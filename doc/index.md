@@ -63,11 +63,11 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 * [Resources](resources.md)
 
-# Building / releasing ANTLR itself
+# Building ANTLR itself
 
 * [Building ANTLR itself](building-antlr.md)
 
-* [Contributing to ANTLR](/CONTRIBUTING.md)
+* [Contributing to ultra-parser](/CONTRIBUTING.md)
 
 * [ANTLR project unit tests](antlr-project-testing.md)
 
