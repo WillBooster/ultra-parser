@@ -69,8 +69,6 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 * [Contributing to ANTLR](/CONTRIBUTING.md)
 
-* [Cutting an ANTLR Release](releasing-antlr.md)
-
 * [ANTLR project unit tests](antlr-project-testing.md)
 
 * [Creating an ANTLR Language Target](creating-a-language-target.md)
