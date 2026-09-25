@@ -8,12 +8,13 @@ package org.antlr.v5.codegen.target;
 
 import org.antlr.v5.codegen.CodeGenerator;
 import org.antlr.v5.codegen.Target;
-import org.stringtemplate.v4.STGroup;
-import org.stringtemplate.v4.StringRenderer;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -82,22 +83,37 @@ public class RustTarget extends Target {
 		return buf.toString();
 	}
 
-	/** Supports {@code format="SCREAMING_SNAKE_CASE"} to name Rust constants. */
+	/**
+	 * Names constants in SCREAMING_SNAKE_CASE. Names already in that case keep it; any other name
+	 * whose conversion is taken gets underscores appended until it is distinct, so that names
+	 * like {@code FOO_BAR} and {@code FooBar} yield distinct constants.
+	 */
 	@Override
-	protected STGroup loadTemplates() {
-		STGroup result = super.loadTemplates();
-		if (result != null) {
-			result.registerRenderer(String.class, new StringRenderer() {
-				@Override
-				public String toString(Object o, String formatString, Locale locale) {
-					if ("SCREAMING_SNAKE_CASE".equals(formatString)) {
-						return toSnakeCase((String) o).toUpperCase(Locale.ROOT);
-					}
-					return super.toString(o, formatString, locale);
-				}
-			});
+	public Map<String, String> getConstantNames(Collection<String> names) {
+		Map<String, String> constantNames = new LinkedHashMap<>();
+		Set<String> used = new HashSet<>();
+		for (String name : names) {
+			String constantName = toScreamingSnakeCase(name);
+			if (constantName.equals(name)) {
+				constantNames.put(name, constantName);
+				used.add(constantName);
+			}
 		}
-		return result;
+		for (String name : names) {
+			if (constantNames.containsKey(name)) {
+				continue;
+			}
+			String constantName = toScreamingSnakeCase(name);
+			while (!used.add(constantName)) {
+				constantName += "_";
+			}
+			constantNames.put(name, constantName);
+		}
+		return constantNames;
+	}
+
+	private static String toScreamingSnakeCase(String name) {
+		return toSnakeCase(name).toUpperCase(Locale.ROOT);
 	}
 
 	/** Converts {@code MyGrammarLexer} to {@code my_grammar_lexer}; keeps existing underscores. */

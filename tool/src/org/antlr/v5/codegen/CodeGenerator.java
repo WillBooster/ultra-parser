@@ -137,13 +137,23 @@ public class CodeGenerator {
 				tokens.put(entry.getKey(), entry.getValue());
 			}
 		}
-		st.add("tokens", tokens);
+		st.add("tokens", toTargetConstants(tokens));
 		Map<String,Integer> rules = new LinkedHashMap<>();
 		for (Rule r : g.rules.values()) {
 			rules.put(r.name, r.index);
 		}
-		st.add("rules", rules);
+		st.add("rules", toTargetConstants(rules));
 		return st;
+	}
+
+	/** Rekeys {@code values} by the target's constant names for their keys. */
+	private Map<String,Integer> toTargetConstants(Map<String,Integer> values) {
+		Map<String,String> constantNames = target.getConstantNames(values.keySet());
+		Map<String,Integer> constants = new LinkedHashMap<>();
+		for (Map.Entry<String,Integer> entry : values.entrySet()) {
+			constants.put(constantNames.get(entry.getKey()), entry.getValue());
+		}
+		return constants;
 	}
 
 	private List<String> toTargetStringLiterals(Collection<String> strings) {

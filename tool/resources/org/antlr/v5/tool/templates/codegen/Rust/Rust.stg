@@ -41,12 +41,12 @@ pub static GRAMMAR: GrammarData = GrammarData {
 
 /// Token types.
 pub mod token {
-    <tokens.keys:{name | pub const <name; format="SCREAMING_SNAKE_CASE">: i32 = <tokens.(name)>;}; separator="\n">
+    <tokens.keys:{name | pub const <name>: i32 = <tokens.(name)>;}; separator="\n">
 }
 
 /// Rule indexes.
 pub mod rule {
-    <rules.keys:{name | pub const <name; format="SCREAMING_SNAKE_CASE">: usize = <rules.(name)>;}; separator="\n">
+    <rules.keys:{name | pub const <name>: usize = <rules.(name)>;}; separator="\n">
 }
 
 >>
