@@ -1,0 +1,13 @@
+start=document
+<empty>
+hello
+a &amp; b
+<br/>
+<a href="x.html" hidden>link<!-- note --></a >
+<p class="a b">\n  text\n</p>
+# Errors
+<a href=>
+<a "x">
+& b
+<!-- unterminated
+<a href="unterminated

@@ -1,0 +1,19 @@
+start=file
+let x = 1;
+let 名前 = "値\\"q";
+let 😀a = [1, "b", [c]];
+raw a b = 1 2;
+any 1 x;
+[1, 2, [3]]
+let #tag = 1;
+(* comment *) let y = z; (* another *)
+# Errors
+let = 1;
+raw a b
+any 1;
+let x = [1, 2;
+let x 1;
+[1 2]
+<empty>
+let x = "unterminated;
+let 😀 = (* unterminated

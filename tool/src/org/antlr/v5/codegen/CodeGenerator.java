@@ -9,8 +9,11 @@ package org.antlr.v5.codegen;
 import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.model.OutputModelObject;
 import org.antlr.v5.runtime.core.Token;
+import org.antlr.v5.runtime.core.atn.ATNSerializer;
 import org.antlr.v5.tool.ErrorType;
 import org.antlr.v5.tool.Grammar;
+import org.antlr.v5.tool.LexerGrammar;
+import org.antlr.v5.tool.Rule;
 import org.stringtemplate.v4.AutoIndentWriter;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
@@ -19,7 +22,11 @@ import org.stringtemplate.v4.STWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** General controller for code gen.  Can instantiate sub generator(s).
@@ -105,6 +112,47 @@ public class CodeGenerator {
 
 	public ST generateBaseVisitor() { return generateBaseVisitor(false); }
 	public ST generateBaseVisitor(boolean header) { return walk(createController().buildBaseVisitorOutputModel(header), header); }
+
+	/**
+	 * Generate the recognizer file of a target whose runtime interprets the ATN (see
+	 * {@link Target#isATNInterpreted()}) from its {@code RecognizerFile} template.
+	 */
+	public ST generateInterpretedRecognizer() {
+		ST st = getTemplates().getInstanceOf("RecognizerFile");
+		st.add("grammarFileName", g.fileName.substring(Math.max(g.fileName.lastIndexOf('/'), g.fileName.lastIndexOf('\\')) + 1));
+		st.add("recognizerName", g.getRecognizerName());
+		st.add("serializedATN", ATNSerializer.Companion.getSerialized(g.atn).toArray());
+		st.add("ruleNames", toTargetStringLiterals(Arrays.asList(g.getRuleNames())));
+		st.add("literalNames", toTargetStringLiterals(Arrays.asList(g.getTokenLiteralNames())));
+		st.add("symbolicNames", toTargetStringLiterals(Arrays.asList(g.getTokenSymbolicNames())));
+		if ( g.isLexer() ) {
+			List<String> channelNames = new ArrayList<>(Arrays.asList("DEFAULT_TOKEN_CHANNEL", "HIDDEN"));
+			channelNames.addAll(g.channelNameToValueMap.keySet());
+			st.add("channelNames", toTargetStringLiterals(channelNames));
+			st.add("modeNames", toTargetStringLiterals(((LexerGrammar)g).modes.keySet()));
+		}
+		Map<String,Integer> tokens = new LinkedHashMap<>();
+		for (Map.Entry<String, Integer> entry : g.tokenNameToTypeMap.entrySet()) {
+			if ( entry.getValue()>=Token.MIN_USER_TOKEN_TYPE ) {
+				tokens.put(entry.getKey(), entry.getValue());
+			}
+		}
+		st.add("tokens", tokens);
+		Map<String,Integer> rules = new LinkedHashMap<>();
+		for (Rule r : g.rules.values()) {
+			rules.put(r.name, r.index);
+		}
+		st.add("rules", rules);
+		return st;
+	}
+
+	private List<String> toTargetStringLiterals(Collection<String> strings) {
+		List<String> literals = new ArrayList<>(strings.size());
+		for (String s : strings) {
+			literals.add(target.getTargetStringLiteralFromString(s, true));
+		}
+		return literals;
+	}
 
 	/** Generate a token vocab file with all the token names/types.  For example:
 	 *  ID=7

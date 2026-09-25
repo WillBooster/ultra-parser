@@ -25,6 +25,15 @@ public class CodeGenPipeline {
 		// after the first error is reported
 		int errorCount = g.tool.errMgr.getNumErrors();
 
+		if ( gen.getTarget().isATNInterpreted() ) {
+			ST recognizer = gen.generateInterpretedRecognizer();
+			if (g.tool.errMgr.getNumErrors() == errorCount) {
+				writeRecognizer(recognizer, gen, false);
+			}
+			gen.writeVocabFile();
+			return;
+		}
+
 		if ( g.isLexer() ) {
 			if (gen.getTarget().needsHeader()) {
 				ST lexer = gen.generateLexer(true); // Header file if needed.

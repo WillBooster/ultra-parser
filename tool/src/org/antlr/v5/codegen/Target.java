@@ -655,4 +655,12 @@ public abstract class Target {
 
 	/** @since 4.6 */
 	public boolean needsHeader() { return false; } // Override in targets that need header files.
+
+	/**
+	 * Whether the target's runtime interprets the grammar's ATN instead of running generated
+	 * parsing code. Such targets only generate a recognizer file from the {@code RecognizerFile}
+	 * template, holding the serialized ATN and the grammar's names; see
+	 * {@link CodeGenerator#generateInterpretedRecognizer()}.
+	 */
+	public boolean isATNInterpreted() { return false; }
 }
