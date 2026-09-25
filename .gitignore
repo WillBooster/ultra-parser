@@ -63,3 +63,7 @@ coverage/
 # Go test and performance trace files
 runtime-testsuite/gen
 tool-testsuite/gen
+
+# ultra-parser
+node_modules/
+examples/*/dist/
