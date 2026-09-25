@@ -21,11 +21,8 @@ public abstract class JvmRunner<TLexer, TParser> extends RuntimeRunner {
 	static {
 		lexerHelperFQN.put("Java", getRuntimeTestRecognizerFQN("Java", true));
 		parserHelperFQN.put("Java", getRuntimeTestRecognizerFQN("Java", false));
-		lexerHelperFQN.put("Kotlin", getRuntimeTestRecognizerFQN("Kotlin", true));
-		parserHelperFQN.put("Kotlin", getRuntimeTestRecognizerFQN("Kotlin", false));
 		String originalClassPath = System.getProperty("java.class.path");
 		classPath.put("Java", getRuntimeHelpersPath("Java", originalClassPath));
-		classPath.put("Kotlin", getRuntimeHelpersPath("Kotlin", originalClassPath));
 	}
 
 	public static String getRuntimeTestRecognizerFQN(String language, boolean isLexer) {

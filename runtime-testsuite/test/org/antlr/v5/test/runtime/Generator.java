@@ -66,7 +66,7 @@ public class Generator {
 			superClass = runOptions.superClass;
 		}
 
-		if (superClass == null && language != null && (language.equals("Java") || language.equals("Kotlin"))) {
+		if (superClass == null && language != null && language.equals("Java")) {
 			if (mainFile.containsParser()) {
 				superClass = JvmRunner.parserHelperFQN.get(language);
 			}
@@ -224,35 +224,14 @@ public class Generator {
 	}
 
 	public static String getExtension(String language) {
-		switch (language) {
-			case "Kotlin":
-				return "kt";
-			case "JavaScript":
-				return "js";
-			case "TypeScript":
-				return "ts";
-			default:
-				return language.toLowerCase();
-		}
+		return language.toLowerCase();
 	}
 
 	private static String getBaseListenerSuffix(String language) {
-		switch (language) {
-			case "JavaScript":
-			case "TypeScript":
-				return null;
-			default:
-				return "BaseListener";
-		}
+		return "BaseListener";
 	}
 
 	private static String getBaseVisitorSuffix(String language) {
-		switch (language) {
-			case "JavaScript":
-			case "TypeScript":
-				return null;
-			default:
-				return "BaseVisitor";
-		}
+		return "BaseVisitor";
 	}
 }
