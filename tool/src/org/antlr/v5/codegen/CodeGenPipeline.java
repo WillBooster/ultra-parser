@@ -10,6 +10,8 @@ import org.antlr.v5.tool.Grammar;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.gui.STViz;
 
+import java.io.File;
+
 public class CodeGenPipeline {
 	final Grammar g;
 	final CodeGenerator gen;
@@ -26,6 +28,13 @@ public class CodeGenPipeline {
 		int errorCount = g.tool.errMgr.getNumErrors();
 
 		if ( gen.getTarget().isATNInterpreted() ) {
+			String fileName = gen.getRecognizerFileName(false);
+			String path = new File(g.tool.getOutputDirectory(g.fileName), fileName).getAbsolutePath();
+			String previous = g.tool.interpretedRecognizerFiles.putIfAbsent(path, g.getRecognizerName());
+			if ( previous!=null && !previous.equals(g.getRecognizerName()) ) {
+				g.tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE, path, "it is also generated for " + previous);
+				return;
+			}
 			ST recognizer = gen.generateInterpretedRecognizer();
 			if (g.tool.errMgr.getNumErrors() == errorCount) {
 				writeRecognizer(recognizer, gen, false);

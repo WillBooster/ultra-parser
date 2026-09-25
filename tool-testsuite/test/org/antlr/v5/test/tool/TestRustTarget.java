@@ -6,13 +6,19 @@
 
 package org.antlr.v5.test.tool;
 
+import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.target.RustTarget;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestRustTarget {
 	@Test
@@ -21,5 +27,16 @@ public class TestRustTarget {
 		assertEquals(
 			Map.of("FooBar", "FOO_BAR_", "FOO_BAR", "FOO_BAR", "T__0", "T__0", "multiplyExpr", "MULTIPLY_EXPR", "WS", "WS"),
 			names);
+	}
+
+	@Test
+	public void rejectsGrammarsThatGenerateTheSameFile(@TempDir Path dir) throws IOException {
+		Path fooBar = Files.writeString(dir.resolve("FooBar.g4"), "grammar FooBar; s : 'a' ;");
+		Path foo_bar = Files.writeString(dir.resolve("Foo_Bar.g4"), "grammar Foo_Bar; s : 'b' ;");
+		Path out = dir.resolve("out");
+		Tool tool = new Tool(new String[] {"-Dlanguage=Rust", "-Xexact-output-dir", "-o", out.toString(), fooBar.toString(), foo_bar.toString()});
+		tool.processGrammarsOnCommandLine();
+		assertEquals(2, tool.getNumErrors());
+		assertTrue(Files.readString(out.resolve("foo_bar_parser.rs")).startsWith("// Generated from FooBar.g4"));
 	}
 }
