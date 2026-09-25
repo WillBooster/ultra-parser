@@ -11,6 +11,7 @@ import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.gui.STViz;
 
 import java.io.File;
+import java.io.IOException;
 
 public class CodeGenPipeline {
 	final Grammar g;
@@ -29,7 +30,16 @@ public class CodeGenPipeline {
 
 		if ( gen.getTarget().isATNInterpreted() ) {
 			String fileName = gen.getRecognizerFileName(false);
-			String path = new File(g.tool.getOutputDirectory(g.fileName), fileName).getAbsolutePath();
+			File file = new File(g.tool.getOutputDirectory(g.fileName), fileName);
+			String path;
+			try {
+				// Canonical paths resolve `..` and symbolic links, so aliases of a directory collide.
+				path = file.getCanonicalPath();
+			}
+			catch (IOException e) {
+				g.tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE, e, file.getPath(), e.getMessage());
+				return;
+			}
 			String previous = g.tool.interpretedRecognizerFiles.putIfAbsent(path, g.getRecognizerName());
 			if ( previous!=null && !previous.equals(g.getRecognizerName()) ) {
 				g.tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE, path, "it is also generated for " + previous);

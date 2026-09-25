@@ -32,11 +32,13 @@ public class TestRustTarget {
 	@Test
 	public void rejectsGrammarsThatGenerateTheSameFile(@TempDir Path dir) throws IOException {
 		Path fooBar = Files.writeString(dir.resolve("FooBar.g4"), "grammar FooBar; s : 'a' ;");
-		Path foo_bar = Files.writeString(dir.resolve("Foo_Bar.g4"), "grammar Foo_Bar; s : 'b' ;");
-		Path out = dir.resolve("out");
-		Tool tool = new Tool(new String[] {"-Dlanguage=Rust", "-Xexact-output-dir", "-o", out.toString(), fooBar.toString(), foo_bar.toString()});
+		Files.writeString(dir.resolve("Foo_Bar.g4"), "grammar Foo_Bar; s : 'b' ;");
+		// An alias of the same directory must not hide the collision.
+		Path foo_bar = dir.resolve("out/../Foo_Bar.g4");
+		Files.createDirectories(dir.resolve("out"));
+		Tool tool = new Tool(new String[] {"-Dlanguage=Rust", fooBar.toString(), foo_bar.toString()});
 		tool.processGrammarsOnCommandLine();
 		assertEquals(2, tool.getNumErrors());
-		assertTrue(Files.readString(out.resolve("foo_bar_parser.rs")).startsWith("// Generated from FooBar.g4"));
+		assertTrue(Files.readString(dir.resolve("foo_bar_parser.rs")).startsWith("// Generated from FooBar.g4"));
 	}
 }
