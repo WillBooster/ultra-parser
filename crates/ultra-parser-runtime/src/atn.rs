@@ -2,6 +2,7 @@
 //! format version 4.
 
 use std::fmt;
+use std::sync::OnceLock;
 
 use crate::interval_set::IntervalSet;
 use crate::token::EOF;
@@ -262,6 +263,8 @@ pub struct Atn {
     pub mode_to_start_state: Vec<usize>,
     pub decision_to_state: Vec<usize>,
     pub lexer_actions: Vec<LexerAction>,
+    /// `next_tokens` of each state, computed on first use like ANTLR's `nextTokenWithinRule`.
+    next_tokens: Vec<OnceLock<IntervalSet>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -588,6 +591,7 @@ impl Atn {
             mode_to_start_state,
             decision_to_state,
             lexer_actions,
+            next_tokens: (0..state_count).map(|_| OnceLock::new()).collect(),
         };
         atn.mark_precedence_decisions();
         atn.verify()?;
@@ -682,7 +686,7 @@ impl Atn {
 
     /// The token types (or code points) the ATN can match next from `state` within its rule;
     /// includes `EPSILON` when the end of the rule is reachable.
-    pub fn next_tokens(&self, state: usize) -> IntervalSet {
-        crate::ll1::look(self, state)
+    pub fn next_tokens(&self, state: usize) -> &IntervalSet {
+        self.next_tokens[state].get_or_init(|| crate::ll1::look(self, state))
     }
 }

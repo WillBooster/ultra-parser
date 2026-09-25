@@ -407,7 +407,7 @@ impl<'a, 't> Parser<'a, 't> {
     fn expected_tokens_at(&self, state: usize, mut ctx: NodeId) -> IntervalSet {
         let mut following = self.atn.next_tokens(state);
         if !following.contains(EPSILON) {
-            return following;
+            return following.clone();
         }
         let mut expected = following.clone();
         expected.remove(EPSILON);
@@ -418,7 +418,7 @@ impl<'a, 't> Parser<'a, 't> {
                 break;
             };
             following = self.atn.next_tokens(self.follow_state(invoking_state));
-            expected.add_set(&following);
+            expected.add_set(following);
             expected.remove(EPSILON);
             ctx = parent;
         }
@@ -655,7 +655,7 @@ impl<'a, 't> Parser<'a, 't> {
     fn error_recovery_set(&self) -> IntervalSet {
         let mut set = IntervalSet::new();
         for invoking_state in self.invoking_states(self.ctx) {
-            set.add_set(&self.atn.next_tokens(self.follow_state(invoking_state)));
+            set.add_set(self.atn.next_tokens(self.follow_state(invoking_state)));
         }
         set.remove(EPSILON);
         set
