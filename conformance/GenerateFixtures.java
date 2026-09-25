@@ -36,7 +36,8 @@ import java.util.stream.Stream;
 
 /**
  * Records how ANTLR's own interpreters lex and parse the inputs of each grammar in the given
- * directory, so that the Rust runtime can be checked against them.
+ * directories, so that the Rust runtime can be checked against them. Usage:
+ * {@code GenerateFixtures <fixtures directory> <grammar directory>...}
  *
  * <p>Each {@code T.inputs} file goes with a combined grammar {@code T.g4} or with the grammars
  * {@code TLexer.g4} and {@code TParser.g4}. Its first line is
@@ -46,14 +47,16 @@ import java.util.stream.Stream;
  */
 public class GenerateFixtures {
 	public static void main(String[] args) throws IOException {
-		Path grammarsDir = Path.of(args[0]);
-		Path fixturesDir = Path.of(args[1]);
+		Path fixturesDir = Path.of(args[0]);
 		Files.createDirectories(fixturesDir);
-		List<Path> inputFiles;
-		try (Stream<Path> files = Files.list(grammarsDir)) {
-			inputFiles = files.filter(p -> p.toString().endsWith(".inputs")).sorted().toList();
+		List<Path> inputFiles = new ArrayList<>();
+		for (String grammarsDirArg : Arrays.asList(args).subList(1, args.length)) {
+			try (Stream<Path> files = Files.list(Path.of(grammarsDirArg))) {
+				inputFiles.addAll(files.filter(p -> p.toString().endsWith(".inputs")).sorted().toList());
+			}
 		}
 		for (Path inputFile : inputFiles) {
+			Path grammarsDir = inputFile.getParent();
 			String name = inputFile.getFileName().toString().replaceFirst("\\.inputs$", "");
 			List<String> lines = Files.readAllLines(inputFile, StandardCharsets.UTF_8);
 			String startRule = lines.get(0).replaceFirst("^start=", "");

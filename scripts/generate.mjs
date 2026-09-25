@@ -22,7 +22,9 @@ for (const file of fs.readdirSync(outDir).filter((file) => file.endsWith('.rs'))
 }
 fs.rmSync(outDir, { force: true, recursive: true });
 
-execFileSync('java', ['-cp', toolJar, 'GenerateFixtures.java', 'grammars', 'fixtures'], {
-  cwd: path.join(rootDir, 'conformance'),
-  stdio: 'inherit',
-});
+// The example grammars are checked with their own inputs, so that they have a single copy.
+execFileSync(
+  'java',
+  ['-cp', toolJar, 'conformance/GenerateFixtures.java', 'conformance/fixtures', 'conformance/grammars', 'examples/arithmetic/grammar'],
+  { cwd: rootDir, stdio: 'inherit' }
+);

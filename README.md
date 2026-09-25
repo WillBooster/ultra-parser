@@ -26,9 +26,9 @@ bun install
 bun run test                                                   # build the example for WebAssembly and test it from JavaScript
 ```
 
-After changing the tool, a grammar under `examples/` or `conformance/grammars/`, or an input under `conformance/grammars/`, run `bun run generate` and commit the regenerated files.
+After changing the tool, or a grammar or `.inputs` file under `examples/*/grammar/` or `conformance/grammars/`, run `bun run generate` and commit the regenerated files.
 
-- `conformance/` checks the runtime against ANTLR's own interpreters. `GenerateFixtures.java` records how they lex and parse each grammar's inputs into `conformance/fixtures/`, and `crates/ultra-parser-runtime/tests/conformance.rs` requires identical tokens, trees, and error messages. Add inputs there when changing the runtime.
+- `conformance/` checks the runtime against ANTLR's own interpreters. `GenerateFixtures.java` records how they lex and parse the inputs of each grammar with a `.inputs` file, in `conformance/grammars/` and `examples/*/grammar/`, into `conformance/fixtures/`. `crates/ultra-parser-runtime/tests/conformance.rs` requires identical tokens, trees, and error messages. Add inputs when changing the runtime.
 - `doc/` is ANTLR's documentation, inherited from upstream. Read it for grammar syntax; its pages about other targets do not apply.
 
 ## ANTLR 5 authors
