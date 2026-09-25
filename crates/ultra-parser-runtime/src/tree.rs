@@ -46,28 +46,49 @@ impl ParseTree {
     /// `(expr (expr 1) + (expr 2))`.
     pub fn to_string_tree(&self) -> String {
         let mut buf = String::new();
-        self.write_node(self.root, &mut buf);
+        // Trees are as deep as the input is long (e.g., left-recursive rules nest one node per
+        // operator), so the walk keeps its own stack of (node, next child) instead of recursing.
+        let mut stack = vec![(self.root, 0)];
+        while let Some((id, next)) = stack.last_mut() {
+            let node = &self.nodes[*id];
+            if *next == 0 {
+                let name = self.rule_names[node.rule_index];
+                if node.children.is_empty() {
+                    buf.push_str(name);
+                    stack.pop();
+                    continue;
+                }
+                buf.push('(');
+                buf.push_str(name);
+            }
+            let Some(&child) = node.children.get(*next) else {
+                buf.push(')');
+                stack.pop();
+                continue;
+            };
+            *next += 1;
+            buf.push(' ');
+            match child {
+                Child::Rule(child) => stack.push((child, 0)),
+                Child::Token(i) | Child::SkippedToken(i) => {
+                    push_escaped(&mut buf, &self.tokens[i].text)
+                }
+                Child::ConjuredToken(i) => push_escaped(&mut buf, &self.conjured_tokens[i].text),
+            }
+        }
         buf
     }
 
-    fn write_node(&self, id: NodeId, buf: &mut String) {
-        let node = &self.nodes[id];
-        let name = self.rule_names[node.rule_index];
-        if node.children.is_empty() {
-            buf.push_str(name);
-            return;
+    /// The invoking states of the rule invocations from `ctx` outwards, excluding the root.
+    pub(crate) fn invoking_states(nodes: &[RuleNode], mut ctx: NodeId) -> Vec<usize> {
+        let mut states = Vec::new();
+        while let (Some(parent), Some(invoking_state)) =
+            (nodes[ctx].parent, nodes[ctx].invoking_state)
+        {
+            states.push(invoking_state);
+            ctx = parent;
         }
-        buf.push('(');
-        buf.push_str(name);
-        for child in &node.children {
-            buf.push(' ');
-            match *child {
-                Child::Rule(child) => self.write_node(child, buf),
-                Child::Token(i) | Child::SkippedToken(i) => push_escaped(buf, &self.tokens[i].text),
-                Child::ConjuredToken(i) => push_escaped(buf, &self.conjured_tokens[i].text),
-            }
-        }
-        buf.push(')');
+        states
     }
 }
 

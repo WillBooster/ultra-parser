@@ -8,6 +8,7 @@ use crate::config::{AltSet, Config, ConfigSet};
 use crate::context::{Ctx, EMPTY_RETURN_STATE, PredictionContext};
 use crate::semantic::SemanticContext;
 use crate::token::{EOF, EPSILON, TokenStream};
+use crate::tree::{NodeId, ParseTree, RuleNode};
 
 /// No alternative of a decision matches the input.
 pub(crate) struct NoViableAlt {
@@ -19,8 +20,10 @@ pub(crate) struct NoViableAlt {
 
 /// The parser state that prediction depends on.
 pub(crate) struct Outer<'o> {
-    /// The invoking states of the current rule invocations, innermost first.
-    pub(crate) invoking_states: &'o [usize],
+    /// The rule contexts built so far.
+    pub(crate) nodes: &'o [RuleNode],
+    /// The current rule context, whose invocation stack full-context prediction starts from.
+    pub(crate) ctx: NodeId,
     /// The precedence of the innermost left-recursive rule invocation, or -1.
     pub(crate) precedence: i32,
 }
@@ -85,8 +88,10 @@ impl Simulator<'_, '_, '_, '_> {
                         return Ok(alts.min());
                     }
                 }
-                let s0 =
-                    self.compute_start_state(self.decision_state, self.outer.invoking_states, true);
+                // Only full-context prediction needs the invocation stack, which is as long as
+                // the input is nested.
+                let invoking_states = ParseTree::invoking_states(self.outer.nodes, self.outer.ctx);
+                let s0 = self.compute_start_state(self.decision_state, &invoking_states, true);
                 return self.exec_atn_with_full_context(s0);
             }
             if step.is_accept {

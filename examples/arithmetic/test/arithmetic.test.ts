@@ -23,3 +23,12 @@ test('recovers from syntax errors', () => {
   expect(result.errors).toEqual(["line 1:6 missing ')' at '<EOF>'"]);
   expect(() => evaluate('1 # 2')).toThrow("line 1:2 token recognition error at: '#'");
 });
+
+test('handles deeply nested and long inputs', () => {
+  const chain = `1${'+1'.repeat(49_999)}`;
+  expect(parse(chain).errors).toEqual([]);
+  expect(evaluate(chain)).toBe(50_000);
+  const nested = `${'('.repeat(20_000)}1${')'.repeat(20_000)}`;
+  expect(parse(nested).errors).toEqual([]);
+  expect(evaluate(nested)).toBe(1);
+});

@@ -171,16 +171,8 @@ impl<'a, 't> Parser<'a, 't> {
         self.precedence_stack.last().copied().unwrap_or(-1)
     }
 
-    /// The invoking states of the rule invocations from `ctx` outwards, excluding the root.
-    fn invoking_states(&self, mut ctx: NodeId) -> Vec<usize> {
-        let mut states = Vec::new();
-        while let (Some(parent), Some(invoking_state)) =
-            (self.nodes[ctx].parent, self.nodes[ctx].invoking_state)
-        {
-            states.push(invoking_state);
-            ctx = parent;
-        }
-        states
+    fn invoking_states(&self, ctx: NodeId) -> Vec<usize> {
+        ParseTree::invoking_states(&self.nodes, ctx)
     }
 
     fn follow_state(&self, invoking_state: usize) -> usize {
@@ -361,9 +353,9 @@ impl<'a, 't> Parser<'a, 't> {
         let decision = state
             .decision
             .expect("decision states have a decision number");
-        let invoking_states = self.invoking_states(self.ctx);
         let outer = Outer {
-            invoking_states: &invoking_states,
+            nodes: &self.nodes,
+            ctx: self.ctx,
             precedence: self.precedence(),
         };
         prediction::adaptive_predict(self.atn, &mut self.input, decision, &outer).map_err(|e| {

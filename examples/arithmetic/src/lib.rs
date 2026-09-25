@@ -68,32 +68,48 @@ pub fn evaluate(source: &str) -> Result<f64, String> {
     Ok(evaluate_expr(&tree, *expr))
 }
 
-fn evaluate_expr(tree: &ParseTree, id: NodeId) -> f64 {
+/// Evaluates the expression node `root` bottom-up with an explicit stack, since left-recursive
+/// rules nest one node per operator and recursion would overflow the WebAssembly stack.
+fn evaluate_expr(tree: &ParseTree, root: NodeId) -> f64 {
     let text = |child: &Child| match *child {
         Child::Token(i) => tree.tokens[i].text.as_str(),
         _ => "",
     };
-    let value = |child: &Child| match *child {
-        Child::Rule(id) => evaluate_expr(tree, id),
-        _ => unreachable!("an operand is an expression"),
-    };
-    match tree.nodes[id].children.as_slice() {
-        [number] => text(number).parse().expect("NUMBER tokens are numbers"),
-        [minus, operand] if text(minus) == "-" => -value(operand),
-        [open, inner, _] if text(open) == "(" => value(inner),
-        [left, op, right] => {
-            let (left, right) = (value(left), value(right));
-            match text(op) {
-                "^" => left.powf(right),
-                "*" => left * right,
-                "/" => left / right,
-                "+" => left + right,
-                "-" => left - right,
-                op => unreachable!("unknown operator {op}"),
+    let mut values: Vec<f64> = Vec::new();
+    // Each entry is a node and whether its operand subexpressions are already on `values`.
+    let mut stack = vec![(root, false)];
+    while let Some((id, operands_evaluated)) = stack.pop() {
+        let children = tree.nodes[id].children.as_slice();
+        if !operands_evaluated {
+            stack.push((id, true));
+            for child in children.iter().rev() {
+                if let Child::Rule(operand) = *child {
+                    stack.push((operand, false));
+                }
             }
+            continue;
         }
-        _ => unreachable!("unexpected expression shape"),
+        let value = match children {
+            [number] => text(number).parse().expect("NUMBER tokens are numbers"),
+            [minus, _] if text(minus) == "-" => -values.pop().expect("operand"),
+            [open, _, _] if text(open) == "(" => values.pop().expect("operand"),
+            [_, op, _] => {
+                let right = values.pop().expect("right operand");
+                let left = values.pop().expect("left operand");
+                match text(op) {
+                    "^" => left.powf(right),
+                    "*" => left * right,
+                    "/" => left / right,
+                    "+" => left + right,
+                    "-" => left - right,
+                    op => unreachable!("unknown operator {op}"),
+                }
+            }
+            _ => unreachable!("unexpected expression shape"),
+        };
+        values.push(value);
     }
+    values.pop().expect("the root value")
 }
 
 #[cfg(test)]
