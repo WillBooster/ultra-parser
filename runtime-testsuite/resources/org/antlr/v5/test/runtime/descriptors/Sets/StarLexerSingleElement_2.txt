@@ -1,0 +1,15 @@
+[grammar]
+grammar T;
+a : A {<InputText():writeln()>} ;
+A : 'b'* 'c' ;
+
+[start]
+a
+
+[input]
+c
+
+[output]
+"""c
+"""
+

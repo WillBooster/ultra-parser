@@ -1,0 +1,174 @@
+<!--
+  ~ Copyright (c) 2012-present The ANTLR Project. All rights reserved.
+  ~ Use of this file is governed by the BSD 3-clause license that
+  ~ can be found in the LICENSE.txt file in the project root.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>9</version>
+	</parent>
+	<groupId>org.antlr</groupId>
+	<artifactId>antlr5-master</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>ANTLR 5</name>
+	<description>ANTLR 5 Master Build POM</description>
+	<url>https://www.antlr.org/</url>
+	<inceptionYear>1992</inceptionYear>
+	<organization>
+		<name>ANTLR</name>
+		<url>https://www.antlr.org/</url>
+	</organization>
+
+    <prerequisites>
+        <maven>3.8</maven>
+    </prerequisites>
+
+    <licenses>
+		<license>
+			<name>BSD-3-Clause</name>
+			<url>https://www.antlr.org/license.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Terence Parr</name>
+			<url>https://github.com/parrt</url>
+			<roles>
+				<role>Project lead - ANTLR</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Eric Vergnaud</name>
+            <url>https://github.com/ericvergnaud</url>
+			<roles>
+				<role>Project lead - ANTLR 5</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Jim Idle</name>
+			<email>jimi@idle.ws</email>
+			<url>https://www.linkedin.com/in/jimidle/</url>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Ivan Kochurkin</name>
+            <url>https://github.com/kvanttt</url>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+		<developer>
+			<name>Ken Domino</name>
+            <url>https://github.com/kaby76</url>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+        <developer>
+            <name>Edoardo Luppi</name>
+            <url>https://github.com/lppedd</url>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+	</developers>
+
+	<modules>
+        <module>runtime/Core</module>
+		<module>runtime/Java</module>
+        <module>runtime/Kotlin</module>
+		<module>tool</module>
+		<module>antlr5-maven-plugin</module>
+		<module>tool-testsuite</module>
+		<module>runtime-testsuite</module>
+	</modules>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<project.build.outputTimestamp>1693865452</project.build.outputTimestamp>
+		<antlr.testinprocess>true</antlr.testinprocess>
+        <maven.compiler.release>17</maven.compiler.release>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+	    <kotlin.version>2.0.0-Beta4</kotlin.version>
+        <junit.version>5.9.0</junit.version>
+	</properties>
+
+	<mailingLists>
+		<mailingList>
+			<name>antlr-discussion</name>
+			<archive>https://groups.google.com/forum/?fromgroups#!forum/antlr-discussion</archive>
+		</mailingList>
+	</mailingLists>
+
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/antlr/antlr5/issues</url>
+	</issueManagement>
+
+	<scm>
+        <url>https://github.com/antlr/antlr5/tree/main</url>
+		<connection>scm:git:git://github.com/antlr/antlr5.git</connection>
+		<developerConnection>scm:git:git@github.com:antlr/antlr5.git</developerConnection>
+		<tag>0.0.1</tag>
+	</scm>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>resources</directory>
+			</resource>
+		</resources>
+		<testResources>
+			<testResource>
+				<directory>test</directory>
+			</testResource>
+		</testResources>
+		<plugins>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.8.1</version>
+					<configuration>
+						<source>${maven.compiler.source}</source>
+						<target>${maven.compiler.target}</target>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.2.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>3.0.0-M6</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>

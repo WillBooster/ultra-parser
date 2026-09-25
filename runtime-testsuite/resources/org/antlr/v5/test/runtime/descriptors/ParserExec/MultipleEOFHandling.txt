@@ -1,0 +1,15 @@
+[notes]
+This test ensures that {@link ParserATNSimulator} produces a correct
+result when the grammar contains multiple explicit references to
+{@code EOF} inside of parser rules.
+
+[grammar]
+grammar T;
+prog : ('x' | 'x' 'y') EOF EOF;
+
+[start]
+prog
+
+[input]
+x
+

@@ -1,0 +1,65 @@
+# Maven build folders
+target/
+# ... but not code generation targets
+!tool/src/org/antlr/v5/codegen/target/
+
+# MacOSX files
+.DS_Store
+
+# User-specific files (MonoDevelop/Xamarin Studio/Visual Studio)
+*.userprefs
+.vs/
+project.lock.json
+
+# NetBeans user configuration files
+nbactions*.xml
+/nbproject/private/
+*/nbproject/private/
+
+# IntelliJ projects
+*.iws
+*.iml
+.idea/
+
+# Eclipse projects
+.classpath
+.project
+.settings/
+.metadata
+
+# Profiler results
+*.hprof
+
+# parrt's bash prompt data
+.fetch_time_cache
+
+# Playground
+#/tool/playground/
+
+# Generated files
+/out/
+/gen/
+/gen3/
+/gen4/
+/tool/playground/
+tmp/
+**/generatedCode/*.interp
+**/generatedCode/*.tokens
+**/generatedCode/*.bak
+
+*.jar
+.vscode
+
+# VSCode Java plugin temporary files
+javac-services.0.log
+javac-services.0.log.lck
+
+# Swift binaries
+.build/
+
+# Code coverage reports
+coverage/
+
+# Go test and performance trace files
+runtime-testsuite/gen
+tool-testsuite/gen

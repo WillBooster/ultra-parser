@@ -1,0 +1,127 @@
+name: antlr5
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ master, dev, hostedci ]
+  pull_request:
+    branches: [ master, dev ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [
+          macos-11,
+          ubuntu-20.04,
+          windows-2022
+        ]
+        target: [
+          tool,
+          java,
+          kotlin,
+        ]
+
+    steps:
+      # Check out the code before setting the environment since some
+      # of the actions actually parse the files to figure out the
+      # dependencies, for instance, the setup-java actually parses
+      # **/pom.xml files to decide what to cache.
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies (Ubuntu)
+      if: startswith(matrix.os, 'ubuntu')
+      run: |
+        sudo apt-get update -qq
+        sudo apt install -y ninja-build
+
+    - name: Install dependencies (MacOS)
+      if: startswith(matrix.os, 'macos')
+      run: brew install ninja
+
+    - name: Set up JDK 17
+      id: setup-java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: 17
+        cache: 'maven'
+
+    - name: Set up Maven
+      if: steps.setup-java.outputs.cache-hit != 'true'
+      uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.9.4
+
+    - name: Build ANTLR modules without testing
+      run: mvn install -DskipTests=true -Darguments="-Dmaven.javadoc.skip=true" -B -V
+
+
+    - name: Unit test core module
+      if: matrix.target != 'tool'
+      run: |
+        cd runtime/Core
+        mvn test
+
+    - id: capitalize
+      name: Capitalize target module name
+      if: matrix.target != 'tool'
+      uses: ASzc/change-string-case-action@v6
+      with:
+        string: ${{ matrix.target }}
+    
+    - name: Unit test target module
+      if: matrix.target != 'tool'
+      run: |
+        cd runtime/${{ steps.capitalize.outputs.capitalized }}
+        mvn test
+
+    - name: Test tool
+      if: matrix.target == 'tool'
+      run: |
+        cd tool-testsuite
+        mvn test
+
+    - name: End-to-end test runtime (Windows)
+      if: startsWith(matrix.os, 'windows') && (matrix.target != 'tool')
+      run: |
+        gci env:* | sort-object name
+
+        cd runtime-testsuite
+        mvn -X '-Dtest=${{ matrix.target }}.**' test
+
+      env:
+        CMAKE_GENERATOR: Ninja
+
+    - name: End-to-end test runtime (non-Windows)
+      if: (startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos'))  && (matrix.target != 'tool')
+      run: |
+        env
+
+        cd runtime-testsuite
+        mvn -X '-Dtest=${{ matrix.target }}.**' test
+
+    - name: Prepare artifacts
+      if: always()
+      run: |
+        cd ${{ github.workspace }}/..
+        tar czfp antlr_${{ matrix.os }}_${{ matrix.target }}.tgz --exclude='.git' antlr5
+        mv antlr_${{ matrix.os }}_${{ matrix.target }}.tgz ${{ github.workspace }}/.
+
+    - name: Archive artifacts
+      if: always()
+      continue-on-error: true
+      uses: actions/upload-artifact@v3
+      with:
+        name: antlr_${{ matrix.os }}_${{ matrix.target }}
+        path: antlr_${{ matrix.os }}_${{ matrix.target }}.tgz

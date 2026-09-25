@@ -1,0 +1,15 @@
+[grammar]
+grammar T;
+a : A {<writeln("$A.text")>} ;
+A : ~'b' ;
+
+[start]
+a
+
+[input]
+x
+
+[output]
+"""x
+"""
+
