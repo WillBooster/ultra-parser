@@ -74,10 +74,20 @@ public class GenerateFixtures {
 				Path parserPath = grammarsDir.resolve(name + "Parser.g4");
 				// The parser grammar imports the lexer's vocabulary from its .tokens file.
 				Path libDir = Files.createTempDirectory("fixtures");
-				Tool tool = new Tool(new String[] {"-o", libDir.toString(), "-lib", libDir.toString(), "-Xexact-output-dir"});
-				lg = (LexerGrammar) tool.loadGrammar(lexerPath.toString());
-				CodeGenerator.create(lg).writeVocabFile();
-				g = tool.loadGrammar(parserPath.toString());
+				try {
+					Tool tool = new Tool(new String[] {"-o", libDir.toString(), "-lib", libDir.toString(), "-Xexact-output-dir"});
+					lg = (LexerGrammar) tool.loadGrammar(lexerPath.toString());
+					CodeGenerator.create(lg).writeVocabFile();
+					g = tool.loadGrammar(parserPath.toString());
+				}
+				finally {
+					try (Stream<Path> files = Files.list(libDir)) {
+						for (Path file : files.toList()) {
+							Files.delete(file);
+						}
+					}
+					Files.delete(libDir);
+				}
 				grammarFiles = name + "Lexer.g4, " + name + "Parser.g4";
 			}
 			if (g.tool.getNumErrors() > 0 || lg.tool.getNumErrors() > 0) {
