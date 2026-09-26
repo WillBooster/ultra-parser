@@ -1,5 +1,7 @@
 # ANTLR 4 Documentation
 
+This is ANTLR's documentation of grammars, inherited from upstream. [Getting Started](getting-started.md) and [TypeScript Target](typescript-target.md) describe ultra-parser.
+
 Please check [Frequently asked questions (FAQ)](faq/index.md) before asking questions on stackoverflow or antlr-discussion list.
 
 Notes:
@@ -25,7 +27,7 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 ## Sections
 
-* [Getting Started with ANTLR v4](getting-started.md)
+* [Getting Started with ultra-parser](getting-started.md)
 
 * [Grammar Lexicon](lexicon.md)
 
@@ -43,32 +45,18 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 * [Parse Tree Listeners](listeners.md)
 
-* [Parse Tree Matching and XPath](tree-matching.md)
-
 * [Semantic Predicates](predicates.md)
 
 * [Options](options.md)
 
 * [ANTLR Tool Command Line Options](tool-options.md)
 
-* [Runtime Libraries and Code Generation Targets](targets.md)
+* [TypeScript Target](typescript-target.md)
 
 * [Unicode U+FFFF, U+10FFFF character streams](unicode.md)
 
-* [Parsing binary streams](parsing-binary-files.md)
-
-* [Parser and lexer interpreters](interpreters.md)
-
-* [Writing target-agnostic grammars](target-agnostic-grammars.md)
-
 * [Resources](resources.md)
 
-# Building ANTLR itself
-
-* [Building ANTLR itself](building-antlr.md)
+# Contributing
 
 * [Contributing to ultra-parser](/CONTRIBUTING.md)
-
-* [ANTLR project unit tests](antlr-project-testing.md)
-
-* [Creating an ANTLR Language Target](creating-a-language-target.md)
