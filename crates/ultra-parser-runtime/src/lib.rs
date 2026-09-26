@@ -124,11 +124,13 @@ impl Grammar {
         lexer::tokenize(&self.atn, source.chars().map(u32::from).collect(), &mut ())
     }
 
-    /// Parses `tokens`, which must end with an EOF token, starting from rule `start_rule`. A tree
-    /// is produced even for invalid input, thanks to error recovery.
+    /// Parses `tokens`, which must end with an EOF token, from token `start_token` (or the next
+    /// token on the default channel) with rule `start_rule`. A tree is produced even for invalid
+    /// input, thanks to error recovery.
     pub fn parse<H: ParserHost>(
         &self,
         tokens: &Tokens,
+        start_token: usize,
         start_rule: usize,
         mode: PredictionMode,
         host: &mut H,
@@ -147,6 +149,7 @@ impl Grammar {
             &self.vocabulary,
             &self.rule_names,
             tokens,
+            start_token,
             mode,
             host,
         )

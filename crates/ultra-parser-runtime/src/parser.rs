@@ -205,6 +205,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         vocabulary: &'a Vocabulary,
         rule_names: &'a [String],
         tokens: &'t Tokens,
+        start_token: usize,
         mode: PredictionMode,
         host: &'h mut H,
     ) -> Self {
@@ -212,7 +213,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             atn,
             vocabulary,
             rule_names,
-            input: TokenStream::new(tokens),
+            input: TokenStream::new(tokens, start_token),
             mode,
             host,
             nodes: Vec::new(),

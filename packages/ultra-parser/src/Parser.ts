@@ -225,12 +225,16 @@ export abstract class Parser extends Recognizer {
     this.#parseListeners = [];
   }
 
-  /** Parses the token stream from rule `ruleIndex`, whose root context `createRoot` creates. */
+  /**
+   * Parses the token stream from its current token with rule `ruleIndex`, whose root context
+   * `createRoot` creates; the stream then stands after the last token the rule consumed.
+   */
   protected enterStartRule<T extends ParserRuleContext>(
     ruleIndex: number,
     createRoot: (parent: ParserRuleContext | null, invokingState: number) => T
   ): T {
     this._input.fill(true);
+    const startToken = this._input.index;
     const tokens = this.#loadTokens();
     this.#contexts = [];
     this.#previousContexts = [];
@@ -238,7 +242,7 @@ export abstract class Parser extends Recognizer {
     const parsing = this.#parsing;
     this.#parsing = true;
     try {
-      const root = this.grammar.parse(tokens, ruleIndex, this.#mode, this.#createHost());
+      const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
       return this.#contexts[root] as T;
     } finally {
       this.#parsing = parsing;

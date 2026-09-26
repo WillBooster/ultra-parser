@@ -1,6 +1,9 @@
 import { expect, test } from 'bun:test';
+import { CharStream, CommonTokenStream, Token } from 'ultra-parser';
 
 import { evaluate, parse } from '../src/index.js';
+import { ArithmeticLexer } from '../src/generated/ArithmeticLexer.js';
+import { ArithmeticParser } from '../src/generated/ArithmeticParser.js';
 
 test('follows precedence and associativity', () => {
   expect(parse('1 + 2 * 3').treeText).toBe('(program (expr (expr 1) + (expr (expr 2) * (expr 3))) <EOF>)');
@@ -34,4 +37,11 @@ test('handles deeply nested and long inputs', () => {
   expect(parse(`${'-'.repeat(20_000)}(1 1`).errors).toEqual([
     "line 1:20003 mismatched input '1' expecting {'^', '-', '*', '/', '+', ')'}",
   ]);
+});
+
+test('parses from where the previous rule stopped', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 2 * 3 4'))));
+  const exprs: string[] = [];
+  while (parser.getCurrentToken().type !== Token.EOF) exprs.push(parser.expr().toStringTree(parser));
+  expect(exprs).toEqual(['(expr 1)', '(expr (expr 2) * (expr 3))', '(expr 4)']);
 });

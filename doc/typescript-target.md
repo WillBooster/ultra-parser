@@ -11,7 +11,7 @@ For a combined grammar `T.g4`, the tool generates:
 - `TListener.ts` with class `TListener`, whose `enter*` and `exit*` methods are optional. Pass `-no-listener` to skip it.
 - `TVisitor.ts` with class `TVisitor<Result>`, which extends `ParseTreeVisitor<Result>` and whose `visit*` methods are optional, with `-visitor`.
 
-The recognizers hold the serialized ATN and the names of tokens, rules, channels, and modes as static members, e.g., `TParser.ID` and `TParser.RULE_expr`. Parsers have a method per rule that parses the whole input from that rule and returns its context:
+The recognizers hold the serialized ATN and the names of tokens, rules, channels, and modes as static members, e.g., `TParser.ID` and `TParser.RULE_expr`. Parsers have a method per rule that parses from the token stream's current token with that rule and returns its context; the stream then stands after the tokens the rule consumed, so rules can be called repeatedly, e.g., one statement at a time:
 
 ```ts
 const parser = new TParser(new CommonTokenStream(new TLexer(CharStream.fromString(input))));

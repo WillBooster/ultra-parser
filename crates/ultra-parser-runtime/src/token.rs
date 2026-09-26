@@ -95,14 +95,15 @@ pub(crate) struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    /// `tokens` must end with an EOF token.
-    pub(crate) fn new(tokens: &'a Tokens) -> Self {
+    /// Starts at token `start`, or the next one on the default channel; `tokens` must end with an
+    /// EOF token.
+    pub(crate) fn new(tokens: &'a Tokens, start: usize) -> Self {
         let mut stream = Self {
             tokens,
             p: 0,
             fetched: Cell::new(0),
         };
-        stream.p = stream.next_on_channel(0);
+        stream.p = stream.next_on_channel(start);
         stream
     }
 

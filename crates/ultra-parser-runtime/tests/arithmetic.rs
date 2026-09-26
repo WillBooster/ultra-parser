@@ -93,7 +93,7 @@ fn parse(source: &str) -> (String, Vec<String>) {
     let (lexer, parser) = grammars();
     let (tokens, lexer_errors) = lexer.tokenize(source);
     let mut errors = lexer_errors;
-    let tree = parser.parse(&tokens, 0, PredictionMode::Ll, &mut errors);
+    let tree = parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut errors);
     (
         tree.to_string_tree(&tokens, parser.rule_names()),
         errors.iter().map(ToString::to_string).collect(),
@@ -192,7 +192,7 @@ fn reports_the_tree_to_the_host() {
     let (lexer, parser) = grammars();
     let (tokens, _) = lexer.tokenize("1+2");
     let mut recorder = Recorder::default();
-    parser.parse(&tokens, 0, PredictionMode::Ll, &mut recorder);
+    parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut recorder);
     assert_eq!(
         recorder.events,
         [
