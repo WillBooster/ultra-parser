@@ -1,13 +1,19 @@
 {
-  "name": "ultra-parser",
+  "name": "ultra-parser-workspace",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
   "scripts": {
-    "build": "node scripts/buildWasm.mjs",
+    "build": "node scripts/buildWasm.mjs && tsc -p packages/ultra-parser/tsconfig.build.json",
     "generate": "node scripts/generate.mjs",
-    "test": "bun run build && bun test"
+    "test": "bun run build && bun test",
+    "typecheck": "tsc -p packages/ultra-parser && tsc -p examples/arithmetic"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2"
+    "@types/bun": "1.4.2",
+    "typescript": "5.9.3"
   }
 }
