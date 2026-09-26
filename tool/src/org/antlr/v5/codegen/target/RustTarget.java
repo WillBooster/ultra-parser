@@ -48,8 +48,8 @@ public class RustTarget extends Target {
 
 	/** Generate {@code t_parser.rs} and {@code t_lexer.rs} from {@code T.g4}. */
 	@Override
-	public String getRecognizerFileName(boolean header) {
-		return toSnakeCase(gen.g.getRecognizerName()) + ".rs";
+	public String getRecognizerFileName(String recognizerName) {
+		return toSnakeCase(recognizerName) + ".rs";
 	}
 
 	@Override

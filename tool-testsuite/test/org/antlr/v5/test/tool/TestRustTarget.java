@@ -8,9 +8,12 @@ package org.antlr.v5.test.tool;
 
 import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.target.RustTarget;
+import org.antlr.v5.tool.BuildDependencyGenerator;
+import org.antlr.v5.tool.Grammar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,5 +43,14 @@ public class TestRustTarget {
 		tool.processGrammarsOnCommandLine();
 		assertEquals(2, tool.getNumErrors());
 		assertTrue(Files.readString(dir.resolve("foo_bar_parser.rs")).startsWith("// Generated from FooBar.g4"));
+	}
+
+	@Test
+	public void listsTheGeneratedFilesAsDependencies(@TempDir Path dir) throws IOException {
+		Path grammar = Files.writeString(dir.resolve("Expr.g4"), "grammar Expr; s : ID ; ID : [a-z]+ ;");
+		Tool tool = new Tool(new String[] {"-Dlanguage=Rust", "-listener", "-visitor", "-o", dir.toString()});
+		Grammar g = tool.loadGrammar(grammar.toString());
+		List<String> names = new BuildDependencyGenerator(tool, g).getGeneratedFileList().stream().map(File::getName).toList();
+		assertEquals(List.of("expr_parser.rs", "Expr.tokens", "expr_lexer.rs", "ExprLexer.tokens"), names);
 	}
 }

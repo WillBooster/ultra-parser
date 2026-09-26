@@ -117,10 +117,10 @@ $ ls Expr*.java
 ExprBaseListener.java  ExprLexer.java         ExprListener.java      ExprParser.java
 ```
 
-And, here's how to generate Rust modules for the WebAssembly runtime from the same grammar:
+And, here's how to generate Rust modules for the WebAssembly runtime from the same grammar. The `antlr4` command above runs ANTLR 4, which has no Rust target, so build this repository's tool (`mvn -B install -DskipTests`) and run its jar:
 
 ```bash
-$ antlr4 -Dlanguage=Rust Expr.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Dlanguage=Rust Expr.g4
 $ ls expr_*.rs
 expr_lexer.rs  expr_parser.rs
 ```

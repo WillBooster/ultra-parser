@@ -456,8 +456,12 @@ public abstract class Target {
 	 *  just use T.java as output regardless of type.
 	 */
 	public String getRecognizerFileName(boolean header) {
+		return getRecognizerFileName(gen.g.getRecognizerName());
+	}
+
+	/** The file name of the recognizer {@code recognizerName}, such as {@code TLexer.java}. */
+	public String getRecognizerFileName(String recognizerName) {
 		ST extST = getTemplates().getInstanceOf("codeFileExtension");
-		String recognizerName = gen.g.getRecognizerName();
 		return recognizerName+extST.render();
 	}
 
