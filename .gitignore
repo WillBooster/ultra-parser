@@ -67,3 +67,4 @@ tool-testsuite/gen
 # ultra-parser
 node_modules/
 examples/*/dist/
+.tmp/
