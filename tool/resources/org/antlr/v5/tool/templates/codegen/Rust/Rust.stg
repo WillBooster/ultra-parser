@@ -1,0 +1,52 @@
+/*
+ * Copyright (c) 2026-present WillBooster Inc. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+
+// The Rust target only emits the data that the ultra-parser-runtime crate interprets.
+
+codeFileExtension() ::= ".rs"
+
+// Used when rewriting left-recursive rules; the runtime evaluates the resulting precedence
+// predicates itself, so the text only shows up in messages.
+recRuleAltPredicate(ruleName, opPrec) ::= "precpred(_ctx, <opPrec>)"
+
+RecognizerFile(grammarFileName, recognizerName, serializedATN, ruleNames, literalNames, symbolicNames, channelNames, modeNames, tokens, rules) ::= <<
+// Generated from <grammarFileName> by ultra-parser. Do not edit.
+
+// Users rarely need every token type and rule index.
+#![allow(dead_code)]
+
+use ultra_parser_runtime::GrammarData;
+
+pub static GRAMMAR: GrammarData = GrammarData {
+    grammar_file_name: "<grammarFileName>",
+    recognizer_name: "<recognizerName>",
+    serialized_atn: &[
+        <serializedATN; separator=",", wrap>
+    ],
+    rule_names: &[
+        <ruleNames; separator=",\n">
+    ],
+    literal_names: &[
+        <literalNames:{name | Some(<name>)}; null="None", separator=",\n">
+    ],
+    symbolic_names: &[
+        <symbolicNames:{name | Some(<name>)}; null="None", separator=",\n">
+    ],
+    channel_names: &[<channelNames; separator=", ">],
+    mode_names: &[<modeNames; separator=", ">],
+};
+
+/// Token types.
+pub mod token {
+    <tokens.keys:{name | pub const <name>: i32 = <tokens.(name)>;}; separator="\n">
+}
+
+/// Rule indexes.
+pub mod rule {
+    <rules.keys:{name | pub const <name>: usize = <rules.(name)>;}; separator="\n">
+}
+
+>>

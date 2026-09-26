@@ -1,0 +1,45 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ hashFiles('**/pom.xml') }}
+      - name: Build the tool and run its tests
+        # The tests of antlr5-maven-plugin already failed upstream.
+        run: |
+          mvn -B install -DskipTests
+          mvn -B test -pl runtime/Core,runtime/Java,tool-testsuite,runtime-testsuite
+      - name: Check that generated code and fixtures are up to date
+        run: |
+          bun run generate
+          git add --all
+          git diff --cached --exit-code
+      - name: Lint Rust
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Test Rust
+        run: cargo test
+      - name: Test WebAssembly
+        run: |
+          bun install --frozen-lockfile
+          bun run test

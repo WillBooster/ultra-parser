@@ -1,0 +1,9 @@
+[tools]
+java = "temurin-21"
+maven = "3.9"
+node = "24.21.0"
+bun = "1.4.2"
+"github:wasm-bindgen/wasm-bindgen" = "0.2.129"
+
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]

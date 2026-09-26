@@ -109,7 +109,7 @@ The following will pop up in a Java-based GUI window:
 
 ### Generating parser code
 
-The previous section used a built-in ANTLR interpreter but typically you will ask ANTLR to generate code in the language used by your project (there are about 10 languages to choose from as of 4.11).  Here's how to generate Java code from a grammar:
+The previous section used a built-in ANTLR interpreter but typically you will ask ANTLR to generate code in the language used by your project (Java or Rust).  Here's how to generate Java code from a grammar:
 
 ```bash
 $ antlr4 Expr.g4
@@ -117,13 +117,12 @@ $ ls Expr*.java
 ExprBaseListener.java  ExprLexer.java         ExprListener.java      ExprParser.java
 ```
 
-And, here's how to generate C++ code from the same grammar:
+And, here's how to generate Rust modules for the WebAssembly runtime from the same grammar. The `antlr4` command above runs ANTLR 4, which has no Rust target, so build this repository's tool (`mvn -B install -DskipTests`) and run its jar:
 
 ```bash
-$ antlr4 -Dlanguage=Cpp Expr.g4
-$ ls Expr*.cpp Expr*.h
-ExprBaseListener.cpp  ExprLexer.cpp         ExprListener.cpp      ExprParser.cpp
-ExprBaseListener.h    ExprLexer.h           ExprListener.h        ExprParser.h
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Dlanguage=Rust Expr.g4
+$ ls expr_*.rs
+expr_lexer.rs  expr_parser.rs
 ```
 
 ## Installation

@@ -24,7 +24,7 @@ Creating a new target involves the following key elements:
    Our runtime test mechanism in dir `runtime-testsuite` will automatically generate code using these templates for each target and check the test results.
    It needs to know how to define various class fields, compare members and so on.
    You must create a `*X*.test.stg` file underneath [runtime-testsuite/resources/org/antlr/v4/test/runtime](../runtime-testsuite/resources/org/antlr/v5/test/runtime)
-   and `Test.*x*.stg` underneath [runtime-testsuite/resources/org/antlr/v4/test/runtime/helpers](../runtime-testsuite/resources/org/antlr/v5/test/runtime/helpers).
+   and `Test.*x*.stg` in a `runtime-testsuite/resources/org/antlr/v5/test/runtime/helpers` directory, creating it if needed.
    Again, your best bet is to copy the templates from the closest language to your target and tweak it to suit.
 6. Create test files under [/runtime-testsuite/test/org/antlr/v4/test/runtime](../runtime-testsuite/test/org/antlr/v5/test/runtime).
    They will load defined test cases in each test descriptor.

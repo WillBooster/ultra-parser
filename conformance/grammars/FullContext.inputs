@@ -1,0 +1,7 @@
+start=s
+$ 34 abc
+@ 34 abc
+$ abc
+@ 34 56 abc
+@ 34
+$ 34 56 abc

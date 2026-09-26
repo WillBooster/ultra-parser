@@ -1,0 +1,13 @@
+{
+  "name": "ultra-parser",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/buildWasm.mjs",
+    "generate": "node scripts/generate.mjs",
+    "test": "bun run build && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2"
+  }
+}

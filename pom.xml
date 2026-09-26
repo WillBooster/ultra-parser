@@ -86,7 +86,6 @@
 	<modules>
         <module>runtime/Core</module>
 		<module>runtime/Java</module>
-        <module>runtime/Kotlin</module>
 		<module>tool</module>
 		<module>antlr5-maven-plugin</module>
 		<module>tool-testsuite</module>

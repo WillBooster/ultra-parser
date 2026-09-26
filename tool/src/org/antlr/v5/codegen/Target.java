@@ -22,7 +22,9 @@ import org.antlr.v5.tool.ast.GrammarAST;
 import org.stringtemplate.v4.*;
 import org.stringtemplate.v4.misc.STMessage;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -454,8 +456,12 @@ public abstract class Target {
 	 *  just use T.java as output regardless of type.
 	 */
 	public String getRecognizerFileName(boolean header) {
+		return getRecognizerFileName(gen.g.getRecognizerName());
+	}
+
+	/** The file name of the recognizer {@code recognizerName}, such as {@code TLexer.java}. */
+	public String getRecognizerFileName(String recognizerName) {
 		ST extST = getTemplates().getInstanceOf("codeFileExtension");
-		String recognizerName = gen.g.getRecognizerName();
 		return recognizerName+extST.render();
 	}
 
@@ -655,4 +661,24 @@ public abstract class Target {
 
 	/** @since 4.6 */
 	public boolean needsHeader() { return false; } // Override in targets that need header files.
+
+	/**
+	 * Whether the target's runtime interprets the grammar's ATN instead of running generated
+	 * parsing code. Such targets only generate a recognizer file from the {@code RecognizerFile}
+	 * template, holding the serialized ATN and the grammar's names; see
+	 * {@link CodeGenerator#generateInterpretedRecognizer()}.
+	 */
+	public boolean isATNInterpreted() { return false; }
+
+	/**
+	 * Maps grammar names (token or rule names) to distinct names of constants in the target
+	 * language, for the recognizer file of a target whose runtime interprets the ATN.
+	 */
+	public Map<String, String> getConstantNames(Collection<String> names) {
+		Map<String, String> constantNames = new LinkedHashMap<>();
+		for (String name : names) {
+			constantNames.put(name, escapeIfNeeded(name));
+		}
+		return constantNames;
+	}
 }

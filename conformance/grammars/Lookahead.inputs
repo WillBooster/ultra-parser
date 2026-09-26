@@ -1,0 +1,15 @@
+start=unit
+<empty>
+public static final int x;
+public static void main(String[] args) { return; }
+class A { int x; void f() { x = y = 1; g(x, 2).h; } }
+java.lang.String s; // comment
+/* block */ static int[][] a;
+a.b c() { int x = 1; return x; }
+# Syntax errors
+public static;
+int x
+void f( { }
+class { }
+int x = ;
+void f() { x = ; y(); }

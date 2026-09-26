@@ -113,6 +113,13 @@ public class Tool {
 	public boolean longMessages = false;
 	public boolean exact_output_dir = false;
 
+	/**
+	 * The recognizer that generated each recognizer file of a target whose runtime interprets the
+	 * ATN, keyed by absolute path; such targets may derive the same file name from distinct
+	 * grammar names.
+	 */
+	public final Map<String, String> interpretedRecognizerFiles = new HashMap<>();
+
     public final static Option[] optionDefs = {
 		new Option("outputDirectory",             "-o", OptionArgType.STRING, "specify output directory where all output is generated"),
 		new Option("libDirectory",                "-lib", OptionArgType.STRING, "specify location of grammars, tokens files"),
