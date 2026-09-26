@@ -152,6 +152,7 @@ export abstract class Parser extends Recognizer {
   #contexts: ParserRuleContext[] = [];
   #previousContexts: (ParserRuleContext | undefined)[] = [];
   #createRoot: ((parent: ParserRuleContext | null, invokingState: number) => ParserRuleContext) | undefined;
+  #tokens: WasmTokens | undefined;
 
   constructor(input: CommonTokenStream) {
     super();
@@ -235,20 +236,30 @@ export abstract class Parser extends Recognizer {
   ): T {
     this._input.fill(true);
     const startToken = this._input.index;
-    const tokens = this.#loadTokens();
+    // Grammar code may call rule methods while parsing: such a parse reads the tokens the outer
+    // parse loaded, whose memory the outer parse still uses, and the outer parse continues after it
+    // from where it was.
+    const outer = [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, startToken] as const;
+    const tokens = this.#parsing && this.#tokens ? this.#tokens : this.#loadTokens();
+    const parsing = this.#parsing;
     this.#contexts = [];
     this.#previousContexts = [];
     this.#createRoot = createRoot;
-    const parsing = this.#parsing;
     this.#parsing = true;
     try {
       const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
       return this.#contexts[root] as T;
     } finally {
       this.#parsing = parsing;
-      this.#contexts = [];
-      this.#previousContexts = [];
-      this.#createRoot = undefined;
+      if (parsing) {
+        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx] = outer;
+        this._input.seek(outer[4]);
+      } else {
+        this.#contexts = [];
+        this.#previousContexts = [];
+        this.#createRoot = undefined;
+        this.#tokens = undefined;
+      }
     }
   }
 
@@ -269,6 +280,7 @@ export abstract class Parser extends Recognizer {
       data[j++] = t.column;
     }
     wasmTokens.setTokens(data);
+    this.#tokens = wasmTokens;
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i] as Token;
       if (!shared || t.hasText) wasmTokens.setText(i, t.text);

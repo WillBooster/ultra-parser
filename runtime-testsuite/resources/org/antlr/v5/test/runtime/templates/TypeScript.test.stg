@@ -1,5 +1,6 @@
-writeln(s) ::= <<console.log(String(<s> ?? null));>>
-write(s) ::= <<process.stdout.write(String(<s> ?? null));>>
+// Like Java, print null for missing values.
+writeln(s) ::= <<console.log(((v: unknown) => String(v ?? null))(<s>));>>
+write(s) ::= <<process.stdout.write(((v: unknown) => String(v ?? null))(<s>));>>
 writeList(s) ::= <<console.log(<s; separator="+">);>>
 
 False() ::= "false"
@@ -8,7 +9,7 @@ True() ::= "true"
 
 Not(v) ::= "!<v>"
 
-Assert(s) ::= <<console.assert(<s>);>>
+Assert(s) ::= <<if (!(<s>)) throw new Error("assertion failed");>>
 
 Cast(t,v) ::= "(<v> as <t>)"
 

@@ -45,3 +45,15 @@ test('parses from where the previous rule stopped', () => {
   while (parser.getCurrentToken().type !== Token.EOF) exprs.push(parser.expr().toStringTree(parser));
   expect(exprs).toEqual(['(expr 1)', '(expr (expr 2) * (expr 3))', '(expr 4)']);
 });
+
+test('continues a parse after grammar code parses again', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 + 2'))));
+  let nested = '';
+  parser.addParseListener({
+    visitTerminal: (node) => {
+      if (node.getText() === '+' && !nested) nested = parser.expr().toStringTree(parser);
+    },
+  });
+  expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
+  expect(nested).toBe('(expr 2)');
+});

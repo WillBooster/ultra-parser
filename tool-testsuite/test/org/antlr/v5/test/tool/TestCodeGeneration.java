@@ -34,17 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class TestCodeGeneration {
-	@Test public void testArgDecl() throws Exception { // should use template not string
-		/*ErrorQueue equeue = */new ErrorQueue();
+	@Test public void testArgDecl() throws Exception {
 		String g =
 				"grammar T;\n" +
 				"a[int xyz] : 'a' ;\n";
-		List<String> evals = getEvalInfoForString(g, "int xyz");
-		System.out.println(evals);
-		for (int i = 0; i < evals.size(); i++) {
-			String eval = evals.get(i);
-			assertFalse(eval.startsWith("<pojo:"), "eval should not be POJO: "+eval);
-		}
+		String parser = generateParser(g);
+		assertTrue(parser.contains("a(xyz: int): AContext"), parser);
+		assertTrue(parser.contains("xyz!: int;"), parser);
 	}
 
 	@Test public void AssignTokenNamesToStringLiteralsInGeneratedParserRuleContexts() throws Exception {

@@ -58,8 +58,10 @@ public class TypeScriptRunner extends RuntimeRunner {
 	}
 
 	/**
-	 * Bun runs TypeScript directly, so the generated code only needs to resolve 'ultra-parser'.
-	 * When compilation is the last stage, the TypeScript compiler checks the generated code.
+	 * Bun runs TypeScript without checking types, so the TypeScript compiler checks the generated
+	 * code first, like the Java target's tests compiled it. Grammars without code are checked
+	 * strictly; the code in test grammars is written for Bun and not null-safe, so grammars run
+	 * by the runtime tests are checked without strict mode.
 	 */
 	@Override
 	protected CompiledState compile(RunOptions runOptions, GeneratedState generatedState) {
@@ -67,16 +69,18 @@ public class TypeScriptRunner extends RuntimeRunner {
 			Path nodeModules = Paths.get(getTempDirPath(), "node_modules");
 			Files.createDirectories(nodeModules);
 			Files.createSymbolicLink(nodeModules.resolve("ultra-parser"), packagePath);
+			List<String> command = new ArrayList<>(List.of(
+				rootPath.resolve(Paths.get("node_modules", ".bin", "tsc")).toString(),
+				"--noEmit", "--skipLibCheck", "--target", "es2022", "--lib", "es2022,dom",
+				"--module", "nodenext", "--moduleResolution", "nodenext",
+				"--typeRoots", rootPath.resolve(Paths.get("node_modules", "@types")).toString(), "--types", "bun"));
 			if (runOptions.endStage == Stage.Compile) {
-				List<String> command = new ArrayList<>(List.of(
-					rootPath.resolve(Paths.get("node_modules", ".bin", "tsc")).toString(),
-					"--noEmit", "--strict", "--skipLibCheck", "--target", "es2022", "--lib", "es2022,dom",
-					"--module", "nodenext", "--moduleResolution", "nodenext"));
-				for (GeneratedFile file : generatedState.generatedFiles) {
-					command.add(file.name);
-				}
-				Processor.run(command.toArray(new String[0]), getTempDirPath());
+				command.add("--strict");
 			}
+			for (GeneratedFile file : generatedState.generatedFiles) {
+				command.add(file.name);
+			}
+			Processor.run(command.toArray(new String[0]), getTempDirPath());
 			return new CompiledState(generatedState, null);
 		}
 		catch (Exception e) {
