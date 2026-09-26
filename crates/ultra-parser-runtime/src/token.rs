@@ -1,3 +1,6 @@
+use std::borrow::Cow;
+use std::cell::Cell;
+
 pub const EOF: i32 = -1;
 pub const EPSILON: i32 = -2;
 pub const INVALID_TYPE: i32 = 0;
@@ -21,14 +24,48 @@ pub struct Token {
     pub column: usize,
     /// Index of this token in the token list, including tokens on hidden channels.
     pub token_index: usize,
-    pub text: String,
+    /// Text that the lexer set instead of the matched input.
+    pub text: Option<String>,
+}
+
+/// The tokens of an input together with the input, which holds the text of most tokens.
+#[derive(Clone, Debug, Default)]
+pub struct Tokens {
+    /// The input as code points; lone surrogates are kept as they are.
+    pub input: Vec<u32>,
+    /// The tokens, ending with an EOF token.
+    pub tokens: Vec<Token>,
+}
+
+impl Tokens {
+    /// The text of `token` like ANTLR's `CommonToken.getText()`: `<EOF>` for an EOF token past the
+    /// end of the input.
+    pub fn text<'a>(&'a self, token: &'a Token) -> Cow<'a, str> {
+        if let Some(text) = &token.text {
+            return Cow::Borrowed(text);
+        }
+        if token.start >= self.input.len() && token.token_type == EOF {
+            return Cow::Borrowed("<EOF>");
+        }
+        Cow::Owned(code_points_to_string(
+            &self.input[token.start.min(self.input.len())..token.end.min(self.input.len())],
+        ))
+    }
+}
+
+/// Converts code points to a string, replacing lone surrogates with U+FFFD.
+pub fn code_points_to_string(code_points: &[u32]) -> String {
+    code_points
+        .iter()
+        .map(|&c| char::from_u32(c).unwrap_or(char::REPLACEMENT_CHARACTER))
+        .collect()
 }
 
 /// Token names used for error messages and parse tree output.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Vocabulary {
-    pub literal_names: &'static [Option<&'static str>],
-    pub symbolic_names: &'static [Option<&'static str>],
+    pub literal_names: Vec<Option<String>>,
+    pub symbolic_names: Vec<Option<String>>,
 }
 
 impl Vocabulary {
@@ -36,10 +73,10 @@ impl Vocabulary {
         if token_type >= 0 {
             let index = token_type as usize;
             if let Some(Some(name)) = self.literal_names.get(index) {
-                return (*name).to_string();
+                return name.clone();
             }
             if let Some(Some(name)) = self.symbolic_names.get(index) {
-                return (*name).to_string();
+                return name.clone();
             }
         } else if token_type == EOF {
             return "EOF".to_string();
@@ -50,20 +87,41 @@ impl Vocabulary {
 
 /// A view over lexed tokens that skips tokens off the default channel, like `CommonTokenStream`.
 pub(crate) struct TokenStream<'a> {
-    tokens: &'a [Token],
+    tokens: &'a Tokens,
     p: usize,
+    /// The highest token index that ANTLR's `BufferedTokenStream`, which lexes lazily, would have
+    /// fetched so far; the host reports lexer errors when their tokens are fetched.
+    fetched: Cell<usize>,
 }
 
 impl<'a> TokenStream<'a> {
     /// `tokens` must end with an EOF token.
-    pub(crate) fn new(tokens: &'a [Token]) -> Self {
-        let mut stream = Self { tokens, p: 0 };
+    pub(crate) fn new(tokens: &'a Tokens) -> Self {
+        let mut stream = Self {
+            tokens,
+            p: 0,
+            fetched: Cell::new(0),
+        };
         stream.p = stream.next_on_channel(0);
         stream
     }
 
+    pub(crate) fn fetched(&self) -> usize {
+        self.fetched.get()
+    }
+
+    fn fetch(&self, i: usize) {
+        if i > self.fetched.get() {
+            self.fetched.set(i.min(self.tokens.tokens.len() - 1));
+        }
+    }
+
     pub(crate) fn tokens(&self) -> &'a [Token] {
-        self.tokens
+        &self.tokens.tokens
+    }
+
+    pub(crate) fn token_text(&self, index: usize) -> Cow<'a, str> {
+        self.tokens.text(&self.tokens.tokens[index])
     }
 
     pub(crate) fn index(&self) -> usize {
@@ -75,7 +133,7 @@ impl<'a> TokenStream<'a> {
     }
 
     pub(crate) fn consume(&mut self) {
-        if self.tokens[self.p].token_type != EOF {
+        if self.tokens()[self.p].token_type != EOF {
             self.p = self.next_on_channel(self.p + 1);
         }
     }
@@ -91,11 +149,11 @@ impl<'a> TokenStream<'a> {
             k => {
                 let mut i = self.p;
                 for _ in 1..k {
-                    if i + 1 < self.tokens.len() {
+                    if i + 1 < self.tokens().len() {
                         i = self.next_on_channel(i + 1);
                     }
                 }
-                Some(&self.tokens[i])
+                Some(&self.tokens()[i])
             }
         }
     }
@@ -114,26 +172,30 @@ impl<'a> TokenStream<'a> {
         if i < 0 {
             None
         } else {
-            Some(&self.tokens[i as usize])
+            Some(&self.tokens()[i as usize])
         }
     }
 
     fn next_on_channel(&self, mut i: usize) -> usize {
-        if i >= self.tokens.len() {
-            return self.tokens.len() - 1;
+        let tokens = self.tokens();
+        if i >= tokens.len() {
+            return tokens.len() - 1;
         }
-        while self.tokens[i].channel != DEFAULT_CHANNEL {
-            if self.tokens[i].token_type == EOF {
+        self.fetch(i);
+        while tokens[i].channel != DEFAULT_CHANNEL {
+            if tokens[i].token_type == EOF {
                 return i;
             }
             i += 1;
+            self.fetch(i);
         }
         i
     }
 
     fn previous_on_channel(&self, mut i: isize) -> isize {
-        while i >= 0 && self.tokens[i as usize].channel != DEFAULT_CHANNEL {
-            if self.tokens[i as usize].token_type == EOF {
+        let tokens = self.tokens();
+        while i >= 0 && tokens[i as usize].channel != DEFAULT_CHANNEL {
+            if tokens[i as usize].token_type == EOF {
                 return i;
             }
             i -= 1;
@@ -143,10 +205,11 @@ impl<'a> TokenStream<'a> {
 
     /// Concatenates the text of the tokens from `start` to `stop` (inclusive) on all channels.
     pub(crate) fn text(&self, start: usize, stop: usize) -> String {
-        self.tokens[start..=stop.min(self.tokens.len() - 1)]
+        let tokens = self.tokens();
+        tokens[start..=stop.min(tokens.len() - 1)]
             .iter()
             .take_while(|t| t.token_type != EOF)
-            .map(|t| t.text.as_str())
+            .map(|t| self.tokens.text(t))
             .collect()
     }
 }

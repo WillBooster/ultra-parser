@@ -1,16 +1,135 @@
 //! The parser interpreter, ported from ANTLR's `ParserInterpreter`, the tree-building parts of
-//! `Parser`, and `DefaultErrorStrategy`.
+//! `Parser`, and `DefaultErrorStrategy`. Where the generated parsers of ANTLR's code generation
+//! targets behave differently from `ParserInterpreter`, it follows the generated parsers: it syncs
+//! at the same states and recovers without adding error nodes.
 
 use crate::SyntaxError;
 use crate::atn::{Atn, StateKind, Transition};
 use crate::interval_set::IntervalSet;
 use crate::ll1;
-use crate::prediction::{self, Outer};
+use crate::prediction::{self, Diagnostic, Outer, PredictionHost, PredictionMode};
 use crate::token::{
-    DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream,
+    DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream, Tokens,
     Vocabulary,
 };
 use crate::tree::{Child, NodeId, ParseTree, RuleNode};
+
+/// Receives what the parser builds and runs the grammar code that the ATN refers to. Rule
+/// contexts are identified by their node in the parse tree the parser returns.
+///
+/// Every method has a default that does nothing, lets predicates succeed, or ignores errors.
+#[allow(unused_variables)]
+pub trait ParserHost {
+    /// The parser entered rule `rule_index` at its start state `state` with a new context `ctx`,
+    /// invoked from `invoking_state` in `parent`. The context of a left-recursive rule
+    /// (`recursive`) becomes a child of its parent only when the rule returns (see `unroll`).
+    #[allow(clippy::too_many_arguments)]
+    fn enter_rule(
+        &mut self,
+        ctx: NodeId,
+        parent: Option<NodeId>,
+        invoking_state: Option<usize>,
+        rule_index: usize,
+        state: usize,
+        start_token: usize,
+        recursive: bool,
+    ) {
+    }
+
+    /// Another iteration of a left-recursive rule: the new context `ctx` takes the place of
+    /// `previous`, which becomes its first child, invoked from `state` (the rule's start state),
+    /// and ends at `previous_stop`.
+    fn push_recursion(
+        &mut self,
+        ctx: NodeId,
+        previous: NodeId,
+        state: usize,
+        previous_stop: Option<usize>,
+    ) {
+    }
+
+    /// The parser chose alternative `alt` of the block at `state`. Blocks of outermost
+    /// alternatives report this, as does the start state of every rule with alternative 1 when
+    /// the rule is entered.
+    fn outer_alt(&mut self, ctx: NodeId, state: usize, alt: usize) {}
+
+    /// The parser left the rule of `ctx`, which ends at `stop_token`; `error` tells whether the
+    /// rule ended early because of a syntax error in it.
+    fn exit_rule(&mut self, ctx: NodeId, stop_token: Option<usize>, error: bool) {}
+
+    /// A left-recursive rule returned `ctx`, which ends at `stop_token` and becomes a child of
+    /// `parent`; `error` tells whether the rule ended early because of a syntax error in it.
+    fn unroll(
+        &mut self,
+        ctx: NodeId,
+        parent: Option<NodeId>,
+        stop_token: Option<usize>,
+        error: bool,
+    ) {
+    }
+
+    /// The parser consumed a token. `state` is the state that matched it, or `None` when error
+    /// recovery skipped it; `error` tells whether the token is an error node.
+    fn token(&mut self, ctx: NodeId, state: Option<usize>, token_index: usize, error: bool) {}
+
+    /// Error recovery made up `token` where `state` expected it; `add_to_tree` tells whether it
+    /// becomes an error node.
+    fn conjure(&mut self, ctx: NodeId, state: usize, token: &Token, add_to_tree: bool) {}
+
+    /// The parser passed the action at `state` with the input at `input_index`.
+    fn action(&mut self, ctx: NodeId, state: usize, input_index: usize) {}
+
+    /// Evaluates predicate `pred_index` of rule `rule_index` with the input at `input_index`;
+    /// `ctx` is `None` for predicates that do not depend on the rule context during prediction.
+    fn sempred(
+        &mut self,
+        ctx: Option<NodeId>,
+        rule_index: usize,
+        pred_index: usize,
+        input_index: usize,
+    ) -> bool {
+        true
+    }
+
+    fn syntax_error(&mut self, error: SyntaxError) {}
+
+    /// A predicate failed while parsing `ctx`; `error` has a default message that does not show
+    /// the predicate.
+    fn failed_predicate(
+        &mut self,
+        ctx: NodeId,
+        rule_index: usize,
+        pred_index: usize,
+        error: SyntaxError,
+    ) {
+        self.syntax_error(error);
+    }
+
+    fn diagnostic(&mut self, diagnostic: Diagnostic) {}
+
+    /// The parser has looked at the tokens up to `index`, as far as ANTLR's token stream, which
+    /// lexes lazily, would have lexed. Called before reporting errors and at the end of parsing,
+    /// so that lexer errors can be reported in the order ANTLR reports them.
+    fn fetched(&mut self, index: usize) {}
+
+    /// The prediction mode to use from now on, which grammar code may change while parsing;
+    /// `None` keeps the mode parsing started with.
+    fn prediction_mode(&self) -> Option<PredictionMode> {
+        None
+    }
+
+    /// Whether to stop parsing, e.g., because grammar code threw an exception.
+    fn is_aborted(&self) -> bool {
+        false
+    }
+}
+
+/// Runs no grammar code and collects syntax errors.
+impl ParserHost for Vec<SyntaxError> {
+    fn syntax_error(&mut self, error: SyntaxError) {
+        self.push(error);
+    }
+}
 
 enum RecognitionError {
     NoViableAlt {
@@ -25,7 +144,9 @@ enum RecognitionError {
     },
     FailedPredicate {
         offending_token: usize,
-        predicate: String,
+        /// The rule and predicate index of a user predicate.
+        predicate: Option<(usize, usize)>,
+        message: String,
     },
 }
 
@@ -53,11 +174,13 @@ enum Recovered {
     Conjured(Token),
 }
 
-pub(crate) struct Parser<'a, 't> {
+pub(crate) struct Parser<'a, 't, 'h, H: ParserHost> {
     atn: &'a Atn,
-    vocabulary: Vocabulary,
-    rule_names: &'static [&'static str],
+    vocabulary: &'a Vocabulary,
+    rule_names: &'a [String],
     input: TokenStream<'t>,
+    mode: PredictionMode,
+    host: &'h mut H,
     nodes: Vec<RuleNode>,
     conjured_tokens: Vec<Token>,
     ctx: NodeId,
@@ -66,27 +189,32 @@ pub(crate) struct Parser<'a, 't> {
     /// The parent and invoking state of each left-recursive rule invocation being parsed.
     parent_context_stack: Vec<(Option<NodeId>, Option<usize>)>,
     matched_eof: bool,
-    errors: Vec<SyntaxError>,
     // Error strategy state
     error_recovery_mode: bool,
     last_error_index: Option<usize>,
     last_error_states: Option<IntervalSet>,
     /// Where `sync` last saw a state that can be skipped (`nextTokensContext`/`nextTokensState`).
     next_tokens: Option<(NodeId, usize)>,
+    /// The `fetched` index last reported to the host.
+    reported_fetched: Option<usize>,
 }
 
-impl<'a, 't> Parser<'a, 't> {
+impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
     pub(crate) fn new(
         atn: &'a Atn,
-        vocabulary: Vocabulary,
-        rule_names: &'static [&'static str],
-        tokens: &'t [Token],
+        vocabulary: &'a Vocabulary,
+        rule_names: &'a [String],
+        tokens: &'t Tokens,
+        mode: PredictionMode,
+        host: &'h mut H,
     ) -> Self {
         Self {
             atn,
             vocabulary,
             rule_names,
             input: TokenStream::new(tokens),
+            mode,
+            host,
             nodes: Vec::new(),
             conjured_tokens: Vec::new(),
             ctx: 0,
@@ -94,15 +222,24 @@ impl<'a, 't> Parser<'a, 't> {
             precedence_stack: Vec::new(),
             parent_context_stack: Vec::new(),
             matched_eof: false,
-            errors: Vec::new(),
             error_recovery_mode: false,
             last_error_index: None,
             last_error_states: None,
             next_tokens: None,
+            reported_fetched: None,
         }
     }
 
-    pub(crate) fn parse(mut self, start_rule: usize) -> (ParseTree, Vec<SyntaxError>) {
+    /// Tells the host how far the tokens have been fetched, if that changed.
+    fn report_fetched(&mut self) {
+        let fetched = self.input.fetched();
+        if self.reported_fetched != Some(fetched) {
+            self.reported_fetched = Some(fetched);
+            self.host.fetched(fetched);
+        }
+    }
+
+    pub(crate) fn parse(mut self, start_rule: usize) -> ParseTree {
         let start_state = self.atn.rule_to_start_state[start_rule];
         let is_left_recursive = self.atn.states[start_state].is_left_recursive_rule;
         let root = self.new_node(None, None, start_rule);
@@ -111,7 +248,11 @@ impl<'a, 't> Parser<'a, 't> {
         } else {
             self.enter_rule(root, start_state);
         }
+        let mut previous = start_state;
         let result = loop {
+            if self.host.is_aborted() {
+                break root;
+            }
             let p = self.state;
             if self.atn.states[p].kind == StateKind::RuleStop {
                 if self.nodes[self.ctx].invoking_state.is_none() {
@@ -126,20 +267,20 @@ impl<'a, 't> Parser<'a, 't> {
                     break root;
                 }
                 self.visit_rule_stop_state(p);
-            } else if let Err(e) = self.visit_state(p) {
-                self.state = self.atn.rule_to_stop_state[self.atn.states[p].rule_index];
+            } else if let Err(e) = self.visit_state(p, previous) {
+                self.nodes[self.ctx].error = true;
                 self.report_error(&e);
                 self.recover(&e);
+                self.state = self.atn.rule_to_stop_state[self.atn.states[p].rule_index];
             }
+            previous = p;
         };
-        let tree = ParseTree {
+        self.report_fetched();
+        ParseTree {
             nodes: self.nodes,
             root: result,
-            tokens: self.input.tokens().to_vec(),
             conjured_tokens: self.conjured_tokens,
-            rule_names: self.rule_names,
-        };
-        (tree, self.errors)
+        }
     }
 
     fn new_node(
@@ -155,6 +296,7 @@ impl<'a, 't> Parser<'a, 't> {
             start: 0,
             stop: None,
             invoking_state,
+            error: false,
         });
         self.nodes.len() - 1
     }
@@ -187,10 +329,20 @@ impl<'a, 't> Parser<'a, 't> {
     fn enter_rule(&mut self, ctx: NodeId, state: usize) {
         self.state = state;
         self.ctx = ctx;
-        self.nodes[ctx].start = self.current_token().token_index;
-        if let Some(parent) = self.nodes[ctx].parent {
+        let node = &mut self.nodes[ctx];
+        node.start = self.input.lt(1).expect("EOF").token_index;
+        let (parent, invoking_state, rule_index, start) = (
+            node.parent,
+            node.invoking_state,
+            node.rule_index,
+            node.start,
+        );
+        if let Some(parent) = parent {
             self.nodes[parent].children.push(Child::Rule(ctx));
         }
+        self.host
+            .enter_rule(ctx, parent, invoking_state, rule_index, state, start, false);
+        self.host.outer_alt(ctx, state, 1);
     }
 
     fn exit_rule(&mut self) {
@@ -199,22 +351,31 @@ impl<'a, 't> Parser<'a, 't> {
         } else {
             self.lt(-1)
         };
-        let node = &mut self.nodes[self.ctx];
-        node.stop = stop.map(|t| t.token_index);
+        let stop = stop.map(|t| t.token_index);
+        let ctx = self.ctx;
+        let node = &mut self.nodes[ctx];
+        node.stop = stop;
         self.state = node.invoking_state.unwrap_or(usize::MAX);
         if let Some(parent) = node.parent {
             self.ctx = parent;
         }
+        let error = node.error;
+        self.host.exit_rule(ctx, stop, error);
     }
 
     fn enter_recursion_rule(&mut self, ctx: NodeId, state: usize, precedence: i32) {
         let node = &self.nodes[ctx];
-        self.parent_context_stack
-            .push((node.parent, node.invoking_state));
+        let (parent, invoking_state, rule_index) =
+            (node.parent, node.invoking_state, node.rule_index);
+        self.parent_context_stack.push((parent, invoking_state));
         self.state = state;
         self.precedence_stack.push(precedence);
         self.ctx = ctx;
-        self.nodes[ctx].start = self.current_token().token_index;
+        let start = self.current_token().token_index;
+        self.nodes[ctx].start = start;
+        self.host
+            .enter_rule(ctx, parent, invoking_state, rule_index, state, start, true);
+        self.host.outer_alt(ctx, state, 1);
     }
 
     fn push_new_recursion_context(&mut self, ctx: NodeId, state: usize) {
@@ -228,6 +389,7 @@ impl<'a, 't> Parser<'a, 't> {
         self.ctx = ctx;
         self.nodes[ctx].start = start;
         self.nodes[ctx].children.push(Child::Rule(previous));
+        self.host.push_recursion(ctx, previous, state, stop);
     }
 
     fn unroll_recursion_contexts(&mut self, parent: Option<NodeId>) {
@@ -240,60 +402,93 @@ impl<'a, 't> Parser<'a, 't> {
             self.ctx = parent;
             self.nodes[parent].children.push(Child::Rule(ret));
         }
+        let error = self.nodes[ret].error;
+        self.host.unroll(ret, parent, stop, error);
     }
 
-    fn consume(&mut self) {
+    /// Consumes the current token; `state` is the state that matches it, if any.
+    fn consume(&mut self, state: Option<usize>) {
         let token = self.current_token();
         if token.token_type != EOF {
             self.input.consume();
         }
-        let child = if self.error_recovery_mode {
+        let error = self.error_recovery_mode;
+        let child = if error {
             Child::SkippedToken(token.token_index)
         } else {
             Child::Token(token.token_index)
         };
         self.nodes[self.ctx].children.push(child);
+        self.host.token(self.ctx, state, token.token_index, error);
     }
 
-    fn add_conjured_token(&mut self, token: Token) {
+    fn add_conjured_token(&mut self, state: usize, token: Token) {
+        self.host.conjure(self.ctx, state, &token, true);
         self.conjured_tokens.push(token);
         let child = Child::ConjuredToken(self.conjured_tokens.len() - 1);
         self.nodes[self.ctx].children.push(child);
     }
 
-    fn match_token(&mut self, token_type: i32) -> Result<(), RecognitionError> {
+    /// Matches a token of `token_type` like `Parser.match`.
+    fn match_token(&mut self, state: usize, token_type: i32) -> Result<(), RecognitionError> {
         if self.current_token().token_type == token_type {
             if token_type == EOF {
                 self.matched_eof = true;
             }
             self.end_error_condition();
-            self.consume();
-        } else if let Recovered::Conjured(token) = self.recover_inline()? {
-            self.add_conjured_token(token);
+            self.consume(Some(state));
+        } else if let Recovered::Conjured(token) = self.recover_inline(state)? {
+            self.add_conjured_token(state, token);
         }
         Ok(())
     }
 
-    fn match_wildcard(&mut self) -> Result<(), RecognitionError> {
+    /// Matches any token like `Parser.matchWildcard`.
+    fn match_wildcard(&mut self, state: usize) -> Result<(), RecognitionError> {
         if self.current_token().token_type > 0 {
             self.end_error_condition();
-            self.consume();
-        } else if let Recovered::Conjured(token) = self.recover_inline()? {
-            self.add_conjured_token(token);
+            self.consume(Some(state));
+        } else if let Recovered::Conjured(token) = self.recover_inline(state)? {
+            self.add_conjured_token(state, token);
+        }
+        Ok(())
+    }
+
+    /// Matches a set of tokens like the code that ANTLR generates for sets, which does not add a
+    /// token made up during recovery to the tree.
+    fn match_set(&mut self, state: usize, transition: &Transition) -> Result<(), RecognitionError> {
+        if transition.matches(self.atn, self.input.la(1), MIN_USER_TOKEN_TYPE, 65535) {
+            self.end_error_condition();
+            self.consume(Some(state));
+        } else if let Recovered::Conjured(token) = self.recover_inline(state)? {
+            self.host.conjure(self.ctx, state, &token, false);
         }
         Ok(())
     }
 
     // Interpretation (`ParserInterpreter`)
 
-    fn visit_state(&mut self, p: usize) -> Result<(), RecognitionError> {
+    fn visit_state(&mut self, p: usize, previous: usize) -> Result<(), RecognitionError> {
         let atn = self.atn;
         let state = &atn.states[p];
+        // Generated parsers sync at the end of each loop iteration instead of where the loop
+        // continues, and at the start of a `+` loop even when its block has one alternative.
+        let continues_loop = state.loop_back_state == Some(previous);
+        match state.kind {
+            StateKind::StarLoopBack => self.sync(p)?,
+            StateKind::PlusBlockStart if state.transitions.len() <= 1 && !continues_loop => {
+                self.sync(p)?
+            }
+            _ => {}
+        }
         let predicted_alt = if state.kind.is_decision() {
-            self.visit_decision_state(p)?
+            self.visit_decision_state(p, !continues_loop)?
         } else {
             1
         };
+        if state.is_outer_alt_block {
+            self.host.outer_alt(self.ctx, p, predicted_alt);
+        }
         let transition = &state.transitions[predicted_alt - 1];
         match *transition {
             Transition::Epsilon { target, .. } => {
@@ -310,14 +505,11 @@ impl<'a, 't> Parser<'a, 't> {
                     self.push_new_recursion_context(ctx, atn.rule_to_start_state[state.rule_index]);
                 }
             }
-            Transition::Atom { label, .. } => self.match_token(label)?,
+            Transition::Atom { label, .. } => self.match_token(p, label)?,
             Transition::Range { .. } | Transition::Set { .. } | Transition::NotSet { .. } => {
-                if !transition.matches(atn, self.input.la(1), MIN_USER_TOKEN_TYPE, 65535) {
-                    self.recover_inline()?;
-                }
-                self.match_wildcard()?;
+                self.match_set(p, transition)?
             }
-            Transition::Wildcard { .. } => self.match_wildcard()?,
+            Transition::Wildcard { .. } => self.match_wildcard(p)?,
             Transition::Rule {
                 target, precedence, ..
             } => {
@@ -328,14 +520,31 @@ impl<'a, 't> Parser<'a, 't> {
                 } else {
                     self.enter_rule(ctx, target);
                 }
+                return Ok(());
             }
-            // Predicates and actions are grammar code, which the runtime does not run.
-            Transition::Predicate { .. } | Transition::Action { .. } => {}
+            Transition::Predicate {
+                rule_index,
+                pred_index,
+                ..
+            } => {
+                if !self
+                    .host
+                    .sempred(Some(self.ctx), rule_index, pred_index, self.input.index())
+                {
+                    return Err(RecognitionError::FailedPredicate {
+                        offending_token: self.current_token().token_index,
+                        predicate: Some((rule_index, pred_index)),
+                        message: format!("failed predicate: {{predicate {pred_index}}}?"),
+                    });
+                }
+            }
+            Transition::Action { .. } => self.host.action(self.ctx, p, self.input.index()),
             Transition::Precedence { precedence, .. } => {
                 if precedence < self.precedence() {
                     return Err(RecognitionError::FailedPredicate {
                         offending_token: self.current_token().token_index,
-                        predicate: format!("precpred(_ctx, {precedence})"),
+                        predicate: None,
+                        message: format!("failed predicate: {{precpred(_ctx, {precedence})}}?"),
                     });
                 }
             }
@@ -344,26 +553,31 @@ impl<'a, 't> Parser<'a, 't> {
         Ok(())
     }
 
-    fn visit_decision_state(&mut self, p: usize) -> Result<usize, RecognitionError> {
+    fn visit_decision_state(&mut self, p: usize, sync: bool) -> Result<usize, RecognitionError> {
         let state = &self.atn.states[p];
         if state.transitions.len() <= 1 {
             return Ok(1);
         }
-        self.sync()?;
+        if sync {
+            self.sync(p)?;
+        }
         let decision = state
             .decision
             .expect("decision states have a decision number");
         let outer = Outer {
             nodes: &self.nodes,
             ctx: self.ctx,
-            precedence: self.precedence(),
+            precedence: self.precedence_stack.last().copied().unwrap_or(-1),
         };
-        prediction::adaptive_predict(self.atn, &mut self.input, decision, &outer).map_err(|e| {
-            RecognitionError::NoViableAlt {
+        let mode = self.host.prediction_mode().unwrap_or(self.mode);
+        let mut host = PredictionHostAdapter {
+            host: &mut *self.host,
+        };
+        prediction::adaptive_predict(self.atn, &mut self.input, decision, &outer, mode, &mut host)
+            .map_err(|e| RecognitionError::NoViableAlt {
                 start_token: e.start_token,
                 offending_token: e.offending_token,
-            }
-        })
+            })
     }
 
     fn visit_rule_stop_state(&mut self, p: usize) {
@@ -379,7 +593,7 @@ impl<'a, 't> Parser<'a, 't> {
         self.state = self.follow_state(self.state);
     }
 
-    // Error handling (`DefaultErrorStrategy` and `ParserInterpreter.recover`)
+    // Error handling (`DefaultErrorStrategy`)
 
     fn begin_error_condition(&mut self) {
         self.error_recovery_mode = true;
@@ -396,43 +610,28 @@ impl<'a, 't> Parser<'a, 't> {
     }
 
     /// The tokens that can follow `state` in `ctx` (`ATN.getExpectedTokens`).
-    fn expected_tokens_at(&self, state: usize, mut ctx: NodeId) -> IntervalSet {
-        let mut following = self.atn.next_tokens(state);
-        if !following.contains(EPSILON) {
-            return following.clone();
-        }
-        let mut expected = following.clone();
-        expected.remove(EPSILON);
-        while following.contains(EPSILON) {
-            let (Some(parent), Some(invoking_state)) =
-                (self.nodes[ctx].parent, self.nodes[ctx].invoking_state)
-            else {
-                break;
-            };
-            following = self.atn.next_tokens(self.follow_state(invoking_state));
-            expected.add_set(following);
-            expected.remove(EPSILON);
-            ctx = parent;
-        }
-        if following.contains(EPSILON) {
-            expected.add(EOF);
-        }
-        expected
+    fn expected_tokens_at(&self, state: usize, ctx: NodeId) -> IntervalSet {
+        let follow_states: Vec<usize> = self
+            .invoking_states(ctx)
+            .into_iter()
+            .map(|s| self.follow_state(s))
+            .collect();
+        expected_tokens(self.atn, state, &follow_states)
     }
 
     fn notify(&mut self, token_index: usize, message: String) {
+        self.report_fetched();
         let token = &self.input.tokens()[token_index];
-        self.errors.push(SyntaxError {
+        self.host.syntax_error(SyntaxError {
+            offending_token: Some(token_index),
             line: token.line,
             column: token.column,
-            start: token.start,
-            end: token.end,
             message,
         });
     }
 
     fn token_error_display(&self, token_index: usize) -> String {
-        escape_ws_and_quote(&self.input.tokens()[token_index].text)
+        escape_ws_and_quote(&self.input.token_text(token_index))
     }
 
     fn report_error(&mut self, e: &RecognitionError) {
@@ -463,12 +662,30 @@ impl<'a, 't> Parser<'a, 't> {
                 "mismatched input {} expecting {}",
                 self.token_error_display(*offending_token),
                 self.expected_tokens_at(*state, *ctx)
-                    .to_string_with(&self.vocabulary)
+                    .to_string_with(self.vocabulary)
             ),
-            RecognitionError::FailedPredicate { predicate, .. } => format!(
-                "rule {} failed predicate: {{{predicate}}}?",
-                self.rule_names[self.nodes[self.ctx].rule_index]
-            ),
+            RecognitionError::FailedPredicate {
+                offending_token,
+                predicate,
+                message,
+            } => {
+                self.report_fetched();
+                let rule_index = self.nodes[self.ctx].rule_index;
+                let token = &self.input.tokens()[*offending_token];
+                let error = SyntaxError {
+                    offending_token: Some(*offending_token),
+                    line: token.line,
+                    column: token.column,
+                    message: format!("rule {} {message}", self.rule_names[rule_index]),
+                };
+                match *predicate {
+                    Some((rule_index, pred_index)) => self
+                        .host
+                        .failed_predicate(self.ctx, rule_index, pred_index, error),
+                    None => self.host.syntax_error(error),
+                }
+                return;
+            }
         };
         self.notify(e.offending_token(), message);
     }
@@ -482,7 +699,7 @@ impl<'a, 't> Parser<'a, 't> {
         let message = format!(
             "extraneous input {} expecting {}",
             self.token_error_display(token),
-            self.expected_tokens().to_string_with(&self.vocabulary)
+            self.expected_tokens().to_string_with(self.vocabulary)
         );
         self.notify(token, message);
     }
@@ -495,15 +712,14 @@ impl<'a, 't> Parser<'a, 't> {
         let token = self.current_token().token_index;
         let message = format!(
             "missing {} at {}",
-            self.expected_tokens().to_string_with(&self.vocabulary),
+            self.expected_tokens().to_string_with(self.vocabulary),
             self.token_error_display(token)
         );
         self.notify(token, message);
     }
 
-    /// Recovers from an error in a rule by skipping tokens until one that can follow the rule
-    /// (`ParserInterpreter.recover` wrapping `DefaultErrorStrategy.recover`).
-    fn recover(&mut self, e: &RecognitionError) {
+    /// Recovers from an error in a rule by skipping tokens until one that can follow the rule.
+    fn recover(&mut self, _e: &RecognitionError) {
         let index = self.input.index();
         if self.last_error_index == Some(index)
             && self
@@ -513,7 +729,7 @@ impl<'a, 't> Parser<'a, 't> {
         {
             // The previous recovery made no progress at this position; skip a token to avoid
             // looping forever.
-            self.consume();
+            self.consume(None);
         }
         self.last_error_index = Some(self.input.index());
         self.last_error_states
@@ -521,26 +737,10 @@ impl<'a, 't> Parser<'a, 't> {
             .add(self.state as i32);
         let follow = self.error_recovery_set();
         self.consume_until(&follow);
-
-        if self.input.index() == index {
-            let offending = &self.input.tokens()[e.offending_token()];
-            let token_type = match *e {
-                RecognitionError::InputMismatch { state, ctx, .. } => self
-                    .expected_tokens_at(state, ctx)
-                    .min_element()
-                    .unwrap_or(INVALID_TYPE),
-                _ => INVALID_TYPE,
-            };
-            let token = Token {
-                token_type,
-                channel: DEFAULT_CHANNEL,
-                ..offending.clone()
-            };
-            self.add_conjured_token(token);
-        }
     }
 
-    fn sync(&mut self) -> Result<(), RecognitionError> {
+    fn sync(&mut self, state: usize) -> Result<(), RecognitionError> {
+        self.state = state;
         if self.error_recovery_mode {
             return Ok(());
         }
@@ -581,9 +781,9 @@ impl<'a, 't> Parser<'a, 't> {
         }
     }
 
-    fn recover_inline(&mut self) -> Result<Recovered, RecognitionError> {
+    fn recover_inline(&mut self, state: usize) -> Result<Recovered, RecognitionError> {
         if self.single_token_deletion() {
-            self.consume();
+            self.consume(Some(state));
             return Ok(Recovered::Matched);
         }
         if self.single_token_insertion() {
@@ -612,10 +812,11 @@ impl<'a, 't> Parser<'a, 't> {
         false
     }
 
+    /// Deletes the current token when the next one is expected; the caller consumes that one.
     fn single_token_deletion(&mut self) -> bool {
         if self.expected_tokens().contains(self.input.la(2)) {
             self.report_unwanted_token();
-            self.consume();
+            self.consume(None);
             self.end_error_condition();
             return true;
         }
@@ -639,7 +840,7 @@ impl<'a, 't> Parser<'a, 't> {
             token_type: expected,
             channel: DEFAULT_CHANNEL,
             end: current.start,
-            text,
+            text: Some(text),
             ..current.clone()
         }
     }
@@ -659,7 +860,58 @@ impl<'a, 't> Parser<'a, 't> {
             if token_type == EOF || set.contains(token_type) {
                 break;
             }
-            self.consume();
+            self.consume(None);
+        }
+    }
+}
+
+/// The tokens that can follow `state` when the current rule was invoked from rule invocations
+/// with the given follow states, innermost first (`ATN.getExpectedTokens`).
+pub(crate) fn expected_tokens(atn: &Atn, state: usize, follow_states: &[usize]) -> IntervalSet {
+    let mut following = atn.next_tokens(state);
+    if !following.contains(EPSILON) {
+        return following.clone();
+    }
+    let mut expected = following.clone();
+    expected.remove(EPSILON);
+    for &follow_state in follow_states {
+        if !following.contains(EPSILON) {
+            break;
+        }
+        following = atn.next_tokens(follow_state);
+        expected.add_set(following);
+        expected.remove(EPSILON);
+    }
+    if following.contains(EPSILON) {
+        expected.add(EOF);
+    }
+    expected
+}
+
+struct PredictionHostAdapter<'h, H: ParserHost> {
+    host: &'h mut H,
+}
+
+impl<H: ParserHost> PredictionHost for PredictionHostAdapter<'_, H> {
+    fn sempred(
+        &mut self,
+        ctx: Option<NodeId>,
+        rule_index: usize,
+        pred_index: usize,
+        input_index: usize,
+    ) -> bool {
+        self.host.is_aborted() || self.host.sempred(ctx, rule_index, pred_index, input_index)
+    }
+
+    fn diagnostic(&mut self, diagnostic: Diagnostic) {
+        if !self.host.is_aborted() {
+            self.host.diagnostic(diagnostic);
+        }
+    }
+
+    fn fetched(&mut self, index: usize) {
+        if !self.host.is_aborted() {
+            self.host.fetched(index);
         }
     }
 }

@@ -1,0 +1,13 @@
+[package]
+name = "ultra-parser-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The ultra-parser runtime as a WebAssembly module for JavaScript hosts."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ultra-parser-runtime = { path = "../ultra-parser-runtime" }

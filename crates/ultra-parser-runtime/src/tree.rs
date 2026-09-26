@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::token::{Token, Tokens};
 
 pub type NodeId = usize;
 
@@ -27,24 +27,24 @@ pub struct RuleNode {
     pub stop: Option<usize>,
     /// The ATN state that invoked the rule; `None` for the root.
     pub(crate) invoking_state: Option<usize>,
+    /// Whether the rule ended early because of a syntax error in it.
+    pub error: bool,
 }
 
-/// A parse tree stored as an arena of rule nodes.
+/// A parse tree stored as an arena of rule nodes; tokens are indexes into the parsed tokens.
 #[derive(Clone, Debug)]
 pub struct ParseTree {
     pub nodes: Vec<RuleNode>,
     pub root: NodeId,
-    pub tokens: Vec<Token>,
     /// Tokens made up during error recovery, such as `<missing ')'>`. They take the position of the
     /// token where they were made up.
     pub conjured_tokens: Vec<Token>,
-    pub rule_names: &'static [&'static str],
 }
 
 impl ParseTree {
     /// Formats the tree as an S-expression like ANTLR's `Trees.toStringTree`, e.g.,
     /// `(expr (expr 1) + (expr 2))`.
-    pub fn to_string_tree(&self) -> String {
+    pub fn to_string_tree(&self, tokens: &Tokens, rule_names: &[String]) -> String {
         let mut buf = String::new();
         // Trees are as deep as the input is long (e.g., left-recursive rules nest one node per
         // operator), so the walk keeps its own stack of (node, next child) instead of recursing.
@@ -52,7 +52,7 @@ impl ParseTree {
         while let Some((id, next)) = stack.last_mut() {
             let node = &self.nodes[*id];
             if *next == 0 {
-                let name = self.rule_names[node.rule_index];
+                let name = &rule_names[node.rule_index];
                 if node.children.is_empty() {
                     buf.push_str(name);
                     stack.pop();
@@ -71,9 +71,11 @@ impl ParseTree {
             match child {
                 Child::Rule(child) => stack.push((child, 0)),
                 Child::Token(i) | Child::SkippedToken(i) => {
-                    push_escaped(&mut buf, &self.tokens[i].text)
+                    push_escaped(&mut buf, &tokens.text(&tokens.tokens[i]))
                 }
-                Child::ConjuredToken(i) => push_escaped(&mut buf, &self.conjured_tokens[i].text),
+                Child::ConjuredToken(i) => {
+                    push_escaped(&mut buf, &tokens.text(&self.conjured_tokens[i]))
+                }
             }
         }
         buf

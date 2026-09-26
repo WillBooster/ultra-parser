@@ -108,6 +108,11 @@ impl IntervalSet {
         result
     }
 
+    /// The disjoint, sorted, inclusive ranges of the set.
+    pub fn intervals(&self) -> &[(i32, i32)] {
+        &self.intervals
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = i32> + '_ {
         self.intervals.iter().flat_map(|&(a, b)| a..=b)
     }

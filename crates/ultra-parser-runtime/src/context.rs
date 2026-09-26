@@ -1,6 +1,8 @@
 //! Graph-structured rule invocation stacks used during prediction, ported from ANTLR's
 //! `PredictionContext` family.
 
+use crate::hash::{FxHashMap, FxHashSet};
+use std::cell::RefCell;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
@@ -27,6 +29,65 @@ pub(crate) enum PredictionContext {
     },
 }
 
+/// Caches of one prediction, like the context and merge caches of ANTLR's
+/// `ParserATNSimulator`. Interning makes equal stacks one object, so that comparing stacks, which
+/// share their tails, does not walk them; the merge cache keeps merges of such stacks from
+/// repeating work, which would otherwise grow exponentially with nesting.
+#[derive(Default)]
+struct ContextCache {
+    contexts: FxHashSet<Ctx>,
+    /// Merges keyed by the addresses of the operands, which the entries keep alive.
+    merges: FxHashMap<(*const PredictionContext, *const PredictionContext, bool), (Ctx, Ctx, Ctx)>,
+}
+
+thread_local! {
+    static CACHE: RefCell<Option<ContextCache>> = const { RefCell::new(None) };
+}
+
+/// Runs `f` with fresh caches for the stacks it creates and merges.
+pub(crate) fn with_context_cache<R>(f: impl FnOnce() -> R) -> R {
+    let outer = CACHE.with_borrow_mut(|cache| cache.replace(ContextCache::default()));
+    let result = f();
+    CACHE.with_borrow_mut(|cache| *cache = outer);
+    result
+}
+
+/// Returns the cached context equal to `ctx`, caching `ctx` if there is none.
+fn intern(ctx: PredictionContext) -> Ctx {
+    CACHE.with_borrow_mut(|cache| match cache {
+        None => Rc::new(ctx),
+        Some(cache) => {
+            if let Some(existing) = cache.contexts.get(&ctx) {
+                return existing.clone();
+            }
+            let ctx = Rc::new(ctx);
+            cache.contexts.insert(ctx.clone());
+            ctx
+        }
+    })
+}
+
+fn cached_merge(a: &Ctx, b: &Ctx, root_is_wildcard: bool) -> Option<Ctx> {
+    CACHE.with_borrow(|cache| {
+        let merges = &cache.as_ref()?.merges;
+        merges
+            .get(&(Rc::as_ptr(a), Rc::as_ptr(b), root_is_wildcard))
+            .or_else(|| merges.get(&(Rc::as_ptr(b), Rc::as_ptr(a), root_is_wildcard)))
+            .map(|(_, _, merged)| merged.clone())
+    })
+}
+
+fn cache_merge(a: &Ctx, b: &Ctx, root_is_wildcard: bool, merged: &Ctx) {
+    CACHE.with_borrow_mut(|cache| {
+        if let Some(cache) = cache {
+            cache.merges.insert(
+                (Rc::as_ptr(a), Rc::as_ptr(b), root_is_wildcard),
+                (a.clone(), b.clone(), merged.clone()),
+            );
+        }
+    });
+}
+
 fn mix(hash: u64, value: u64) -> u64 {
     (hash.rotate_left(5) ^ value).wrapping_mul(0x517c_c1b7_2722_0a95)
 }
@@ -48,7 +109,7 @@ impl PredictionContext {
             }
             Some(parent) => {
                 let hash = mix(mix(1, parent.hash_value()), return_state as u64);
-                Rc::new(Self::Singleton {
+                intern(Self::Singleton {
                     parent,
                     return_state,
                     hash,
@@ -65,7 +126,7 @@ impl PredictionContext {
         for &return_state in &return_states {
             hash = mix(hash, return_state as u64);
         }
-        Rc::new(Self::Array {
+        intern(Self::Array {
             parents,
             return_states,
             hash,
@@ -193,6 +254,15 @@ pub(crate) fn merge(a: &Ctx, b: &Ctx, root_is_wildcard: bool) -> Ctx {
     if Rc::ptr_eq(a, b) || a == b {
         return a.clone();
     }
+    if let Some(merged) = cached_merge(a, b, root_is_wildcard) {
+        return merged;
+    }
+    let merged = merge_uncached(a, b, root_is_wildcard);
+    cache_merge(a, b, root_is_wildcard, &merged);
+    merged
+}
+
+fn merge_uncached(a: &Ctx, b: &Ctx, root_is_wildcard: bool) -> Ctx {
     let a_single = !matches!(**a, PredictionContext::Array { .. });
     let b_single = !matches!(**b, PredictionContext::Array { .. });
     if a_single && b_single {

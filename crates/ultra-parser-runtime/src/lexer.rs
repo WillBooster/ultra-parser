@@ -1,7 +1,7 @@
-//! The lexer simulator, ported from ANTLR's `LexerATNSimulator` and `Lexer.nextToken()`
-//! without DFA caching.
+//! The lexer simulator, ported from ANTLR's `LexerATNSimulator` without DFA caching, and a driver
+//! ported from `Lexer.nextToken()`.
 
-use std::collections::HashSet;
+use crate::hash::FxHashSet;
 use std::rc::Rc;
 
 use crate::SyntaxError;
@@ -9,13 +9,74 @@ use crate::atn::{
     Atn, INVALID_ALT, LexerAction, MAX_CHAR_VALUE, MIN_CHAR_VALUE, StateKind, Transition,
 };
 use crate::context::{Ctx, EMPTY_RETURN_STATE, PredictionContext};
-use crate::token::{DEFAULT_CHANNEL, EOF, INVALID_TYPE, Token};
+use crate::token::{DEFAULT_CHANNEL, EOF, INVALID_TYPE, Token, Tokens, code_points_to_string};
 
 const MORE: i32 = -2;
 const SKIP: i32 = -3;
 
-/// Indexes into `Atn::lexer_actions` to run when a token is accepted.
-type Executor = Rc<Vec<usize>>;
+/// A position in the input.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Position {
+    /// Offset in code points.
+    pub index: usize,
+    /// 1-based line.
+    pub line: usize,
+    /// 0-based column in code points.
+    pub column: usize,
+}
+
+impl Position {
+    pub const START: Self = Self {
+        index: 0,
+        line: 1,
+        column: 0,
+    };
+
+    /// The position after consuming the code point at this position of `input`.
+    pub fn advance(self, input: &[u32]) -> Self {
+        match input.get(self.index) {
+            None => self,
+            Some(&c) if c == '\n' as u32 => Self {
+                index: self.index + 1,
+                line: self.line + 1,
+                column: 0,
+            },
+            Some(_) => Self {
+                index: self.index + 1,
+                column: self.column + 1,
+                ..self
+            },
+        }
+    }
+}
+
+/// Runs the grammar code that the lexer ATN refers to.
+pub trait LexerHost {
+    /// Evaluates predicate `pred_index` of lexer rule `rule_index` with the input at `at`.
+    fn sempred(&mut self, _rule_index: usize, _pred_index: usize, _at: Position) -> bool {
+        true
+    }
+}
+
+/// Grammar code is not run: predicates succeed.
+impl LexerHost for () {}
+
+/// A lexer action to run when a token is accepted: an index into `Atn::lexer_actions` and, for a
+/// custom action reached before the end of the token, how many code points into the token it is.
+pub type LexerActionRef = (usize, Option<usize>);
+
+type Executor = Rc<Vec<LexerActionRef>>;
+
+/// The token a lexer rule matched.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LexerMatch {
+    /// The token type, or EOF at the end of the input.
+    pub token_type: i32,
+    /// The position after the token.
+    pub stop: Position,
+    /// The actions to run, in order.
+    pub actions: Vec<LexerActionRef>,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 struct LexerConfig {
@@ -48,7 +109,7 @@ impl LexerConfig {
 #[derive(Default)]
 struct LexerConfigSet {
     configs: Vec<LexerConfig>,
-    seen: HashSet<LexerConfig>,
+    seen: FxHashSet<LexerConfig>,
 }
 
 impl LexerConfigSet {
@@ -59,188 +120,53 @@ impl LexerConfigSet {
     }
 }
 
+/// Matches one token of `input` in `mode` from `start` (`LexerATNSimulator.match`). On failure,
+/// returns the position where no rule could continue.
+pub(crate) fn match_token(
+    atn: &Atn,
+    input: &[u32],
+    mode: usize,
+    start: Position,
+    host: &mut dyn LexerHost,
+) -> Result<LexerMatch, Position> {
+    Simulator {
+        atn,
+        input,
+        pos: start,
+        start_index: start.index,
+        host,
+    }
+    .match_token(mode)
+}
+
+struct Simulator<'a, 'h> {
+    atn: &'a Atn,
+    input: &'a [u32],
+    pos: Position,
+    start_index: usize,
+    host: &'h mut dyn LexerHost,
+}
+
 struct Accept {
-    index: usize,
-    line: usize,
-    column: usize,
+    pos: Position,
     token_type: i32,
     executor: Option<Executor>,
 }
 
-pub(crate) struct Lexer<'a> {
-    atn: &'a Atn,
-    chars: Vec<char>,
-    index: usize,
-    line: usize,
-    column: usize,
-    start_index: usize,
-}
-
-impl<'a> Lexer<'a> {
-    pub(crate) fn new(atn: &'a Atn, source: &str) -> Self {
-        Self {
-            atn,
-            chars: source.chars().collect(),
-            index: 0,
-            line: 1,
-            column: 0,
-            start_index: 0,
-        }
-    }
-
-    pub(crate) fn tokenize(mut self) -> (Vec<Token>, Vec<SyntaxError>) {
-        let mut tokens = Vec::new();
-        let mut errors = Vec::new();
-        let mut mode = 0;
-        let mut mode_stack = Vec::new();
-        let mut hit_eof = false;
-        'outer: loop {
-            if hit_eof {
-                tokens.push(self.token(
-                    EOF,
-                    DEFAULT_CHANNEL,
-                    self.index,
-                    self.line,
-                    self.column,
-                    tokens.len(),
-                ));
-                break;
-            }
-            let token_start = self.index;
-            let start_line = self.line;
-            let start_column = self.column;
-            let mut channel = DEFAULT_CHANNEL;
-            let mut token_type;
-            loop {
-                token_type = INVALID_TYPE;
-                let predicted = match self.match_token(mode) {
-                    Some((predicted, executor)) => {
-                        for &action in executor.iter().flat_map(|e| e.iter()) {
-                            match self.atn.lexer_actions[action] {
-                                LexerAction::Channel(c) => channel = c,
-                                // Custom actions are grammar code, which the runtime does not run.
-                                LexerAction::Custom { .. } => {}
-                                LexerAction::Mode(m) => mode = m,
-                                LexerAction::More => token_type = MORE,
-                                LexerAction::PopMode => match mode_stack.pop() {
-                                    Some(m) => mode = m,
-                                    // ANTLR throws `EmptyStackException` here; reporting keeps
-                                    // lexing without aborting the WebAssembly instance.
-                                    None => errors.push(SyntaxError {
-                                        line: start_line,
-                                        column: start_column,
-                                        start: token_start,
-                                        end: self.index,
-                                        message: "cannot pop a mode: the mode stack is empty"
-                                            .to_string(),
-                                    }),
-                                },
-                                LexerAction::PushMode(m) => {
-                                    mode_stack.push(mode);
-                                    mode = m;
-                                }
-                                LexerAction::Skip => token_type = SKIP,
-                                LexerAction::Type(t) => token_type = t,
-                            }
-                        }
-                        predicted
-                    }
-                    None => {
-                        let end = (self.index + 1).min(self.chars.len());
-                        let text: String = self.chars[token_start..end]
-                            .iter()
-                            .map(|&c| error_display(c))
-                            .collect();
-                        errors.push(SyntaxError {
-                            line: start_line,
-                            column: start_column,
-                            start: token_start,
-                            end,
-                            message: format!("token recognition error at: '{text}'"),
-                        });
-                        if self.la() != EOF {
-                            self.consume();
-                        }
-                        SKIP
-                    }
-                };
-                if self.la() == EOF {
-                    hit_eof = true;
-                }
-                if token_type == INVALID_TYPE {
-                    token_type = predicted;
-                }
-                if token_type == SKIP {
-                    continue 'outer;
-                }
-                if token_type != MORE {
-                    break;
-                }
-            }
-            tokens.push(self.token(
-                token_type,
-                channel,
-                token_start,
-                start_line,
-                start_column,
-                tokens.len(),
-            ));
-            if token_type == EOF {
-                break;
-            }
-        }
-        (tokens, errors)
-    }
-
-    fn token(
-        &self,
-        token_type: i32,
-        channel: i32,
-        start: usize,
-        line: usize,
-        column: usize,
-        token_index: usize,
-    ) -> Token {
-        let end = self.index.max(start);
-        let text = if token_type == EOF && start >= self.chars.len() {
-            "<EOF>".to_string()
-        } else {
-            self.chars[start..end].iter().collect()
-        };
-        Token {
-            token_type,
-            channel,
-            start,
-            end,
-            line,
-            column,
-            token_index,
-            text,
-        }
-    }
-
+impl Simulator<'_, '_> {
     fn la(&self) -> i32 {
-        self.chars.get(self.index).map_or(EOF, |&c| c as i32)
+        self.input.get(self.pos.index).map_or(EOF, |&c| c as i32)
     }
 
-    fn consume(&mut self) {
-        if self.chars[self.index] == '\n' {
-            self.line += 1;
-            self.column = 0;
-        } else {
-            self.column += 1;
-        }
-        self.index += 1;
-    }
-
-    /// Matches the next token in `mode`; returns its type and the actions to run, or `None` when no
-    /// rule matches.
-    fn match_token(&mut self, mode: usize) -> Option<(i32, Option<Executor>)> {
-        self.start_index = self.index;
+    fn match_token(&mut self, mode: usize) -> Result<LexerMatch, Position> {
         let s0 = self.compute_start_state(self.atn.mode_to_start_state[mode]);
         let mut accept = None;
         if let Some((token_type, executor)) = self.accepted(&s0) {
-            accept = Some(self.capture(token_type, executor));
+            accept = Some(Accept {
+                pos: self.pos,
+                token_type,
+                executor,
+            });
         }
         let mut t = self.la();
         let mut s = s0;
@@ -250,10 +176,14 @@ impl<'a> Lexer<'a> {
                 break;
             }
             if t != EOF {
-                self.consume();
+                self.pos = self.pos.advance(self.input);
             }
             if let Some((token_type, executor)) = self.accepted(&reach) {
-                accept = Some(self.capture(token_type, executor));
+                accept = Some(Accept {
+                    pos: self.pos,
+                    token_type,
+                    executor,
+                });
                 if t == EOF {
                     break;
                 }
@@ -262,24 +192,17 @@ impl<'a> Lexer<'a> {
             s = reach;
         }
         match accept {
-            Some(accept) => {
-                self.index = accept.index;
-                self.line = accept.line;
-                self.column = accept.column;
-                Some((accept.token_type, accept.executor))
-            }
-            None if t == EOF && self.index == self.start_index => Some((EOF, None)),
-            None => None,
-        }
-    }
-
-    fn capture(&self, token_type: i32, executor: Option<Executor>) -> Accept {
-        Accept {
-            index: self.index,
-            line: self.line,
-            column: self.column,
-            token_type,
-            executor,
+            Some(accept) => Ok(LexerMatch {
+                token_type: accept.token_type,
+                stop: accept.pos,
+                actions: accept.executor.map(|e| e.to_vec()).unwrap_or_default(),
+            }),
+            None if t == EOF && self.pos.index == self.start_index => Ok(LexerMatch {
+                token_type: EOF,
+                stop: self.pos,
+                actions: Vec::new(),
+            }),
+            None => Err(self.pos),
         }
     }
 
@@ -295,9 +218,10 @@ impl<'a> Lexer<'a> {
             })
     }
 
-    fn compute_start_state(&self, start_state: usize) -> LexerConfigSet {
+    fn compute_start_state(&mut self, start_state: usize) -> LexerConfigSet {
         let mut configs = LexerConfigSet::default();
-        for (i, transition) in self.atn.states[start_state].transitions.iter().enumerate() {
+        let atn = self.atn;
+        for (i, transition) in atn.states[start_state].transitions.iter().enumerate() {
             let config = LexerConfig {
                 state: transition.target(),
                 alt: i + 1,
@@ -305,28 +229,34 @@ impl<'a> Lexer<'a> {
                 executor: None,
                 passed_through_non_greedy_decision: false,
             };
-            self.closure(config, &mut configs, false, false);
+            self.closure(config, &mut configs, false, false, false);
         }
         configs
     }
 
-    fn compute_reach_set(&self, closure: &LexerConfigSet, t: i32) -> LexerConfigSet {
+    fn compute_reach_set(&mut self, closure: &LexerConfigSet, t: i32) -> LexerConfigSet {
         let mut reach = LexerConfigSet::default();
         let mut skip_alt = INVALID_ALT;
+        let atn = self.atn;
         for c in &closure.configs {
             let current_alt_reached_accept_state = c.alt == skip_alt;
             if current_alt_reached_accept_state && c.passed_through_non_greedy_decision {
                 continue;
             }
-            for transition in &self.atn.states[c.state].transitions {
-                if !transition.matches(self.atn, t, MIN_CHAR_VALUE, MAX_CHAR_VALUE) {
+            for transition in &atn.states[c.state].transitions {
+                if !transition.matches(atn, t, MIN_CHAR_VALUE, MAX_CHAR_VALUE) {
                     continue;
                 }
-                let config = c.with_state(self.atn, transition.target());
+                let executor = c
+                    .executor
+                    .as_ref()
+                    .map(|e| fix_offset_before_match(atn, e, self.pos.index - self.start_index));
+                let config = c.derive(atn, transition.target(), c.context.clone(), executor);
                 if self.closure(
                     config,
                     &mut reach,
                     current_alt_reached_accept_state,
+                    true,
                     t == EOF,
                 ) {
                     // This alternative reached an accept state; later configurations of the same
@@ -340,13 +270,15 @@ impl<'a> Lexer<'a> {
     }
 
     fn closure(
-        &self,
+        &mut self,
         config: LexerConfig,
         configs: &mut LexerConfigSet,
         mut current_alt_reached_accept_state: bool,
+        speculative: bool,
         treat_eof_as_epsilon: bool,
     ) -> bool {
-        let state = &self.atn.states[config.state];
+        let atn = self.atn;
+        let state = &atn.states[config.state];
         if state.kind == StateKind::RuleStop {
             if config.context.has_empty_path() {
                 if config.context.is_empty() {
@@ -354,7 +286,7 @@ impl<'a> Lexer<'a> {
                     return true;
                 }
                 configs.add(config.derive(
-                    self.atn,
+                    atn,
                     config.state,
                     PredictionContext::empty(),
                     config.executor.clone(),
@@ -372,11 +304,12 @@ impl<'a> Lexer<'a> {
                         .parent(i)
                         .expect("non-empty return state")
                         .clone();
-                    let c = config.derive(self.atn, return_state, parent, config.executor.clone());
+                    let c = config.derive(atn, return_state, parent, config.executor.clone());
                     current_alt_reached_accept_state = self.closure(
                         c,
                         configs,
                         current_alt_reached_accept_state,
+                        speculative,
                         treat_eof_as_epsilon,
                     );
                 }
@@ -390,11 +323,14 @@ impl<'a> Lexer<'a> {
             configs.add(config.clone());
         }
         for transition in &state.transitions {
-            if let Some(c) = self.epsilon_target(&config, transition, treat_eof_as_epsilon) {
+            if let Some(c) =
+                self.epsilon_target(&config, transition, speculative, treat_eof_as_epsilon)
+            {
                 current_alt_reached_accept_state = self.closure(
                     c,
                     configs,
                     current_alt_reached_accept_state,
+                    speculative,
                     treat_eof_as_epsilon,
                 );
             }
@@ -403,11 +339,13 @@ impl<'a> Lexer<'a> {
     }
 
     fn epsilon_target(
-        &self,
+        &mut self,
         config: &LexerConfig,
         transition: &Transition,
+        speculative: bool,
         treat_eof_as_epsilon: bool,
     ) -> Option<LexerConfig> {
+        let atn = self.atn;
         match *transition {
             Transition::Rule {
                 target,
@@ -416,18 +354,32 @@ impl<'a> Lexer<'a> {
             } => {
                 let context =
                     PredictionContext::singleton(Some(config.context.clone()), follow_state);
-                Some(config.derive(self.atn, target, context, config.executor.clone()))
+                Some(config.derive(atn, target, context, config.executor.clone()))
             }
             // Precedence predicates only appear in parsers.
             Transition::Precedence { .. } => None,
-            // Predicates are grammar code, which the runtime does not run; they always succeed.
-            Transition::Predicate { target, .. }
-            | Transition::Epsilon { target, .. }
+            Transition::Predicate {
+                target,
+                rule_index,
+                pred_index,
+                ..
+            } => {
+                // Like ANTLR, a speculative evaluation sees the input after the current symbol.
+                let at = if speculative {
+                    self.pos.advance(self.input)
+                } else {
+                    self.pos
+                };
+                self.host
+                    .sempred(rule_index, pred_index, at)
+                    .then(|| config.with_state(atn, target))
+            }
+            Transition::Epsilon { target, .. }
             | Transition::Action {
                 target,
                 action_index: None,
                 ..
-            } => Some(config.with_state(self.atn, target)),
+            } => Some(config.with_state(atn, target)),
             Transition::Action {
                 target,
                 action_index: Some(action_index),
@@ -435,37 +387,160 @@ impl<'a> Lexer<'a> {
             } => {
                 if config.context.has_empty_path() {
                     let mut actions = config.executor.as_deref().cloned().unwrap_or_default();
-                    actions.push(action_index);
-                    Some(config.derive(
-                        self.atn,
-                        target,
-                        config.context.clone(),
-                        Some(Rc::new(actions)),
-                    ))
+                    actions.push((action_index, None));
+                    Some(config.derive(atn, target, config.context.clone(), Some(Rc::new(actions))))
                 } else {
-                    Some(config.with_state(self.atn, target))
+                    // Actions in rules that the token rule invokes are not run.
+                    Some(config.with_state(atn, target))
                 }
             }
             Transition::Atom { target, .. }
             | Transition::Range { target, .. }
             | Transition::Set { target, .. }
                 if treat_eof_as_epsilon
-                    && transition.matches(self.atn, EOF, MIN_CHAR_VALUE, MAX_CHAR_VALUE) =>
+                    && transition.matches(atn, EOF, MIN_CHAR_VALUE, MAX_CHAR_VALUE) =>
             {
-                Some(config.with_state(self.atn, target))
+                Some(config.with_state(atn, target))
             }
             _ => None,
         }
     }
 }
 
-fn error_display(c: char) -> String {
-    match c {
-        '\n' => "\\n".to_string(),
-        '\t' => "\\t".to_string(),
-        '\r' => "\\r".to_string(),
-        c => c.to_string(),
+/// Records how far into the token the custom actions of `executor` are
+/// (`LexerActionExecutor.fixOffsetBeforeMatch`).
+fn fix_offset_before_match(atn: &Atn, executor: &Executor, offset: usize) -> Executor {
+    if !executor
+        .iter()
+        .any(|&(i, o)| o.is_none() && matches!(atn.lexer_actions[i], LexerAction::Custom { .. }))
+    {
+        return executor.clone();
     }
+    Rc::new(
+        executor
+            .iter()
+            .map(|&(i, o)| match atn.lexer_actions[i] {
+                LexerAction::Custom { .. } if o.is_none() => (i, Some(offset)),
+                _ => (i, o),
+            })
+            .collect(),
+    )
+}
+
+/// Splits `input` into tokens like `Lexer.nextToken()` does, ending with an EOF token. Custom
+/// actions are not run.
+pub(crate) fn tokenize(
+    atn: &Atn,
+    input: Vec<u32>,
+    host: &mut dyn LexerHost,
+) -> (Tokens, Vec<SyntaxError>) {
+    let mut tokens = Vec::new();
+    let mut errors = Vec::new();
+    let mut pos = Position::START;
+    let mut mode = 0;
+    let mut mode_stack = Vec::new();
+    let mut hit_eof = false;
+    'outer: loop {
+        if hit_eof {
+            tokens.push(Token {
+                token_type: EOF,
+                channel: DEFAULT_CHANNEL,
+                start: pos.index,
+                end: pos.index,
+                line: pos.line,
+                column: pos.column,
+                token_index: tokens.len(),
+                text: None,
+            });
+            break;
+        }
+        let token_start = pos;
+        let mut channel = DEFAULT_CHANNEL;
+        let mut token_type;
+        loop {
+            token_type = INVALID_TYPE;
+            let predicted = match match_token(atn, &input, mode, pos, host) {
+                Ok(m) => {
+                    pos = m.stop;
+                    for (action, _) in m.actions {
+                        match atn.lexer_actions[action] {
+                            LexerAction::Channel(c) => channel = c,
+                            LexerAction::Custom { .. } => {}
+                            LexerAction::Mode(m) => mode = m,
+                            LexerAction::More => token_type = MORE,
+                            LexerAction::PopMode => match mode_stack.pop() {
+                                Some(m) => mode = m,
+                                // ANTLR throws `EmptyStackException` here; reporting keeps
+                                // lexing without aborting the WebAssembly instance.
+                                None => errors.push(SyntaxError {
+                                    offending_token: None,
+                                    line: token_start.line,
+                                    column: token_start.column,
+                                    message: "cannot pop a mode: the mode stack is empty"
+                                        .to_string(),
+                                }),
+                            },
+                            LexerAction::PushMode(m) => {
+                                mode_stack.push(mode);
+                                mode = m;
+                            }
+                            LexerAction::Skip => token_type = SKIP,
+                            LexerAction::Type(t) => token_type = t,
+                        }
+                    }
+                    m.token_type
+                }
+                Err(stop) => {
+                    let end = (stop.index + 1).min(input.len());
+                    errors.push(SyntaxError {
+                        offending_token: None,
+                        line: token_start.line,
+                        column: token_start.column,
+                        message: format!(
+                            "token recognition error at: '{}'",
+                            error_display(&input[token_start.index..end])
+                        ),
+                    });
+                    pos = stop.advance(&input);
+                    SKIP
+                }
+            };
+            if pos.index >= input.len() {
+                hit_eof = true;
+            }
+            if token_type == INVALID_TYPE {
+                token_type = predicted;
+            }
+            if token_type == SKIP {
+                continue 'outer;
+            }
+            if token_type != MORE {
+                break;
+            }
+        }
+        tokens.push(Token {
+            token_type,
+            channel,
+            start: token_start.index,
+            end: pos.index.max(token_start.index),
+            line: token_start.line,
+            column: token_start.column,
+            token_index: tokens.len(),
+            text: None,
+        });
+        if token_type == EOF {
+            break;
+        }
+    }
+    (Tokens { input, tokens }, errors)
+}
+
+/// Escapes a text for lexer error messages like `Lexer.getErrorDisplay`.
+pub(crate) fn error_display(code_points: &[u32]) -> String {
+    code_points_to_string(code_points)
+        .replace('\n', "\\n")
+        .replace('\t', "\\t")
+        .replace('\r', "\\r")
 }
 
 #[cfg(test)]
@@ -480,9 +555,13 @@ mod tests {
             5, 97, 0, 0, 3, 2, 6, 0, 0, 0, 1, 0, 1, 4, 0, 0,
         ])
         .unwrap();
-        let (tokens, errors) = Lexer::new(&atn, "a").tokenize();
+        let (tokens, errors) = tokenize(&atn, vec!['a' as u32], &mut ());
         assert_eq!(
-            tokens.iter().map(|t| t.token_type).collect::<Vec<_>>(),
+            tokens
+                .tokens
+                .iter()
+                .map(|t| t.token_type)
+                .collect::<Vec<_>>(),
             [1, EOF]
         );
         assert_eq!(errors.len(), 1);

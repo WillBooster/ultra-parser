@@ -101,6 +101,10 @@ pub struct AtnState {
     pub is_left_recursive_rule: bool,
     /// Whether this star loop entry state decides whether a precedence rule continues.
     pub is_precedence_decision: bool,
+    /// Whether the alternatives of this block are the outermost alternatives of a rule: the
+    /// block a rule starts with, or the block of the operator alternatives of a left-recursive
+    /// rule.
+    pub is_outer_alt_block: bool,
 }
 
 impl AtnState {
@@ -117,6 +121,7 @@ impl AtnState {
             loop_back_state: None,
             is_left_recursive_rule: false,
             is_precedence_decision: false,
+            is_outer_alt_block: false,
         }
     }
 
@@ -273,14 +278,10 @@ pub struct AtnError {
 }
 
 impl AtnError {
-    fn new(message: impl Into<String>) -> Self {
+    pub(crate) fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
         }
-    }
-
-    pub(crate) fn wrong_grammar_type(recognizer_name: &str) -> Self {
-        Self::new(format!("{recognizer_name} has the wrong grammar type"))
     }
 }
 
@@ -595,7 +596,27 @@ impl Atn {
         };
         atn.mark_precedence_decisions();
         atn.verify()?;
+        if atn.grammar_type == GrammarType::Parser {
+            atn.mark_outer_alt_blocks();
+        }
         Ok(atn)
+    }
+
+    /// Marks the blocks of outermost alternatives like ANTLR's
+    /// `GrammarParserInterpreter.findOuterMostDecisionStates`.
+    fn mark_outer_alt_blocks(&mut self) {
+        for rule_start in self.rule_to_start_state.clone() {
+            let target = self.states[rule_start].transitions[0].target();
+            if self.states[target].kind == StateKind::BlockStart {
+                self.states[target].is_outer_alt_block = true;
+            }
+        }
+        for i in 0..self.states.len() {
+            if self.states[i].is_precedence_decision {
+                let block_start = self.states[i].transitions[0].target();
+                self.states[block_start].is_outer_alt_block = true;
+            }
+        }
     }
 
     /// Marks the star loop entry states that decide whether a precedence rule continues or completes.

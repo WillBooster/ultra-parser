@@ -1,6 +1,6 @@
 //! ATN configurations and configuration sets used by parser prediction.
 
-use std::collections::HashMap;
+use crate::hash::FxHashMap;
 use std::hash::{Hash, Hasher};
 
 use crate::context::{Ctx, merge};
@@ -45,6 +45,14 @@ impl AltSet {
             }
         }
         crate::atn::INVALID_ALT
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = usize> + '_ {
+        self.words.iter().enumerate().flat_map(|(i, &w)| {
+            (0..64)
+                .filter(move |b| w & (1 << b) != 0)
+                .map(move |b| i * 64 + b)
+        })
     }
 
     pub(crate) fn union_with(&mut self, other: &AltSet) {
@@ -124,7 +132,7 @@ impl Config {
 #[derive(Clone, Debug)]
 pub(crate) struct ConfigSet {
     configs: Vec<Config>,
-    lookup: HashMap<(usize, usize, SemanticContext), usize>,
+    lookup: FxHashMap<(usize, usize, SemanticContext), usize>,
     pub(crate) full_ctx: bool,
     pub(crate) has_semantic_context: bool,
     pub(crate) dips_into_outer_context: bool,
@@ -136,7 +144,7 @@ impl ConfigSet {
     pub(crate) fn new(full_ctx: bool) -> Self {
         Self {
             configs: Vec::new(),
-            lookup: HashMap::new(),
+            lookup: FxHashMap::default(),
             full_ctx,
             has_semantic_context: false,
             dips_into_outer_context: false,

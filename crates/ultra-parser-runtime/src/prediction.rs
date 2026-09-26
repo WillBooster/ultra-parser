@@ -1,7 +1,8 @@
-//! Adaptive LL(*) prediction, ported from ANTLR's `ParserATNSimulator` (prediction mode `LL`)
-//! without DFA caching: SLL prediction first, then full-context LL prediction on SLL conflicts.
+//! Adaptive LL(*) prediction, ported from ANTLR's `ParserATNSimulator` without DFA caching: SLL
+//! prediction first, then full-context LL prediction on SLL conflicts.
 
-use std::collections::{HashMap, HashSet};
+use crate::hash::{FxHashMap, FxHashSet};
+use std::cell::RefCell;
 
 use crate::atn::{Atn, INVALID_ALT, StateKind, Transition};
 use crate::config::{AltSet, Config, ConfigSet};
@@ -9,6 +10,60 @@ use crate::context::{Ctx, EMPTY_RETURN_STATE, PredictionContext};
 use crate::semantic::SemanticContext;
 use crate::token::{EOF, EPSILON, TokenStream};
 use crate::tree::{NodeId, ParseTree, RuleNode};
+
+/// How the parser predicts alternatives, like ANTLR's `PredictionMode`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum PredictionMode {
+    /// SLL prediction only: faster, but it may pick the wrong alternative of a decision that
+    /// needs full context.
+    Sll,
+    /// SLL prediction, then full-context LL prediction when SLL prediction finds a conflict.
+    #[default]
+    Ll,
+    /// Like `Ll`, but full-context prediction goes on until it knows exactly which alternatives
+    /// are ambiguous, for diagnostics.
+    LlExactAmbigDetection,
+}
+
+/// A report about prediction for diagnostics, like the ones ANTLR's `ANTLRErrorListener` receives.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Diagnostic {
+    pub kind: DiagnosticKind,
+    pub decision: usize,
+    /// The rule of the decision.
+    pub rule_index: usize,
+    /// Index of the first token of the decision.
+    pub start_index: usize,
+    /// Index of the token where prediction stopped.
+    pub stop_index: usize,
+    /// The conflicting or ambiguous alternatives; empty for context sensitivities.
+    pub alts: Vec<usize>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DiagnosticKind {
+    AttemptingFullContext,
+    ContextSensitivity,
+    Ambiguity { exact: bool },
+}
+
+/// What prediction asks the parser: user predicates and diagnostics.
+pub(crate) trait PredictionHost {
+    /// Evaluates a user predicate with the input at `input_index`, the start of the decision;
+    /// `ctx` is the rule context for predicates that depend on it.
+    fn sempred(
+        &mut self,
+        ctx: Option<NodeId>,
+        rule_index: usize,
+        pred_index: usize,
+        input_index: usize,
+    ) -> bool;
+
+    fn diagnostic(&mut self, diagnostic: Diagnostic);
+
+    /// The parser fetched the tokens up to `index` (see `ParserHost::fetched`).
+    fn fetched(&mut self, index: usize);
+}
 
 /// No alternative of a decision matches the input.
 pub(crate) struct NoViableAlt {
@@ -33,6 +88,19 @@ pub(crate) fn adaptive_predict(
     input: &mut TokenStream<'_>,
     decision: usize,
     outer: &Outer<'_>,
+    mode: PredictionMode,
+    host: &mut dyn PredictionHost,
+) -> Result<usize, NoViableAlt> {
+    crate::context::with_context_cache(|| predict(atn, input, decision, outer, mode, host))
+}
+
+fn predict(
+    atn: &Atn,
+    input: &mut TokenStream<'_>,
+    decision: usize,
+    outer: &Outer<'_>,
+    mode: PredictionMode,
+    host: &mut dyn PredictionHost,
 ) -> Result<usize, NoViableAlt> {
     let decision_state = atn.decision_to_state[decision];
     let mut simulator = Simulator {
@@ -40,8 +108,11 @@ pub(crate) fn adaptive_predict(
         input,
         start_index: 0,
         outer,
+        decision,
         decision_state,
         is_precedence_decision: atn.states[decision_state].is_precedence_decision,
+        mode,
+        host: RefCell::new(host),
     };
     simulator.start_index = simulator.input.index();
     let mut s0 = simulator.compute_start_state(decision_state, &[], false);
@@ -63,16 +134,51 @@ struct Step {
     predicates: Option<Vec<(SemanticContext, usize)>>,
 }
 
-struct Simulator<'a, 'i, 't, 'o> {
+struct Simulator<'a, 'i, 't, 'o, 'h> {
     atn: &'a Atn,
     input: &'i mut TokenStream<'t>,
     start_index: usize,
     outer: &'o Outer<'o>,
+    decision: usize,
     decision_state: usize,
     is_precedence_decision: bool,
+    mode: PredictionMode,
+    host: RefCell<&'h mut dyn PredictionHost>,
 }
 
-impl Simulator<'_, '_, '_, '_> {
+impl Simulator<'_, '_, '_, '_, '_> {
+    /// Evaluates `context` with the input at the start of the decision, as ANTLR does wherever
+    /// it evaluates predicates during prediction.
+    fn eval(&self, context: &SemanticContext) -> bool {
+        let ctx = self.outer.ctx;
+        let start_index = self.start_index;
+        let mut host = self.host.borrow_mut();
+        context.eval(
+            self.outer.precedence,
+            &mut |rule_index, pred_index, ctx_dependent| {
+                host.sempred(
+                    ctx_dependent.then_some(ctx),
+                    rule_index,
+                    pred_index,
+                    start_index,
+                )
+            },
+        )
+    }
+
+    fn report(&self, kind: DiagnosticKind, stop_index: usize, alts: &AltSet) {
+        let mut host = self.host.borrow_mut();
+        host.fetched(self.input.fetched());
+        host.diagnostic(Diagnostic {
+            kind,
+            decision: self.decision,
+            rule_index: self.atn.states[self.decision_state].rule_index,
+            start_index: self.start_index,
+            stop_index,
+            alts: alts.iter().collect(),
+        });
+    }
+
     fn exec_atn(&mut self, s0: ConfigSet) -> Result<usize, NoViableAlt> {
         let mut previous = s0;
         let mut t = self.input.la(1);
@@ -81,17 +187,24 @@ impl Simulator<'_, '_, '_, '_> {
                 return self.no_viable_alt_or_finished_alt(&previous);
             };
             let step = self.compute_step(reach);
-            if step.requires_full_context {
+            if step.requires_full_context && self.mode != PredictionMode::Sll {
+                let mut conflicting_alts =
+                    step.configs.conflicting_alts.clone().unwrap_or_default();
                 if let Some(predicates) = &step.predicates {
-                    let alts = self.eval_predicates(predicates, true);
-                    if alts.len() == 1 {
-                        return Ok(alts.min());
+                    conflicting_alts = self.eval_predicates(predicates, true);
+                    if conflicting_alts.len() == 1 {
+                        return Ok(conflicting_alts.min());
                     }
                 }
                 // Only full-context prediction needs the invocation stack, which is as long as
                 // the input is nested.
                 let invoking_states = ParseTree::invoking_states(self.outer.nodes, self.outer.ctx);
                 let s0 = self.compute_start_state(self.decision_state, &invoking_states, true);
+                self.report(
+                    DiagnosticKind::AttemptingFullContext,
+                    self.input.index(),
+                    &conflicting_alts,
+                );
                 return self.exec_atn_with_full_context(s0);
             }
             if step.is_accept {
@@ -122,7 +235,7 @@ impl Simulator<'_, '_, '_, '_> {
             is_accept = true;
             configs.unique_alt = predicted;
             step_prediction = predicted;
-        } else if has_sll_conflict_terminating_prediction(self.atn, &configs) {
+        } else if has_sll_conflict_terminating_prediction(self.atn, self.mode, &configs) {
             let conflicting = conflicting_alts(&configs);
             step_prediction = conflicting.min();
             configs.conflicting_alts = Some(conflicting);
@@ -162,24 +275,48 @@ impl Simulator<'_, '_, '_, '_> {
         let mut previous = s0;
         self.input.seek(self.start_index);
         let mut t = self.input.la(1);
-        loop {
+        let (reach, predicted, exact) = loop {
             let Some(reach) = self.compute_reach_set(&previous, t, true) else {
                 return self.no_viable_alt_or_finished_alt(&previous);
             };
+            let subsets = conflicting_alt_subsets(&reach);
             let predicted = unique_alt(&reach);
             if predicted != INVALID_ALT {
+                self.report(
+                    DiagnosticKind::ContextSensitivity,
+                    self.input.index(),
+                    &AltSet::default(),
+                );
                 return Ok(predicted);
             }
-            let predicted = single_viable_alt(&conflicting_alt_subsets(&reach));
-            if predicted != INVALID_ALT {
-                return Ok(predicted);
+            if self.mode == PredictionMode::LlExactAmbigDetection {
+                // Never stop early: go on until the ambiguity is exact.
+                if all_subsets_conflict(&subsets) && all_subsets_equal(&subsets) {
+                    break (reach, single_viable_alt(&subsets), true);
+                }
+            } else {
+                let predicted = single_viable_alt(&subsets);
+                if predicted != INVALID_ALT {
+                    break (reach, predicted, false);
+                }
             }
             previous = reach;
             if t != EOF {
                 self.input.consume();
                 t = self.input.la(1);
             }
+        };
+        // Predicates were evaluated on the fly during full-context prediction.
+        let mut alts = AltSet::default();
+        for c in &reach {
+            alts.insert(c.alt);
         }
+        self.report(
+            DiagnosticKind::Ambiguity { exact },
+            self.input.index(),
+            &alts,
+        );
+        Ok(predicted)
     }
 
     fn no_viable_alt(&self) -> NoViableAlt {
@@ -227,7 +364,7 @@ impl Simulator<'_, '_, '_, '_> {
             intermediate
         } else {
             let mut reach = ConfigSet::new(full_ctx);
-            let mut busy = HashSet::new();
+            let mut busy = FxHashSet::default();
             for c in &intermediate {
                 self.closure(c.clone(), &mut reach, &mut busy, false, full_ctx, t == EOF);
             }
@@ -288,7 +425,7 @@ impl Simulator<'_, '_, '_, '_> {
         let mut configs = ConfigSet::new(full_ctx);
         for (i, transition) in self.atn.states[p].transitions.iter().enumerate() {
             let config = Config::new(transition.target(), i + 1, initial_context.clone());
-            let mut busy = HashSet::new();
+            let mut busy = FxHashSet::default();
             self.closure(config, &mut configs, &mut busy, true, full_ctx, false);
         }
         configs
@@ -297,7 +434,7 @@ impl Simulator<'_, '_, '_, '_> {
     /// Removes the configurations of alternatives other than 1 that the precedence of the current
     /// rule invocation rules out, as ANTLR's `applyPrecedenceFilter` does.
     fn apply_precedence_filter(&self, configs: &ConfigSet) -> ConfigSet {
-        let mut states_from_alt1: HashMap<usize, Ctx> = HashMap::new();
+        let mut states_from_alt1: FxHashMap<usize, Ctx> = FxHashMap::default();
         let mut result = ConfigSet::new(configs.full_ctx);
         for c in configs.iter().filter(|c| c.alt == 1) {
             let Some(updated) = c.semantic.eval_precedence(self.outer.precedence) else {
@@ -329,7 +466,7 @@ impl Simulator<'_, '_, '_, '_> {
         let mut valid = ConfigSet::new(configs.full_ctx);
         let mut invalid = ConfigSet::new(configs.full_ctx);
         for c in configs {
-            if c.semantic == SemanticContext::Empty || c.semantic.eval(self.outer.precedence) {
+            if c.semantic == SemanticContext::Empty || self.eval(&c.semantic) {
                 valid.add(c.clone());
             } else {
                 invalid.add(c.clone());
@@ -358,7 +495,7 @@ impl Simulator<'_, '_, '_, '_> {
     fn eval_predicates(&self, predicates: &[(SemanticContext, usize)], complete: bool) -> AltSet {
         let mut alts = AltSet::default();
         for (pred, alt) in predicates {
-            if *pred == SemanticContext::Empty || pred.eval(self.outer.precedence) {
+            if *pred == SemanticContext::Empty || self.eval(pred) {
                 alts.insert(*alt);
                 if !complete {
                     break;
@@ -372,7 +509,7 @@ impl Simulator<'_, '_, '_, '_> {
         &self,
         config: Config,
         configs: &mut ConfigSet,
-        busy: &mut HashSet<Config>,
+        busy: &mut FxHashSet<Config>,
         collect_predicates: bool,
         full_ctx: bool,
         treat_eof_as_epsilon: bool,
@@ -393,7 +530,7 @@ impl Simulator<'_, '_, '_, '_> {
         &self,
         config: Config,
         configs: &mut ConfigSet,
-        busy: &mut HashSet<Config>,
+        busy: &mut FxHashSet<Config>,
         collect_predicates: bool,
         full_ctx: bool,
         depth: i32,
@@ -461,7 +598,7 @@ impl Simulator<'_, '_, '_, '_> {
         &self,
         config: Config,
         configs: &mut ConfigSet,
-        busy: &mut HashSet<Config>,
+        busy: &mut FxHashSet<Config>,
         collect_predicates: bool,
         full_ctx: bool,
         depth: i32,
@@ -596,9 +733,7 @@ impl Simulator<'_, '_, '_, '_> {
                 if collect_predicates && in_context {
                     let predicate = SemanticContext::Precedence(precedence);
                     if full_ctx {
-                        predicate
-                            .eval(self.outer.precedence)
-                            .then(|| config.with_state(target))
+                        self.eval(&predicate).then(|| config.with_state(target))
                     } else {
                         Some(Config {
                             state: target,
@@ -616,19 +751,22 @@ impl Simulator<'_, '_, '_, '_> {
                 pred_index,
                 ctx_dependent,
             } => {
-                // In full-context mode the predicate would be evaluated here; the runtime does
-                // not run grammar code, so it always succeeds.
-                if collect_predicates && (!ctx_dependent || in_context) && !full_ctx {
+                if collect_predicates && (!ctx_dependent || in_context) {
                     let predicate = SemanticContext::Predicate {
                         rule_index,
                         pred_index,
                         ctx_dependent,
                     };
-                    Some(Config {
-                        state: target,
-                        semantic: SemanticContext::and(&config.semantic, &predicate),
-                        ..config.clone()
-                    })
+                    if full_ctx {
+                        // Full-context prediction evaluates predicates on the fly.
+                        self.eval(&predicate).then(|| config.with_state(target))
+                    } else {
+                        Some(Config {
+                            state: target,
+                            semantic: SemanticContext::and(&config.semantic, &predicate),
+                            ..config.clone()
+                        })
+                    }
                 } else {
                     Some(config.with_state(target))
                 }
@@ -660,7 +798,7 @@ fn unique_alt(configs: &ConfigSet) -> usize {
 
 /// Groups the alternatives of configurations by their state and context.
 fn conflicting_alt_subsets(configs: &ConfigSet) -> Vec<AltSet> {
-    let mut index: HashMap<(usize, &Ctx), usize> = HashMap::new();
+    let mut index: FxHashMap<(usize, &Ctx), usize> = FxHashMap::default();
     let mut subsets: Vec<AltSet> = Vec::new();
     for c in configs {
         let i = *index.entry((c.state, &c.context)).or_insert_with(|| {
@@ -680,21 +818,49 @@ fn conflicting_alts(configs: &ConfigSet) -> AltSet {
     alts
 }
 
-fn has_sll_conflict_terminating_prediction(atn: &Atn, configs: &ConfigSet) -> bool {
+fn has_sll_conflict_terminating_prediction(
+    atn: &Atn,
+    mode: PredictionMode,
+    configs: &ConfigSet,
+) -> bool {
     if configs
         .iter()
         .all(|c| atn.states[c.state].kind == StateKind::RuleStop)
     {
         return true;
     }
+    // Pure SLL prediction combines the configurations of different semantic contexts, since it
+    // cannot fail over to full-context prediction.
+    let combined;
+    let configs = if mode == PredictionMode::Sll && configs.has_semantic_context {
+        let mut dup = ConfigSet::new(configs.full_ctx);
+        for c in configs {
+            dup.add(Config {
+                semantic: SemanticContext::Empty,
+                ..c.clone()
+            });
+        }
+        combined = dup;
+        &combined
+    } else {
+        configs
+    };
     let has_conflicting_alt_set = conflicting_alt_subsets(configs)
         .iter()
         .any(|alts| alts.len() > 1);
     has_conflicting_alt_set && !has_state_associated_with_one_alt(configs)
 }
 
+fn all_subsets_conflict(subsets: &[AltSet]) -> bool {
+    subsets.iter().all(|alts| alts.len() > 1)
+}
+
+fn all_subsets_equal(subsets: &[AltSet]) -> bool {
+    subsets.windows(2).all(|pair| pair[0] == pair[1])
+}
+
 fn has_state_associated_with_one_alt(configs: &ConfigSet) -> bool {
-    let mut state_to_alts: HashMap<usize, AltSet> = HashMap::new();
+    let mut state_to_alts: FxHashMap<usize, AltSet> = FxHashMap::default();
     for c in configs {
         state_to_alts.entry(c.state).or_default().insert(c.alt);
     }
