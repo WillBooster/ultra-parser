@@ -27,7 +27,7 @@ jobs:
         # The tests of antlr5-maven-plugin already failed upstream.
         run: |
           mvn -B install -DskipTests
-          mvn -B test -pl runtime/Core,tool-testsuite,runtime-testsuite
+          mvn -B test -pl runtime/Core,runtime/Java,tool-testsuite,runtime-testsuite
       - name: Check that generated code and fixtures are up to date
         run: |
           bun run generate

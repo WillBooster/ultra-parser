@@ -19,11 +19,11 @@ An experimental parser generator for WebAssembly, derived from [ANTLR 5](https:/
 Install the tools pinned in `mise.toml` and `rust-toolchain.toml` with `mise install`, then:
 
 ```sh
-mvn -B install -DskipTests                                     # build the tool
-mvn -B test -pl runtime/Core,tool-testsuite,runtime-testsuite  # the tests of antlr5-maven-plugin already failed upstream
-cargo test                                                     # includes the conformance tests
+mvn -B install -DskipTests                                                 # build the tool
+mvn -B test -pl runtime/Core,runtime/Java,tool-testsuite,runtime-testsuite # the tests of antlr5-maven-plugin already failed upstream
+cargo test                                                                 # includes the conformance tests
 bun install
-bun run test                                                   # build the example for WebAssembly and test it from JavaScript
+bun run test                                                               # build the example for WebAssembly and test it from JavaScript
 ```
 
 After changing the tool, or a grammar or `.inputs` file under `examples/*/grammar/` or `conformance/grammars/`, run `bun run generate` and commit the regenerated files.
