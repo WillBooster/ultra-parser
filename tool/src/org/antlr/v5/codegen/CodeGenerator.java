@@ -191,16 +191,50 @@ public class CodeGenerator {
 		}
 	}
 
+	/** Starts the grammar's code in templates' output, which {@link #tidy} leaves as it is. */
+	public static final char GRAMMAR_CODE_START = '\u0001';
+	/** Ends the grammar's code in templates' output. */
+	public static final char GRAMMAR_CODE_END = '\u0002';
+
 	/**
 	 * Removes the blank lines that templates leave where parts render nothing: trailing
-	 * whitespace, runs of blank lines, and blank lines at the start or end of a block.
+	 * whitespace, runs of blank lines, and blank lines at the start or end of a block. The
+	 * grammar's code, which templates enclose in {@link #GRAMMAR_CODE_START} and
+	 * {@link #GRAMMAR_CODE_END}, keeps its whitespace, and the markers are removed.
 	 */
-	static String tidy(String code) {
-		return code
+	public static String tidy(String code) {
+		List<String> grammarCode = new ArrayList<>();
+		StringBuilder template = new StringBuilder();
+		int i = 0;
+		while (i < code.length()) {
+			int start = code.indexOf(GRAMMAR_CODE_START, i);
+			int end = start < 0 ? -1 : code.indexOf(GRAMMAR_CODE_END, start);
+			if (end < 0) {
+				template.append(code, i, code.length());
+				break;
+			}
+			template.append(code, i, start).append(GRAMMAR_CODE_START).append(grammarCode.size()).append(GRAMMAR_CODE_END);
+			grammarCode.add(code.substring(start + 1, end));
+			i = end + 1;
+		}
+		String tidied = template.toString()
 			.replaceAll("(?m)[ \\t]+$", "")
 			.replaceAll("\n{3,}", "\n\n")
 			.replaceAll("([{(\\[])\n\n", "$1\n")
 			.replaceAll("\n\n(\t*[})\\]])", "\n$1");
+		StringBuilder result = new StringBuilder();
+		i = 0;
+		while (i < tidied.length()) {
+			int start = tidied.indexOf(GRAMMAR_CODE_START, i);
+			if (start < 0) {
+				result.append(tidied, i, tidied.length());
+				break;
+			}
+			int end = tidied.indexOf(GRAMMAR_CODE_END, start);
+			result.append(tidied, i, start).append(grammarCode.get(Integer.parseInt(tidied.substring(start + 1, end))));
+			i = end + 1;
+		}
+		return result.toString();
 	}
 
 	public String getRecognizerFileName() { return getRecognizerFileName(false); }

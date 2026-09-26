@@ -121,7 +121,9 @@ public class BuildDependencyGenerator {
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getBaseListenerFileName(true)));
           }
-          files.add(getOutputFile(generator.getBaseListenerFileName(false)));
+          if (generator.getTarget().wantsBaseListener()) {
+            files.add(getOutputFile(generator.getBaseListenerFileName(false)));
+          }
         }
 
         if ( g.tool.gen_visitor ) {
@@ -135,7 +137,9 @@ public class BuildDependencyGenerator {
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getBaseVisitorFileName(true)));
           }
-          files.add(getOutputFile(generator.getBaseVisitorFileName(false)));
+          if (generator.getTarget().wantsBaseVisitor()) {
+            files.add(getOutputFile(generator.getBaseVisitorFileName(false)));
+          }
         }
 
 

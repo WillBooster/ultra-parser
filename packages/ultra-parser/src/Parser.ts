@@ -482,7 +482,24 @@ export abstract class Parser extends Recognizer {
     stopIndex: number,
     alts: number[]
   ): void {
+    // Listeners report at the token where prediction stopped; hooks must still see the parser's position.
+    const index = this._input.index;
     this._input.seek(stopIndex);
+    try {
+      this.#dispatchDiagnostic(kind, decision, ruleIndex, startIndex, stopIndex, alts);
+    } finally {
+      this._input.seek(index);
+    }
+  }
+
+  #dispatchDiagnostic(
+    kind: number,
+    decision: number,
+    ruleIndex: number,
+    startIndex: number,
+    stopIndex: number,
+    alts: number[]
+  ): void {
     for (const listener of this.errorListeners) {
       switch (kind) {
         case 0:

@@ -406,7 +406,8 @@ LexerPushModeCommand(arg, grammar) ::= "this.pushMode(<arg>);"
 
 // Action chunks
 
-ActionText(t) ::= "<t.text>"
+// The grammar's code, which CodeGenerator.tidy leaves as it is.
+ActionText(t) ::= "<\u0001><t.text><\u0002>"
 ActionTemplate(t) ::= "<t.st>"
 ArgRef(a) ::= "localctx.<a.escapedName>"
 LocalRef(a) ::= "localctx.<a.escapedName>"

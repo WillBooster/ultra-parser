@@ -35,8 +35,8 @@ ANTLR generates output files in the current directory by default. This option sp
 ```bash
 $ antlr4 -o /tmp T.g4
 $ ls /tmp/T*
-/tmp/T.tokens /tmp/TListener.java
-/tmp/TBaseListener.java /tmp/TParser.java
+/tmp/T.tokens /tmp/TLexer.ts
+/tmp/TListener.ts /tmp/TParser.ts
 ```
 
 ## `-lib libdir`
@@ -107,33 +107,26 @@ Tell ANTLR not to generate a parse tree visitor; this is the default.
 
 ## `-package`
 
-Use this option to specify a package or namespace for ANTLR-generated files. Alternatively, you can add a @header {...} action but that ties the grammar to a specific language. If you use this option and @header, make sure that the header action does not contain a package specification otherwise the generated code will have two of them.
+TypeScript has no packages, so the TypeScript target ignores this option.
 
 ## `-depend`
 
 Instead of generating a parser and/or lexer, generate a list of file dependencies, one per line. The output shows what each grammar depends on and what it generates. This is useful for build tools that need to know ANTLR grammar dependencies. Here’s an example:
  	
 ```bash
-$ antlr4 -depend T.g	
-T.g: A.tokens
-TParser.java : T.g
-T.tokens : T.g
-TLexer.java : T.g
-TListener.java : T.g
-TBaseListener.java : T.g
+$ java -jar antlr5-0.0.1-SNAPSHOT-complete.jar -depend T.g4
+T.g4: A.tokens
+TParser.ts : T.g4
+T.tokens : T.g4
+TLexer.ts : T.g4
+TListener.ts : T.g4
 ```
 
-If you use -lib libdir with -depend and grammar option tokenVocab=A, then the dependencies include the library path as well: T.g: libdir/A.tokens. The output is also sensitive to the -o outdir option: outdir/TParser.java : T.g.
+If you use -lib libdir with -depend and grammar option tokenVocab=A, then the dependencies include the library path as well: T.g4: libdir/A.tokens. The output is also sensitive to the -o outdir option: outdir/TParser.ts : T.g4.
 
 ## `-D<option>=value`
 
-Use this option to override or set a grammar-level option in the specified grammar or grammars. This option is useful for generating parsers in different languages without altering the grammar itself. (I expect to have other targets in the near future.)
- 	
-```bash
-$ antlr4 -Dlanguage=Java T.g4 # default
-$ antlr4 -Dlanguage=C T.g4
-error(31): ANTLR cannot generate C code as of version 4.0b3
-```
+Use this option to override or set a grammar-level option in the specified grammar or grammars, such as `-DsuperClass=MyParser`. TypeScript is the only target (`language=TypeScript`) and the default.
 
 ## `-Werror`
 
@@ -169,8 +162,8 @@ All output goes into `-o` dir regardless of paths/package.
 
 * Output `-o` directory specifier is the exact directory containing the output. Previously it would include the relative path specified on the grammar itself for the purposes of packages.
 
-**new**: `-o /tmp subdir/T.g4` => `/tmp/subdir/T.java`
-**old**: `-o /tmp subdir/T.g4` => `/tmp/T.java`
+**new**: `-o /tmp subdir/T.g4` => `/tmp/subdir/T.ts`
+**old**: `-o /tmp subdir/T.g4` => `/tmp/T.ts`
 
 *  Previously we looked for the tokens vocab file in the `-lib` dir or in the output dir. **New**: also look in the directory containing the grammar, particularly if it it is specified with a path.
 
@@ -194,11 +187,10 @@ $ tree /tmp/build
 └── src
     └── pkg
         ├── A.tokens
-        ├── ABaseListener.java
-        ├── ALexer.java
+        ├── ALexer.ts
         ├── ALexer.tokens
-        ├── AListener.java
-        └── AParser.java
+        ├── AListener.ts
+        └── AParser.ts
 ```
 
 Now, let's build a grammar that sits in the current directory:
@@ -208,19 +200,17 @@ $ a4.7 -o /tmp/build B.g4
 $ tree /tmp/build
 /tmp/build
 ├── B.tokens
-├── BBaseListener.java
-├── BLexer.java
+├── BLexer.ts
 ├── BLexer.tokens
-├── BListener.java
-├── BParser.java
+├── BListener.ts
+├── BParser.ts
 └── src
     └── pkg
         ├── A.tokens
-        ├── ABaseListener.java
-        ├── ALexer.java
+        ├── ALexer.ts
         ├── ALexer.tokens
-        ├── AListener.java
-        └── AParser.java
+        ├── AListener.ts
+        └── AParser.ts
 ```
 
 Finally, if we don't specify the output directory, it paid attention to the relative path specified on the input grammar:
@@ -234,11 +224,10 @@ $ tree
     └── pkg
         ├── A.g4
         ├── A.tokens
-        ├── ABaseListener.java
-        ├── ALexer.java
+        ├── ALexer.ts
         ├── ALexer.tokens
-        ├── AListener.java
-        └── AParser.java
+        ├── AListener.ts
+        └── AParser.ts
 ```
 
 ### Example for the output directory (4.7.1 with -Xexact-output-dir)
@@ -251,11 +240,10 @@ $ a4.7.1 -Xexact-output-dir  -o /tmp/build src/pkg/A.g4
 $ tree /tmp/build
 /tmp/build
 ├── A.tokens
-├── ABaseListener.java
-├── ALexer.java
+├── ALexer.ts
 ├── ALexer.tokens
-├── AListener.java
-└── AParser.java
+├── AListener.ts
+└── AParser.ts
 ```
 
 If you use the package option, it still does not change where the output is generated if you use `-o`
@@ -265,21 +253,10 @@ $ a4.7.1 -Xexact-output-dir -package pkg -o /tmp/build src/pkg/A.g4
 $ tree /tmp/build
 /tmp/build
 ├── A.tokens
-├── ABaseListener.java
-├── ALexer.java
+├── ALexer.ts
 ├── ALexer.tokens
-├── AListener.java
-└── AParser.java
-```
-
-4.7.1 does however add the package specification into the generated files:
-
-```bash
-$ grep package /tmp/build/A*.java
-/tmp/build/ABaseListener.java:package pkg;
-/tmp/build/ALexer.java:package pkg;
-/tmp/build/AListener.java:package pkg;
-/tmp/build/AParser.java:package pkg;
+├── AListener.ts
+└── AParser.ts
 ```
 
 Compare this to 4.7:
@@ -291,11 +268,10 @@ beast:/tmp/parrt $ tree /tmp/build
 └── src
     └── pkg
         ├── A.tokens
-        ├── ABaseListener.java
-        ├── ALexer.java
+        ├── ALexer.ts
         ├── ALexer.tokens
-        ├── AListener.java
-        └── AParser.java
+        ├── AListener.ts
+        └── AParser.ts
 ```
 
 ### Example of where it looks for tokens vocab
@@ -321,14 +297,13 @@ In 4.7.1 it looks in the directory containing the grammars as well:
 $ a4.7.1 -o /tmp/build src/pkg/*.g4
 $ tree /tmp/build
 /tmp/build
-├── L.java
+├── L.ts
 ├── L.tokens
-├── P.java
+├── P.ts
 ├── P.tokens
-├── PBaseListener.java
-├── PListener.java
+├── PListener.ts
 └── src
     └── pkg
-        ├── L.java
+        ├── L.ts
         └── L.tokens
 ```

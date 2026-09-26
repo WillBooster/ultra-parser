@@ -12,7 +12,7 @@ export class RecognitionException extends Error {
   }
 }
 
-/** Thrown out of a parse by a parser whose `errorHandler` is a {@link BailErrorStrategy}. */
+/** Thrown out of a parse by a parser whose `_errHandler` is a {@link BailErrorStrategy}. */
 export class ParseCancellationException extends Error {
   constructor(override readonly cause: RecognitionException) {
     super(cause.message);

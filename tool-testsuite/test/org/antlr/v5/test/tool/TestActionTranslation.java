@@ -245,7 +245,7 @@ public class TestActionTranslation {
 
 			CodeGenerator gen = CodeGenerator.create(g);
 			ST outputFileST = gen.generateParser(false);
-			String output = outputFileST.render();
+			String output = CodeGenerator.tidy(outputFileST.render());
 			//System.out.println(output);
 			String b = "#" + actionName + "#";
 			int start = output.indexOf(b);

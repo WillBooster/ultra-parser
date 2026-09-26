@@ -187,17 +187,9 @@ public class Generator {
 
 			if (runOptions.useListener) {
 				generatedFiles.add(new GeneratedFile(mainGrammarName + "Listener" + extensionWithDot, GeneratedFile.Type.Other));
-				String baseListenerSuffix = getBaseListenerSuffix(language);
-				if (baseListenerSuffix != null) {
-					generatedFiles.add(new GeneratedFile(mainGrammarName + baseListenerSuffix + extensionWithDot, GeneratedFile.Type.Other));
-				}
 			}
 			if (runOptions.useVisitor) {
 				generatedFiles.add(new GeneratedFile(mainGrammarName + "Visitor" + extensionWithDot, GeneratedFile.Type.Other));
-				String baseVisitorSuffix = getBaseVisitorSuffix(language);
-				if (baseVisitorSuffix != null) {
-					generatedFiles.add(new GeneratedFile(mainGrammarName + baseVisitorSuffix + extensionWithDot, GeneratedFile.Type.Other));
-				}
 			}
 		}
 
@@ -212,14 +204,5 @@ public class Generator {
 
 	public static String getExtension(String language) {
 		return language.equals("TypeScript") ? "ts" : language.toLowerCase();
-	}
-
-	/** TypeScript listeners and visitors have optional methods instead of base classes. */
-	private static String getBaseListenerSuffix(String language) {
-		return null;
-	}
-
-	private static String getBaseVisitorSuffix(String language) {
-		return null;
 	}
 }

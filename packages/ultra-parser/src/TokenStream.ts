@@ -1,15 +1,15 @@
 import { Token, type TokenSource } from './Token.js';
 
-/**
- * The tokens of a lexer, of which a parser sees those on one channel, like ANTLR's
- * `CommonTokenStream`. The parser reads all tokens before it parses.
- */
 /** A lexer error that waits until the parser fetches the token it precedes. */
 interface DeferredLexerError {
   tokenIndex: number;
   report: () => void;
 }
 
+/**
+ * The tokens of a lexer, of which a parser sees those on one channel, like ANTLR's
+ * `CommonTokenStream`. The parser reads all tokens before it parses.
+ */
 export class CommonTokenStream {
   readonly tokens: Token[] = [];
   private p = -1;
