@@ -164,7 +164,7 @@ public abstract class RuntimeRunner extends Runner {
 		outputFileST.add("predictionMode", runOptions.predictionMode);
 		outputFileST.add("buildParseTree", runOptions.buildParseTree);
 		addExtraRecognizerParameters(outputFileST);
-		writeFile(getTempDirPath(), getTestFileWithExt(), outputFileST.render());
+		writeFile(Path.of(getTempDirPath(), getTestFileWithExt()).toString(), outputFileST.render(), "UTF-8");
 	}
 
 	protected String grammarParseRuleToRecognizerName(String startRuleName) {
@@ -216,7 +216,7 @@ public abstract class RuntimeRunner extends Runner {
 	}
 
 	protected void writeInputFile(RunOptions runOptions) throws IOException {
-		writeFile(getTempDirPath(), InputFileName, runOptions.input);
+		writeFile(Path.of(getTempDirPath(), InputFileName).toString(), runOptions.input, "UTF-8");
 	}
 
 	protected ExecutedState execute(RunOptions runOptions, CompiledState compiledState) {

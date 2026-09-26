@@ -25,6 +25,3 @@ expression
 
 [input]
 a and b
-
-[skip]
-PHP

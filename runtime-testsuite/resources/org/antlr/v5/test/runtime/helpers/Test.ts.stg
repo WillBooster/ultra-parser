@@ -1,0 +1,54 @@
+import fs from 'node:fs';
+
+import {
+	CharStream,
+	CommonTokenStream,
+	DiagnosticErrorListener,
+	type ErrorListener,
+	type ParserRuleContext,
+	ParseTreeWalker,
+	PredictionMode,
+} from 'ultra-parser';
+
+import { <lexerName> } from './<lexerName>.js';
+<if(parserName)>
+import { <parserName> } from './<parserName>.js';
+<endif>
+
+const errorListener: ErrorListener = {
+	syntaxError(_recognizer, _offendingSymbol, line, column, message) {
+		process.stderr.write(`line ${line}:${column} ${message}\n`);
+	},
+};
+
+const treeShapeListener = {
+	enterEveryRule(ctx: ParserRuleContext) {
+		for (let i = 0; i \< ctx.getChildCount(); i++) {
+			if (ctx.getChild(i)?.parent !== ctx) throw new Error('Invalid parse tree shape detected.');
+		}
+	},
+};
+
+const inputPath = process.argv[2] as string;
+const input = CharStream.fromString(fs.readFileSync(inputPath, 'utf8'), inputPath);
+const lexer = new <lexerName>(input);
+lexer.removeErrorListeners();
+lexer.addErrorListener(errorListener);
+const stream = new CommonTokenStream(lexer);
+<if(parserName)>
+const parser = new <parserName>(stream);
+parser.removeErrorListeners();
+parser.addErrorListener(errorListener);
+<if(showDiagnosticErrors)>
+parser.addErrorListener(new DiagnosticErrorListener());
+<endif>
+parser.predictionMode = PredictionMode.<predictionMode>;
+<if(!buildParseTree)>
+parser.buildParseTrees = false;
+<endif>
+const tree = parser.<parserStartRuleName>();
+ParseTreeWalker.DEFAULT.walk(treeShapeListener, tree);
+<else>
+stream.fill();
+for (const token of stream.tokens) console.log(token.toString());
+<endif>

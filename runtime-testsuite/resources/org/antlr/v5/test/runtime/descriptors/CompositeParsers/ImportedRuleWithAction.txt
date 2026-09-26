@@ -14,7 +14,3 @@ s
 
 [input]
 b
-
-[skip]
-Go
-

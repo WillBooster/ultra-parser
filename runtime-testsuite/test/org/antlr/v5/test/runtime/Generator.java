@@ -62,19 +62,6 @@ public class Generator {
 		}
 
 		String superClass = runOptions.superClass;
-		if (runOptions.superClass != null) {
-			superClass = runOptions.superClass;
-		}
-
-		if (superClass == null && language != null && language.equals("Java")) {
-			if (mainFile.containsParser()) {
-				superClass = JvmRunner.parserHelperFQN.get(language);
-			}
-			else {
-				superClass = JvmRunner.lexerHelperFQN.get(language);
-			}
-		}
-
 		if (superClass != null) {
 			options.add("-DsuperClass=" + superClass);
 		}
@@ -120,7 +107,7 @@ public class Generator {
 		final LexerParserName lexerParserName;
 		List<GeneratedFile> generatedFiles = new ArrayList<>();
 
-		language = language != null ? language : "Java";
+		language = language != null ? language : "TypeScript";
 		if (errorQueue.errors.isEmpty()) {
 			lexerParserName = getLexerParserName(mainFile, grammarFiles, language, outputDirectory);
 			generatedFiles = getGeneratedFiles(runOptions, language, mainGrammarName, outputDirectory, lexerParserName);
@@ -224,14 +211,15 @@ public class Generator {
 	}
 
 	public static String getExtension(String language) {
-		return language.toLowerCase();
+		return language.equals("TypeScript") ? "ts" : language.toLowerCase();
 	}
 
+	/** TypeScript listeners and visitors have optional methods instead of base classes. */
 	private static String getBaseListenerSuffix(String language) {
-		return "BaseListener";
+		return null;
 	}
 
 	private static String getBaseVisitorSuffix(String language) {
-		return "BaseVisitor";
+		return null;
 	}
 }

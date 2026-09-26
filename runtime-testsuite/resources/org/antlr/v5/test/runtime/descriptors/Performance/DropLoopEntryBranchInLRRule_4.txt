@@ -46,11 +46,3 @@ between X1 and X2 or between X3 and X4 and
 between X1 and X2 or between X3 and X4 and
 between X1 and X2 or between X3 and X4
 ;
-
-[skip]
-Python3
-JavaScript
-TypeScript
-PHP
-Go
-

@@ -17,12 +17,3 @@ baa
 [errors]
 """line 1:0 mismatched input 'b' expecting {<EOF>, 'a'}
 """
-
-[skip]
-Cpp
-CSharp
-Go
-JavaScript
-TypeScript
-PHP
-Python3
