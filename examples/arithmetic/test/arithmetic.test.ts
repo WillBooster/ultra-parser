@@ -1,26 +1,24 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { expect, test } from 'bun:test';
 
-import { beforeAll, expect, test } from 'bun:test';
+import { evaluate, parse } from '../src/index.js';
 
-import { evaluate, initSync, parse } from '../dist/arithmetic.js';
-
-beforeAll(() => {
-  const wasm = fs.readFileSync(path.join(import.meta.dirname, '..', 'dist', 'arithmetic_bg.wasm'));
-  initSync({ module: new WebAssembly.Module(wasm) });
-});
-
-test('parses and evaluates expressions in WebAssembly', () => {
-  const result = parse('1 + 2 * 3');
-  expect(result.tree).toBe('(program (expr (expr 1) + (expr (expr 2) * (expr 3))) <EOF>)');
-  expect(result.errors).toEqual([]);
-  expect(evaluate('2 ^ 3 ^ 2 - (4 - 1)')).toBe(509);
+test('follows precedence and associativity', () => {
+  expect(parse('1 + 2 * 3').treeText).toBe('(program (expr (expr 1) + (expr (expr 2) * (expr 3))) <EOF>)');
+  expect(evaluate('1 + 2 * 3')).toBe(7);
+  expect(evaluate('(1 + 2) * 3')).toBe(9);
+  expect(evaluate('10 - 4 - 3')).toBe(3);
+  expect(evaluate('2 ^ 3 ^ 2')).toBe(512);
+  expect(evaluate('-2 ^ 2')).toBe(-4);
+  expect(evaluate('1.5 * 4 / 2')).toBe(3);
 });
 
 test('recovers from syntax errors', () => {
-  const result = parse('1 + (2');
-  expect(result.tree).toBe("(program (expr (expr 1) + (expr ( (expr 2) <missing ')'>)) <EOF>)");
-  expect(result.errors).toEqual(["line 1:6 missing ')' at '<EOF>'"]);
+  const missing = parse('1 + (2');
+  expect(missing.treeText).toBe("(program (expr (expr 1) + (expr ( (expr 2) <missing ')'>)) <EOF>)");
+  expect(missing.errors).toEqual(["line 1:6 missing ')' at '<EOF>'"]);
+  const incomplete = parse('1 +');
+  expect(incomplete.treeText).toBe('(program (expr (expr 1) + expr) <EOF>)');
+  expect(incomplete.errors).toEqual(["line 1:3 mismatched input '<EOF>' expecting {'-', '(', NUMBER}"]);
   expect(() => evaluate('1 # 2')).toThrow("line 1:2 token recognition error at: '#'");
 });
 
