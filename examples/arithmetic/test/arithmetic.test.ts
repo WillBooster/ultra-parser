@@ -16,6 +16,8 @@ test('recovers from syntax errors', () => {
   const missing = parse('1 + (2');
   expect(missing.treeText).toBe("(program (expr (expr 1) + (expr ( (expr 2) <missing ')'>)) <EOF>)");
   expect(missing.errors).toEqual(["line 1:6 missing ')' at '<EOF>'"]);
+  expect(missing.tree.getText()).toBe("1+(2<missing ')'><EOF>");
+  expect(parse('1 ) 2').tree.getText()).toBe('1)2');
   const incomplete = parse('1 +');
   expect(incomplete.treeText).toBe('(program (expr (expr 1) + expr) <EOF>)');
   expect(incomplete.errors).toEqual(["line 1:3 mismatched input '<EOF>' expecting {'-', '(', NUMBER}"]);

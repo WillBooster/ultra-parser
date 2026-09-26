@@ -124,14 +124,13 @@ export class ParserRuleContext {
     return this.invokingState === -1;
   }
 
-  /** The text of the tokens in the subtree, without hidden tokens. */
+  /** The text of the tokens in the subtree, including error nodes and without hidden tokens. */
   getText(): string {
     let text = '';
-    walk(this, {
-      visitTerminal: (node) => {
-        text += node.getText();
-      },
-    });
+    const append = (node: TerminalNode): void => {
+      text += node.getText();
+    };
+    walk(this, { visitTerminal: append, visitErrorNode: append });
     return text;
   }
 
