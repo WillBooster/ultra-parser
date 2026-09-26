@@ -8,7 +8,7 @@ package org.antlr.v5.test.tool;
 
 import org.antlr.runtime.RecognitionException;
 import org.antlr.v5.test.runtime.*;
-import org.antlr.v5.test.runtime.java.JavaRunner;
+import org.antlr.v5.test.runtime.typescript.TypeScriptRunner;
 import org.antlr.v5.test.runtime.states.ExecutedState;
 import org.antlr.v5.test.runtime.states.GeneratedState;
 import org.antlr.v5.test.runtime.states.State;
@@ -684,7 +684,7 @@ public class TestCompositeGrammars {
 	private static void checkCompilation(String grammarStr, Path tempDirPath) {
 		RunOptions runOptions = RunOptions.createCompilationOptions(new String[] {grammarStr}, null,
 				false, false, null, null);
-		try (JavaRunner runner = new JavaRunner(tempDirPath, false)) {
+		try (TypeScriptRunner runner = new TypeScriptRunner(tempDirPath, false)) {
 			State state = runner.run(runOptions);
 			if (state.containsErrors())
 				fail(state.getErrorMessage());

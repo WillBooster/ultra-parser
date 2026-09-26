@@ -29,6 +29,7 @@ import org.antlr.v5.misc.OrderedHashSet;
 import kotlin.Pair;
 import org.antlr.v5.tool.Attribute;
 import org.antlr.v5.tool.ErrorType;
+import org.antlr.v5.tool.LeftRecursiveRule;
 import org.antlr.v5.tool.Rule;
 import org.antlr.v5.tool.ast.ActionAST;
 import org.antlr.v5.tool.ast.AltAST;
@@ -52,6 +53,8 @@ import static org.antlr.v5.parse.ANTLRParser.TOKEN_REF;
 public class RuleFunction extends OutputModelObject {
 	public final String name;
 	public final String escapedName;
+	/** The name of the parser's method for the rule. */
+	public final String methodName;
 	public final List<String> modifiers;
 	public String ctxType;
 	public final Collection<String> ruleLabels;
@@ -61,6 +64,8 @@ public class RuleFunction extends OutputModelObject {
 	public final Rule rule;
 	public final AltLabelStructDecl[] altToContext;
 	public boolean hasLookaheadBlock;
+	/** What the parser does when it chooses each outermost alternative. */
+	public final List<AltHook> altHooks = new ArrayList<>();
 
 	@ModelElement public List<SrcOp> code;
 	@ModelElement public OrderedHashSet<Decl> locals; // TODO: move into ctx?
@@ -76,6 +81,7 @@ public class RuleFunction extends OutputModelObject {
 		super(factory);
 		this.name = r.name;
 		this.escapedName = factory.getGenerator().getTarget().escapeIfNeeded(r.name);
+		this.methodName = factory.getGenerator().getTarget().getRuleMethodName(r.name);
 		this.rule = r;
 		modifiers = Utils.nodesToStrings(r.modifiers);
 
@@ -115,6 +121,15 @@ public class RuleFunction extends OutputModelObject {
 		}
 
 		startState = factory.getGrammar().atn.getRuleToStartState()[r.index];
+		if ( !(r instanceof LeftRecursiveRule) ) {
+			int n = r.numberOfAlts;
+			for (int alt = 1; alt <= n; alt++) {
+				// The rule's block has a block start state only with several alternatives.
+				int state = n > 1 ? startState.transition(0).getTarget().getStateNumber() : startState.getStateNumber();
+				String ctxName = altToContext[alt] != null ? altToContext[alt].escapedName : null;
+				altHooks.add(new AltHook(state, n > 1 ? alt : 1, ctxName, alt, null, false));
+			}
+		}
 	}
 
 	public void addContextGetters(OutputModelFactory factory, Rule r) {

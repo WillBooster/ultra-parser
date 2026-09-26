@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class TestCodeGeneration {
@@ -51,8 +52,7 @@ public class TestCodeGeneration {
 			"grammar T;\n" +
 			"root: 't1';\n" +
 			"Token: 't1';";
-		List<String> evals = getEvalInfoForString(g, "() { return getToken(");
-		assertNotEquals(0, evals.size());
+		assertTrue(generateParser(g).contains("Token(): TerminalNode {"));
 	}
 
 	@Test public void AssignTokenNamesToStringLiteralArraysInGeneratedParserRuleContexts() throws Exception {
@@ -60,8 +60,15 @@ public class TestCodeGeneration {
 			"grammar T;\n" +
 				"root: 't1' 't1';\n" +
 				"Token: 't1';";
-		List<String> evals = getEvalInfoForString(g, "() { return getTokens(");
-		assertNotEquals(0, evals.size());
+		assertTrue(generateParser(g).contains("Token_list(): TerminalNode[] {"));
+	}
+
+	private static String generateParser(String grammarString) throws RecognitionException {
+		Grammar g = new Grammar(grammarString);
+		SemanticPipeline sem = new SemanticPipeline(g);
+		sem.process();
+		g.atn = new ParserATNFactory(g).createATN();
+		return CodeGenerator.create(g).generateParser().render();
 	}
 
 	/** Add tags around each attribute/template/value write */

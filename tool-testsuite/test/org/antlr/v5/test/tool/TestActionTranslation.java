@@ -104,56 +104,56 @@ public class TestActionTranslation {
 		String action = "x, $ID.text+\"3242\", (*$ID).foo(21,33), 3.2+1, '\\n', "+
 						"\"a,oo\\nick\", {bl, \"fdkj\"eck}";
 		String expected =
-			"x, (((AContext)_localctx).ID!=null?((AContext)_localctx).ID.getText():null)+\"3242\", " +
-			"(*((AContext)_localctx).ID).foo(21,33), 3.2+1, '\\n', \"a,oo\\nick\", {bl, \"fdkj\"eck}";
+			"x, localctx._ID?.text+\"3242\", " +
+			"(*localctx._ID).foo(21,33), 3.2+1, '\\n', \"a,oo\\nick\", {bl, \"fdkj\"eck}";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
 	@Test public void testArguments() throws Exception {
 		String action = "$x; $ctx.x";
-		String expected = "_localctx.x; _localctx.x";
+		String expected = "localctx.x; localctx.x";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
 	@Test public void testReturnValue() throws Exception {
 		String action = "$y; $ctx.y";
-		String expected = "_localctx.y; _localctx.y";
+		String expected = "localctx.y; localctx.y";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
 	@Test public void testReturnValueWithNumber() throws Exception {
 		String action = "$ctx.x1";
-		String expected = "_localctx.x1";
+		String expected = "localctx.x1";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
 	@Test public void testReturnValuesCurrentRule() throws Exception {
 		String action = "$y; $ctx.y;";
-		String expected = "_localctx.y; _localctx.y;";
+		String expected = "localctx.y; localctx.y;";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
 	@Test public void testReturnValues() throws Exception {
 		String action = "$lab.e; $b.e; $y.e = \"\";";
-		String expected = "((AContext)_localctx).lab.e; ((AContext)_localctx).b.e; _localctx.y.e = \"\";";
+		String expected = "localctx._lab.e; localctx._b.e; localctx.y.e = \"\";";
 		testActions(attributeTemplate, "inline", action, expected);
 	}
 
     @Test public void testReturnWithMultipleRuleRefs() throws Exception {
 		String action = "$c.x; $c.y;";
-		String expected = "((AContext)_localctx).c.x; ((AContext)_localctx).c.y;";
+		String expected = "localctx._c.x; localctx._c.y;";
 		testActions(attributeTemplate, "inline", action, expected);
     }
 
     @Test public void testTokenRefs() throws Exception {
 		String action = "$id; $ID; $id.text; $id.getText(); $id.line;";
-		String expected = "((AContext)_localctx).id; ((AContext)_localctx).ID; (((AContext)_localctx).id!=null?((AContext)_localctx).id.getText():null); ((AContext)_localctx).id.getText(); (((AContext)_localctx).id!=null?((AContext)_localctx).id.getLine():0);";
+		String expected = "localctx._id; localctx._ID; localctx._id?.text; localctx._id.getText(); (localctx._id?.line ?? 0);";
 		testActions(attributeTemplate, "inline", action, expected);
     }
 
     @Test public void testRuleRefs() throws Exception {
         String action = "$lab.start; $c.text;";
-		String expected = "(((AContext)_localctx).lab!=null?(((AContext)_localctx).lab.getStart()):null); (((AContext)_localctx).c!=null?get_input().getText(((AContext)_localctx).c.getStart(),((AContext)_localctx).c.getStop()):null);";
+		String expected = "localctx._lab?.start; (localctx._c ? this._input.getText(localctx._c.start, localctx._c.stop) : undefined);";
 		testActions(attributeTemplate, "inline", action, expected);
     }
 
@@ -193,12 +193,12 @@ public class TestActionTranslation {
             ">>";
         // ref to value returned from recursive call to rule
         String action = "$v = $e.v;";
-		String expected = "((EContext)_localctx).v =  ((EContext)_localctx).e.v;";
+		String expected = "localctx.v =  localctx._e.v;";
 		testActions(recursiveTemplate, "inline", action, expected);
 		testActions(leftRecursiveTemplate, "inline", action, expected);
         // ref to predefined attribute obtained from recursive call to rule
         action = "$v = $e.text.length();";
-        expected = "((EContext)_localctx).v =  (((EContext)_localctx).e!=null?get_input().getText(((EContext)_localctx).e.getStart(),((EContext)_localctx).e.getStop()):null).length();";
+        expected = "localctx.v =  (localctx._e ? this._input.getText(localctx._e.start, localctx._e.stop) : undefined).length();";
 		testActions(recursiveTemplate, "inline", action, expected);
 		testActions(leftRecursiveTemplate, "inline", action, expected);
 	}
@@ -208,7 +208,7 @@ public class TestActionTranslation {
 
 		// this is the expected translation for all cases
 		String expected =
-			"_localctx.text; get_input().getText(_localctx.getStart(), get_input().LT(-1))";
+			"localctx.text; this._input.getText(localctx.start, this._input.LT(-1))";
 
 		testActions(attributeTemplate, "init", action, expected);
 		testActions(attributeTemplate, "inline", action, expected);

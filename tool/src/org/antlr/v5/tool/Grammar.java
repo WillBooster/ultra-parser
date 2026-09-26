@@ -1335,18 +1335,6 @@ public class Grammar implements AttributeResolver {
 				input);
 	}
 
-	/** @since 4.5.1 */
-	public GrammarParserInterpreter createGrammarParserInterpreter(TokenStream tokenStream) {
-		if (this.isLexer()) {
-			throw new IllegalStateException("A parser interpreter can only be created for a parser or combined grammar.");
-		}
-		// must run ATN through serializer to set some state flags
-		IntegerList serialized = ATNSerializer.Companion.getSerialized(atn);
-		ATN deserializedATN = new ATNDeserializer().deserialize(serialized.toArray());
-
-		return new GrammarParserInterpreter(this, deserializedATN, tokenStream);
-	}
-
 	public ParserInterpreter createParserInterpreter(TokenStream tokenStream) {
 		if (this.isLexer()) {
 			throw new IllegalStateException("A parser interpreter can only be created for a parser or combined grammar.");

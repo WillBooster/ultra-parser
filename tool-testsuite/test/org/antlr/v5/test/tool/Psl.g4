@@ -2,13 +2,6 @@ grammar Psl;
 
 @parser::members
 {
-	public void printPosition(String name, Token tok)
-	{
-		java.lang.System.out.printf("%s: pos %d, len %d%n",
-				name, tok.getCharPositionInLine(), tok.getText().length());
-	}
-
-
 	/**
 	 * Checks whether a set of digit groups and commas construct
 	 * a valid command-number.
@@ -23,27 +16,18 @@ grammar Psl;
 	 *
 	 * @returns true (valid), false (invalid)
 	 */
-
-	public boolean isValidCommaNumber(List<Token> digits, List<Token> commas)
+	isValidCommaNumber(digits: Token[], commas: Token[]): boolean
 	{
-		Token[]	aDigits = new Token[0];
-		Token[]	aCommas = new Token[0];
-		int		j;
-
-		aDigits = digits.toArray(aDigits);
-		aCommas = commas.toArray(aCommas);
-		if (aDigits.length != aCommas.length + 1)
+		if (digits.length !== commas.length + 1)
 		{
 			return false;
 		}
-		for (j = 0; j < aCommas.length; ++j)
+		for (let j = 0; j < commas.length; ++j)
 		{
-			int	p1, p2, p3;
-			p1 = aDigits[j].getCharPositionInLine()
-					+ aDigits[j].getText().length();
-			p2 = aCommas[j].getCharPositionInLine();
-			p3 = aDigits[j + 1].getCharPositionInLine();
-			if (p1 != p2 || (p2 + 1) != p3)
+			const p1 = digits[j]!.column + digits[j]!.text.length;
+			const p2 = commas[j]!.column;
+			const p3 = digits[j + 1]!.column;
+			if (p1 !== p2 || (p2 + 1) !== p3)
 			{
 				return false;
 			}
@@ -68,31 +52,21 @@ grammar Psl;
 	 *
 	 * @returns true (valid), false (invalid)
 	 */
-
-	public boolean isValidFloatingConstant(
-		Token whole,
-		Token period,
-		Token fraction
-	)
+	isValidFloatingConstant(whole: Token | null | undefined, period: Token, fraction: Token | null | undefined): boolean
 	{
-		boolean		foundDigits = false;
-		int			column;
-
-		if (whole != null)
+		let foundDigits = false;
+		if (whole)
 		{
 			foundDigits = true;
-			column = whole.getCharPositionInLine()
-					+ whole.getText().length();
-			if (column != period.getCharPositionInLine())
+			if (whole.column + whole.text.length !== period.column)
 			{
 				return false;
 			}
 		}
-		if (fraction != null)
+		if (fraction)
 		{
 			foundDigits = true;
-			column = period.getCharPositionInLine() + 1;
-			if (column != fraction.getCharPositionInLine())
+			if (period.column + 1 !== fraction.column)
 			{
 				return false;
 			}
@@ -146,21 +120,21 @@ numeric_endpoint
 floating_constant
 	:	comma_number PERIOD fraction=DIGIT_SEQUENCE?
 		{
-			isValidFloatingConstant($comma_number.stop, $PERIOD, $fraction)
+			this.isValidFloatingConstant($comma_number.stop, $PERIOD, $fraction)
 		}?<fail = {
 			"COMMA:A floating-point constant cannot have internal white space"
 		}>
 
 	/*|	whole=DIGIT_SEQUENCE PERIOD fraction=DIGIT_SEQUENCE?
 		{
-			isValidFloatingConstant($whole, $PERIOD, $fraction)
+			this.isValidFloatingConstant($whole, $PERIOD, $fraction)
 		}?/* <fail = {
 			"DIG:A floating-point constant cannot have internal white space"
 		}>*/
 
 	|	PERIOD fraction=DIGIT_SEQUENCE
 		{
-			isValidFloatingConstant(null, $PERIOD, $fraction)
+			this.isValidFloatingConstant(null, $PERIOD, $fraction)
 		}?<fail = {
 			"DEC:A floating-point constant cannot have internal white space"
 		}>
@@ -169,7 +143,7 @@ floating_constant
 comma_number
 	:	digits+=DIGIT_SEQUENCE ( commas+=COMMA digits+=DIGIT_SEQUENCE )+
 		{
-			isValidCommaNumber($digits, $commas)
+			this.isValidCommaNumber($digits, $commas)
 		}?<fail = {
 			"A comma-number cannot have internal white space"
 		}>

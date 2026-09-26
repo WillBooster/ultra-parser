@@ -7,7 +7,7 @@
 package org.antlr.v5.test.tool;
 
 import org.antlr.v5.test.runtime.states.ExecutedState;
-import org.junit.jupiter.api.Disabled;
+import org.antlr.v5.test.runtime.states.GeneratedState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,6 +15,7 @@ import java.nio.file.Path;
 
 import static org.antlr.v5.test.tool.ToolTestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /** Test parser execution.
  *
@@ -48,30 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *  the remaining input to match.
  */
 public class TestParserExec {
-	/**
-	 * This is a regression test for antlr/antlr4#118.
-	 * https://github.com/antlr/antlr4/issues/118
-	 */
-	@Disabled("Performance impact of passing this test may not be worthwhile")
-	// TODO: port to test framework (not ported because test currently fails)
-	@Test public void testStartRuleWithoutEOF() {
-		String grammar =
-			"grammar T;\n"+
-			"s @after {dumpDFA();}\n" +
-			"  : ID | ID INT ID ;\n" +
-			"ID : 'a'..'z'+ ;\n"+
-			"INT : '0'..'9'+ ;\n"+
-			"WS : (' '|'\\t'|'\\n')+ -> skip ;\n";
-		ExecutedState executedState = execParser(grammar, "s", "abc 34", true);
-		String expecting =
-			"Decision 0:\n" +
-			"s0-ID->s1\n" +
-			"s1-INT->s2\n" +
-			"s2-EOF->:s3=>1\n"; // Must point at accept state
-		assertEquals(expecting, executedState.output);
-		assertEquals("", executedState.errors);
-	}
-
 	/**
 	 * This is a regression test for antlr/antlr4#588 "ClassCastException during
 	 * semantic predicate handling".
@@ -114,10 +91,10 @@ public class TestParserExec {
 			"    | '«' '/' ID '»'\n" +
 			"    ;";
 
-		execLexer(lexerGrammar, "", tempDir, true);
-		ExecutedState executedState = execParser(parserGrammar, "file", "", false, tempDir, false);
-		assertEquals("", executedState.output);
-		assertEquals("", executedState.errors);
+		GeneratedState lexerState = generate(lexerGrammar, null, tempDir, null, true);
+		assertFalse(lexerState.containsErrors(), lexerState.getErrorMessage());
+		GeneratedState parserState = generate(parserGrammar, null, tempDir, null, true);
+		assertFalse(parserState.containsErrors(), parserState.getErrorMessage());
 	}
 
 	/**
@@ -132,11 +109,11 @@ public class TestParserExec {
 			"\n" +
 			"file : group+ EOF; \n" +
 			"\n" +
-			"group: INT sequence {outStream.println($sequence.values.size());} ; \n" +
+			"group: INT sequence {console.log($sequence.values.length);} ; \n" +
 			"\n" +
-			"sequence returns [List<Integer> values = new ArrayList<Integer>()] \n" +
-			"  locals[List<Integer> localValues = new ArrayList<Integer>()]\n" +
-			"         : (INT {$localValues.add($INT.int);})* {$values.addAll($localValues);}\n" +
+			"sequence returns [values: number[] = []] \n" +
+			"  locals[localValues: number[] = []]\n" +
+			"         : (INT {$localValues.push($INT.int);})* {$values.push(...$localValues);}\n" +
 			"; \n" +
 			"\n" +
 			"INT : [0-9]+ ; // match integers \n" +

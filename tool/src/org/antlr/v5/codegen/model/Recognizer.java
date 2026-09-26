@@ -9,7 +9,6 @@ import org.antlr.v5.codegen.CodeGenerator;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.model.chunk.ActionChunk;
 import org.antlr.v5.codegen.model.chunk.ActionText;
-import org.antlr.v5.codegen.target.JavaTarget;
 import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.Rule;
 
@@ -65,13 +64,7 @@ public abstract class Recognizer extends OutputModelObject {
 
 		ruleNames = g.rules.keySet();
 		rules = g.rules.values();
-		// TODO get serialization details from target
-		if ( gen.getTarget() instanceof JavaTarget) {
-			atn = new SerializedJavaATN(factory, g.atn);
-		}
-		else {
-			atn = new SerializedATN(factory, g.atn);
-		}
+		atn = new SerializedATN(factory, g.atn);
 		if (g.getOptionString("superClass") != null) {
 			superClass = new ActionText(null, g.getOptionString("superClass"));
 		}

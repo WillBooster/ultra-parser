@@ -13,6 +13,7 @@ import org.antlr.v5.codegen.model.AltBlock;
 import org.antlr.v5.codegen.model.Choice;
 import org.antlr.v5.codegen.model.CodeBlockForAlt;
 import org.antlr.v5.codegen.model.CodeBlockForOuterMostAlt;
+import org.antlr.v5.codegen.model.InlineAction;
 import org.antlr.v5.codegen.model.InvokeRule;
 import org.antlr.v5.codegen.model.LL1AltBlock;
 import org.antlr.v5.codegen.model.LL1OptionalBlock;
@@ -96,7 +97,7 @@ public class ParserFactory extends DefaultOutputModelFactory {
 	}
 
 	@Override
-	public List<SrcOp> action(ActionAST ast) { return list(new Action(this, ast)); }
+	public List<SrcOp> action(ActionAST ast) { return list(new InlineAction(this, ast)); }
 
 	@Override
 	public List<SrcOp> sempred(ActionAST ast) { return list(new SemPred(this, ast)); }

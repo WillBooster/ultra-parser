@@ -17,7 +17,7 @@ public class TestDollarParser {
 	@Test
 	public void testSimpleCall() {
 		String grammar = "grammar T;\n" +
-                      "a : ID  { outStream.println(new java.io.File($parser.getSourceName()).getAbsolutePath()); }\n" +
+                      "a : ID  { console.log($parser.tokenStream.tokenSource.sourceName); }\n" +
                       "  ;\n" +
                       "ID : 'a'..'z'+ ;\n";
 		ExecutedState executedState = execParser(grammar, "a", "x", true);

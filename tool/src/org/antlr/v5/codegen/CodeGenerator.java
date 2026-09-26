@@ -20,6 +20,7 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STWriter;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -113,57 +114,6 @@ public class CodeGenerator {
 	public ST generateBaseVisitor() { return generateBaseVisitor(false); }
 	public ST generateBaseVisitor(boolean header) { return walk(createController().buildBaseVisitorOutputModel(header), header); }
 
-	/**
-	 * Generate the recognizer file of a target whose runtime interprets the ATN (see
-	 * {@link Target#isATNInterpreted()}) from its {@code RecognizerFile} template.
-	 */
-	public ST generateInterpretedRecognizer() {
-		ST st = getTemplates().getInstanceOf("RecognizerFile");
-		st.add("grammarFileName", g.fileName.substring(Math.max(g.fileName.lastIndexOf('/'), g.fileName.lastIndexOf('\\')) + 1));
-		st.add("recognizerName", g.getRecognizerName());
-		st.add("serializedATN", ATNSerializer.Companion.getSerialized(g.atn).toArray());
-		st.add("ruleNames", toTargetStringLiterals(Arrays.asList(g.getRuleNames())));
-		st.add("literalNames", toTargetStringLiterals(Arrays.asList(g.getTokenLiteralNames())));
-		st.add("symbolicNames", toTargetStringLiterals(Arrays.asList(g.getTokenSymbolicNames())));
-		if ( g.isLexer() ) {
-			List<String> channelNames = new ArrayList<>(Arrays.asList("DEFAULT_TOKEN_CHANNEL", "HIDDEN"));
-			channelNames.addAll(g.channelNameToValueMap.keySet());
-			st.add("channelNames", toTargetStringLiterals(channelNames));
-			st.add("modeNames", toTargetStringLiterals(((LexerGrammar)g).modes.keySet()));
-		}
-		Map<String,Integer> tokens = new LinkedHashMap<>();
-		for (Map.Entry<String, Integer> entry : g.tokenNameToTypeMap.entrySet()) {
-			if ( entry.getValue()>=Token.MIN_USER_TOKEN_TYPE ) {
-				tokens.put(entry.getKey(), entry.getValue());
-			}
-		}
-		st.add("tokens", toTargetConstants(tokens));
-		Map<String,Integer> rules = new LinkedHashMap<>();
-		for (Rule r : g.rules.values()) {
-			rules.put(r.name, r.index);
-		}
-		st.add("rules", toTargetConstants(rules));
-		return st;
-	}
-
-	/** Rekeys {@code values} by the target's constant names for their keys. */
-	private Map<String,Integer> toTargetConstants(Map<String,Integer> values) {
-		Map<String,String> constantNames = target.getConstantNames(values.keySet());
-		Map<String,Integer> constants = new LinkedHashMap<>();
-		for (Map.Entry<String,Integer> entry : values.entrySet()) {
-			constants.put(constantNames.get(entry.getKey()), entry.getValue());
-		}
-		return constants;
-	}
-
-	private List<String> toTargetStringLiterals(Collection<String> strings) {
-		List<String> literals = new ArrayList<>(strings.size());
-		for (String s : strings) {
-			literals.add(target.getTargetStringLiteralFromString(s, true));
-		}
-		return literals;
-	}
-
 	/** Generate a token vocab file with all the token names/types.  For example:
 	 *  ID=7
 	 *  FOR=8
@@ -227,20 +177,30 @@ public class CodeGenerator {
 	}
 
 	public void write(ST code, String fileName) {
-		try {
-//			long start = System.currentTimeMillis();
-			Writer w = tool.getOutputFileWriter(g, fileName);
-			STWriter wr = new AutoIndentWriter(w);
+		try (Writer w = tool.getOutputFileWriter(g, fileName)) {
+			StringWriter buf = new StringWriter();
+			STWriter wr = new AutoIndentWriter(buf);
 			wr.setLineWidth(lineWidth);
 			code.write(wr);
-			w.close();
-//			long stop = System.currentTimeMillis();
+			w.write(tidy(buf.toString()));
 		}
 		catch (IOException ioe) {
 			tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE,
 								  ioe,
 								  fileName);
 		}
+	}
+
+	/**
+	 * Removes the blank lines that templates leave where parts render nothing: trailing
+	 * whitespace, runs of blank lines, and blank lines at the start or end of a block.
+	 */
+	static String tidy(String code) {
+		return code
+			.replaceAll("(?m)[ \\t]+$", "")
+			.replaceAll("\n{3,}", "\n\n")
+			.replaceAll("([{(\\[])\n\n", "$1\n")
+			.replaceAll("\n\n(\t*[})\\]])", "\n$1");
 	}
 
 	public String getRecognizerFileName() { return getRecognizerFileName(false); }
