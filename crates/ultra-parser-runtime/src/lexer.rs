@@ -122,11 +122,19 @@ impl<'a> Lexer<'a> {
                                 LexerAction::Custom { .. } => {}
                                 LexerAction::Mode(m) => mode = m,
                                 LexerAction::More => token_type = MORE,
-                                LexerAction::PopMode => {
-                                    if let Some(m) = mode_stack.pop() {
-                                        mode = m;
-                                    }
-                                }
+                                LexerAction::PopMode => match mode_stack.pop() {
+                                    Some(m) => mode = m,
+                                    // ANTLR throws `EmptyStackException` here; reporting keeps
+                                    // lexing without aborting the WebAssembly instance.
+                                    None => errors.push(SyntaxError {
+                                        line: start_line,
+                                        column: start_column,
+                                        start: token_start,
+                                        end: self.index,
+                                        message: "cannot pop a mode: the mode stack is empty"
+                                            .to_string(),
+                                    }),
+                                },
                                 LexerAction::PushMode(m) => {
                                     mode_stack.push(mode);
                                     mode = m;
@@ -457,5 +465,30 @@ fn error_display(c: char) -> String {
         '\t' => "\\t".to_string(),
         '\r' => "\\r".to_string(),
         c => c.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reports_pop_mode_on_an_empty_mode_stack() {
+        // lexer grammar Pop; A : 'a' -> popMode ;
+        let atn = Atn::deserialize(&[
+            4, 0, 1, 4, 6, -1, 2, 0, 7, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 3, 0, 1, 1, 0, 0, 0, 1, 3,
+            5, 97, 0, 0, 3, 2, 6, 0, 0, 0, 1, 0, 1, 4, 0, 0,
+        ])
+        .unwrap();
+        let (tokens, errors) = Lexer::new(&atn, "a").tokenize();
+        assert_eq!(
+            tokens.iter().map(|t| t.token_type).collect::<Vec<_>>(),
+            [1, EOF]
+        );
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            errors[0].to_string(),
+            "line 1:0 cannot pop a mode: the mode stack is empty"
+        );
     }
 }
