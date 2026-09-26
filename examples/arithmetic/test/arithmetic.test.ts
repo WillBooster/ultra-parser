@@ -31,4 +31,7 @@ test('handles deeply nested and long inputs', () => {
   const nested = `${'('.repeat(20_000)}1${')'.repeat(20_000)}`;
   expect(parse(nested).errors).toEqual([]);
   expect(evaluate(nested)).toBe(1);
+  expect(parse(`${'-'.repeat(20_000)}(1 1`).errors).toEqual([
+    "line 1:20003 mismatched input '1' expecting {'^', '-', '*', '/', '+', ')'}",
+  ]);
 });
