@@ -349,3 +349,20 @@ test('rejects a lexer mode that does not exist', () => {
   lexer.mode(0);
   expect(lexer.nextToken().text).toBe('1');
 });
+
+test('lets go of reported lexer errors when a report throws', () => {
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 # 2 #'));
+  const stream = new CommonTokenStream(lexer);
+  let calls = 0;
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = {
+    syntaxError: () => {
+      calls++;
+      if (calls === 2) throw new Error('stop');
+    },
+  };
+  lexer.addErrorListener(listener);
+  expect(() => stream.getText()).toThrow('stop');
+  expect(calls).toBe(2);
+  expect((stream as unknown as { deferredLexerErrors: unknown[] }).deferredLexerErrors).toEqual([]);
+});

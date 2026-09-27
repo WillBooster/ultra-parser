@@ -50,16 +50,20 @@ export class CommonTokenStream {
   /** Reports the deferred errors of the lexer up to the token `tokenIndex`. */
   releaseLexerErrors(tokenIndex: number): void {
     // The queue is read through `this`, since a report that reads the stream may drain it.
-    while (this.reportedLexerErrors < this.deferredLexerErrors.length) {
-      const error = this.deferredLexerErrors[this.reportedLexerErrors] as DeferredLexerError;
-      if (error.tokenIndex > tokenIndex) break;
-      // Counted first, so that a report that reads the stream does not report the error again.
-      this.reportedLexerErrors++;
-      error.report();
-    }
-    if (this.reportedLexerErrors === this.deferredLexerErrors.length) {
-      this.deferredLexerErrors = [];
-      this.reportedLexerErrors = 0;
+    try {
+      while (this.reportedLexerErrors < this.deferredLexerErrors.length) {
+        const error = this.deferredLexerErrors[this.reportedLexerErrors] as DeferredLexerError;
+        if (error.tokenIndex > tokenIndex) break;
+        // Counted first, so that a report that reads the stream does not report the error again.
+        this.reportedLexerErrors++;
+        error.report();
+      }
+    } finally {
+      // Reported errors are let go, even when a report throws.
+      if (this.reportedLexerErrors === this.deferredLexerErrors.length) {
+        this.deferredLexerErrors = [];
+        this.reportedLexerErrors = 0;
+      }
     }
   }
 
