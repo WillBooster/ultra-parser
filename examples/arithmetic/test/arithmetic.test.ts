@@ -274,3 +274,24 @@ test('keeps CommonToken fields behind the setters that parsers track', () => {
   const token = new CommonToken(ArithmeticParser.NUMBER, 0, 0, 0, 1, 0, null, null, '1');
   expect(() => Object.defineProperty(token, 'type', { value: ArithmeticParser.T__4 })).toThrow(TypeError);
 });
+
+test('reports the text of tokens of other classes', () => {
+  class Custom extends CommonToken {
+    override get text(): string {
+      return this.type === Token.EOF ? '<EOF>' : 'custom';
+    }
+  }
+  const input = CharStream.fromString('1');
+  const tokens: Token[] = [
+    new Custom(ArithmeticParser.T__4, 0, 0, 0, 1, 0, null, input),
+    new Custom(Token.EOF, 0, 1, 0, 1, 1, null, input),
+  ];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const parser = new ArithmeticParser(new CommonTokenStream(source));
+  const errors: string[] = [];
+  parser.removeErrorListeners();
+  const listener: ErrorListener = { syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message) };
+  parser.addErrorListener(listener);
+  parser.expr();
+  expect(errors[0]).toBe("mismatched input 'custom' expecting {'-', '(', NUMBER}");
+});

@@ -308,7 +308,8 @@ export abstract class Parser extends Recognizer {
     const version = tokenVersion();
     const holds = (memory: WasmTokens | undefined): boolean =>
       memory?.loaded?.tokens === tokens && memory.loaded.length === tokens.length && memory.loaded.version === version;
-    // Tokens of other classes cannot report changes, so they are copied for every parse.
+    // Tokens of other classes cannot report changes, so they are copied for every parse, and their
+    // text may differ from the input without `hasText` saying so.
     const unchanged = this._input.onlyCommonTokens;
     const last = this.#loadedTokens;
     if (unchanged && last && holds(last)) return last;
@@ -338,7 +339,7 @@ export abstract class Parser extends Recognizer {
     wasmTokens.setTokens(data);
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i] as Token;
-      if (!shared || t.hasText) wasmTokens.setText(i, t.text);
+      if (!shared || !unchanged || t.hasText) wasmTokens.setText(i, t.text);
     }
     wasmTokens.loaded = { tokens, length: tokens.length, version };
     return wasmTokens;
