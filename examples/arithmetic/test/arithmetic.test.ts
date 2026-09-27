@@ -393,3 +393,31 @@ test('answers precpred with the precedence of the left-recursive rule being pars
   expect(answers).toEqual([false, true]);
   expect(parser.precpred(null, 0)).toBe(true);
 });
+
+test('pops the precedence of a left-recursive rule before its exit event', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('2 ^ 3'))));
+  const answers: boolean[] = [];
+  parser.addParseListener({
+    exitEveryRule: (ctx) => {
+      if (ctx.getText() === '3') answers.push(parser.precpred(ctx, 5));
+    },
+  });
+  parser.program();
+  expect(answers).toEqual([true]);
+});
+
+test('leaves deeply nested rules quickly when grammar code throws', () => {
+  const input = `${'('.repeat(20_000)}1${')'.repeat(20_000)}`;
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString(input))));
+  let exits = 0;
+  parser.addParseListener({
+    visitTerminal: (node) => {
+      if (node.getText() === '1') throw new Error('stop');
+    },
+    exitEveryRule: () => {
+      exits++;
+    },
+  });
+  expect(() => parser.program()).toThrow('stop');
+  expect(exits).toBe(20_002);
+}, 60_000);
