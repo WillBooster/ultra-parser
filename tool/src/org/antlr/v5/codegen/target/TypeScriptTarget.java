@@ -23,6 +23,8 @@ public class TypeScriptTarget extends Target {
 		"interface", "let", "module", "new", "null", "number", "package", "private", "protected",
 		"public", "require", "return", "set", "static", "string", "super", "switch", "symbol", "this",
 		"throw", "true", "try", "type", "typeof", "var", "void", "while", "with", "yield", "of",
+		// Names that strict code (classes) and modules cannot bind.
+		"arguments", "eval", "await",
 		// Members of the runtime's rule contexts, which getters, arguments, and return values would override.
 		"parser", "parent", "invokingState", "children", "start", "stop", "exception", "ruleIndex",
 		"getAltNumber", "setAltNumber", "copyFrom", "addChild", "addTokenNode", "addErrorNode",

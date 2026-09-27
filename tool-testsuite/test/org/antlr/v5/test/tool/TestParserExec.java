@@ -66,6 +66,18 @@ public class TestParserExec {
 		assertEquals("line 1:6 rule floating_constant DEC:A floating-point constant cannot have internal white space\n", executedState.errors);
 	}
 
+	/** Arguments may have names that strict code and modules cannot bind. */
+	@Test public void testStrictModeArgumentNames() {
+		String grammar =
+			"grammar T;\n" +
+			"s : a[1, 2, 3] ;\n" +
+			"a[int arguments, int eval, int await] : ID {console.log($arguments + $eval + $await);} ;\n" +
+			"ID : [a-z]+ ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "abc", false);
+		assertEquals("6\n", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
 	/** Actions written for ANTLR read token text with {@code $t.getText()}. */
 	@Test public void testTokenGetText() {
 		String grammar =
