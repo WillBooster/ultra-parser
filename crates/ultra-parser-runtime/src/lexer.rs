@@ -9,7 +9,7 @@ use crate::atn::{
     Atn, INVALID_ALT, LexerAction, MAX_CHAR_VALUE, MIN_CHAR_VALUE, StateKind, Transition,
 };
 use crate::context::{Ctx, EMPTY_RETURN_STATE, PredictionContext};
-use crate::token::{DEFAULT_CHANNEL, EOF, INVALID_TYPE, Token, Tokens, code_points_to_string};
+use crate::token::{DEFAULT_CHANNEL, EOF, INVALID_TYPE, Token, Tokens, escape_ws, to_code_points};
 
 const MORE: i32 = -2;
 const SKIP: i32 = -3;
@@ -476,8 +476,9 @@ pub(crate) fn tokenize(
                                     offending_token: None,
                                     line: token_start.line,
                                     column: token_start.column,
-                                    message: "cannot pop a mode: the mode stack is empty"
-                                        .to_string(),
+                                    message: to_code_points(
+                                        "cannot pop a mode: the mode stack is empty",
+                                    ),
                                 }),
                             },
                             LexerAction::PushMode(m) => {
@@ -496,10 +497,12 @@ pub(crate) fn tokenize(
                         offending_token: None,
                         line: token_start.line,
                         column: token_start.column,
-                        message: format!(
-                            "token recognition error at: '{}'",
-                            error_display(&input[token_start.index..end])
-                        ),
+                        message: [
+                            to_code_points("token recognition error at: '"),
+                            escape_ws(&input[token_start.index..end]),
+                            to_code_points("'"),
+                        ]
+                        .concat(),
                     });
                     pos = stop.advance(&input);
                     SKIP
@@ -533,14 +536,6 @@ pub(crate) fn tokenize(
         }
     }
     (Tokens { input, tokens }, errors)
-}
-
-/// Escapes a text for lexer error messages like `Lexer.getErrorDisplay`.
-pub(crate) fn error_display(code_points: &[u32]) -> String {
-    code_points_to_string(code_points)
-        .replace('\n', "\\n")
-        .replace('\t', "\\t")
-        .replace('\r', "\\r")
 }
 
 #[cfg(test)]

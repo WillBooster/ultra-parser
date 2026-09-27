@@ -29,6 +29,7 @@ pub use parser::ParserHost;
 pub use prediction::{Diagnostic, DiagnosticKind, PredictionMode};
 pub use token::{
     DEFAULT_CHANNEL, EOF, HIDDEN_CHANNEL, Token, Tokens, Vocabulary, code_points_to_string,
+    to_code_points,
 };
 pub use tree::NodeId;
 
@@ -51,13 +52,20 @@ pub struct SyntaxError {
     pub line: usize,
     /// 0-based column in code points.
     pub column: usize,
-    pub message: String,
+    /// The message as code points, which keeps lone surrogates of the input.
+    pub message: Vec<u32>,
 }
 
 impl fmt::Display for SyntaxError {
     /// Formats the error like ANTLR's `ConsoleErrorListener`, e.g., `line 1:4 missing ')' at '<EOF>'`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "line {}:{} {}", self.line, self.column, self.message)
+        write!(
+            f,
+            "line {}:{} {}",
+            self.line,
+            self.column,
+            code_points_to_string(&self.message)
+        )
     }
 }
 

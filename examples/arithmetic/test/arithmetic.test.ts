@@ -296,6 +296,31 @@ test('reports the text of tokens of other classes', () => {
   expect(errors[0]).toBe("mismatched input 'custom' expecting {'-', '(', NUMBER}");
 });
 
+test('keeps lone surrogates of token text in error messages', () => {
+  class Custom extends CommonToken {
+    override get text(): string {
+      return this.type === Token.EOF ? '<EOF>' : 'x\uDC00';
+    }
+  }
+  const input = CharStream.fromString('\uD800');
+  const messages = [new CommonToken(999, 0, 0, 0, 1, 0, null, input), new Custom(999, 0, 0, 0, 1, 0, null, input)].map(
+    (token) => {
+      const tokens = [token, new CommonToken(Token.EOF, 0, 1, 0, 1, 1, null, input)];
+      const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+      const parser = new ArithmeticParser(new CommonTokenStream(source));
+      const errors: string[] = [];
+      parser.removeErrorListeners();
+      parser.addErrorListener({ syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message) });
+      parser.expr();
+      return errors[0];
+    }
+  );
+  expect(messages).toEqual([
+    "mismatched input '\uD800' expecting {'-', '(', NUMBER}",
+    "mismatched input 'x\uDC00' expecting {'-', '(', NUMBER}",
+  ]);
+});
+
 test('returns the hidden tokens to the left in order', () => {
   const input = CharStream.fromString('1 \t2');
   const tokens = [

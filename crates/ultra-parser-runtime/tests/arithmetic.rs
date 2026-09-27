@@ -149,16 +149,13 @@ impl ParserHost for TreeBuilder<'_> {
     }
 
     fn token(&mut self, ctx: NodeId, _state: Option<usize>, token_index: usize, _error: bool) {
-        let text = self
-            .tokens
-            .text(&self.tokens.tokens[token_index])
-            .into_owned();
+        let text = self.tokens.text(&self.tokens.tokens[token_index]);
         self.add(ctx, Node::Token(text));
     }
 
     fn conjure(&mut self, ctx: NodeId, _state: usize, token: &Token, add_to_tree: bool) {
         if add_to_tree {
-            let text = self.tokens.text(token).into_owned();
+            let text = self.tokens.text(token);
             self.add(ctx, Node::Token(text));
         }
     }

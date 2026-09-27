@@ -1,4 +1,4 @@
-import { WasmTokens } from './wasm.js';
+import { toCodePoints, WasmTokens } from './wasm.js';
 
 /** The input of a lexer as Unicode code points, like ANTLR's `CodePointCharStream`. */
 export class CharStream {
@@ -16,14 +16,8 @@ export class CharStream {
     readonly text: string,
     readonly sourceName = '<unknown>'
   ) {
-    const data = new Uint32Array(text.length);
-    let n = 0;
-    for (let i = 0; i < text.length; i++) {
-      const c = text.codePointAt(i) ?? 0;
-      data[n++] = c;
-      if (c > 0xffff) i++;
-    }
-    this.data = n === text.length ? data : data.slice(0, n);
+    this.data = toCodePoints(text);
+    const n = this.data.length;
     if (n !== text.length) {
       const offsets = new Uint32Array(n + 1);
       let offset = 0;

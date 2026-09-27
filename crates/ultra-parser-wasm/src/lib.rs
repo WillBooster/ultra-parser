@@ -51,7 +51,7 @@ unsafe extern "C" {
         token_index: i32,
         line: u32,
         column: u32,
-        message: *const u8,
+        message: *const u32,
         len: usize,
     ) -> i32;
     fn failed_predicate(
@@ -59,7 +59,7 @@ unsafe extern "C" {
         rule_index: u32,
         pred_index: u32,
         token_index: u32,
-        message: *const u8,
+        message: *const u32,
         len: usize,
     ) -> i32;
     fn fetched(token_index: u32) -> i32;
@@ -326,18 +326,18 @@ pub unsafe extern "C" fn tokens_set(tokens: *mut Tokens, data: *const i32, n: us
 ///
 /// # Safety
 ///
-/// `tokens` must be a live token list with a token `index`, and `text` must point to `len` bytes
-/// of UTF-8. No lexer match or parse may be reading `tokens`, including from its host callbacks.
+/// `tokens` must be a live token list with a token `index`, and `text` must point to `len` code
+/// points. No lexer match or parse may be reading `tokens`, including from its host callbacks.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tokens_set_text(
     tokens: *mut Tokens,
     index: usize,
-    text: *const u8,
+    text: *const u32,
     len: usize,
 ) {
     // SAFETY: guaranteed by the caller.
     let (tokens, text) = unsafe { (&mut *tokens, slice(text, len)) };
-    tokens.tokens[index].text = Some(String::from_utf8_lossy(text).into_owned());
+    tokens.tokens[index].text = Some(text.to_vec());
 }
 
 // Lexing

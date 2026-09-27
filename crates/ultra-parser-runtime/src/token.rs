@@ -24,8 +24,8 @@ pub struct Token {
     pub column: usize,
     /// Index of this token in the token list, including tokens on hidden channels.
     pub token_index: usize,
-    /// Text that the lexer set instead of the matched input.
-    pub text: Option<String>,
+    /// Code points of the text that the lexer set instead of the matched input.
+    pub text: Option<Vec<u32>>,
 }
 
 /// The tokens of an input together with the input, which holds the text of most tokens.
@@ -38,19 +38,44 @@ pub struct Tokens {
 }
 
 impl Tokens {
-    /// The text of `token` like ANTLR's `CommonToken.getText()`: `<EOF>` for an EOF token past the
-    /// end of the input.
-    pub fn text<'a>(&'a self, token: &'a Token) -> Cow<'a, str> {
+    /// The code points of `token`'s text like ANTLR's `CommonToken.getText()`: `<EOF>` for an EOF
+    /// token past the end of the input.
+    pub fn code_points<'a>(&'a self, token: &'a Token) -> Cow<'a, [u32]> {
         if let Some(text) = &token.text {
             return Cow::Borrowed(text);
         }
         if token.start >= self.input.len() && token.token_type == EOF {
-            return Cow::Borrowed("<EOF>");
+            return Cow::Owned(to_code_points("<EOF>"));
         }
-        Cow::Owned(code_points_to_string(
+        Cow::Borrowed(
             &self.input[token.start.min(self.input.len())..token.end.min(self.input.len())],
-        ))
+        )
     }
+
+    /// The text of `token`, replacing lone surrogates with U+FFFD.
+    pub fn text(&self, token: &Token) -> String {
+        code_points_to_string(&self.code_points(token))
+    }
+}
+
+/// The code points of `text`, for messages and token text.
+pub fn to_code_points(text: &str) -> Vec<u32> {
+    text.chars().map(u32::from).collect()
+}
+
+/// Escapes line feeds, carriage returns, and tabs for error messages, like
+/// `Lexer.getErrorDisplay` and `DefaultErrorStrategy.escapeWSAndQuote`.
+pub(crate) fn escape_ws(code_points: &[u32]) -> Vec<u32> {
+    let mut escaped = Vec::with_capacity(code_points.len());
+    for &c in code_points {
+        match char::from_u32(c) {
+            Some('\n') => escaped.extend(to_code_points("\\n")),
+            Some('\r') => escaped.extend(to_code_points("\\r")),
+            Some('\t') => escaped.extend(to_code_points("\\t")),
+            _ => escaped.push(c),
+        }
+    }
+    escaped
 }
 
 /// Converts code points to a string, replacing lone surrogates with U+FFFD.
@@ -122,8 +147,8 @@ impl<'a> TokenStream<'a> {
         &self.tokens.tokens
     }
 
-    pub(crate) fn token_text(&self, index: usize) -> Cow<'a, str> {
-        self.tokens.text(&self.tokens.tokens[index])
+    pub(crate) fn token_code_points(&self, index: usize) -> Cow<'a, [u32]> {
+        self.tokens.code_points(&self.tokens.tokens[index])
     }
 
     pub(crate) fn index(&self) -> usize {
@@ -205,13 +230,14 @@ impl<'a> TokenStream<'a> {
         i
     }
 
-    /// Concatenates the text of the tokens from `start` to `stop` (inclusive) on all channels.
-    pub(crate) fn text(&self, start: usize, stop: usize) -> String {
+    /// Concatenates the code points of the tokens from `start` to `stop` (inclusive) on all
+    /// channels.
+    pub(crate) fn code_points(&self, start: usize, stop: usize) -> Vec<u32> {
         let tokens = self.tokens();
         tokens[start..=stop.min(tokens.len() - 1)]
             .iter()
             .take_while(|t| t.token_type != EOF)
-            .map(|t| self.tokens.text(t))
+            .flat_map(|t| self.tokens.code_points(t).into_owned())
             .collect()
     }
 }

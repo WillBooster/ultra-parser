@@ -12,7 +12,7 @@ use crate::ll1;
 use crate::prediction::{self, Diagnostic, Outer, PredictionHost, PredictionMode};
 use crate::token::{
     DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream,
-    Vocabulary,
+    Vocabulary, escape_ws, to_code_points,
 };
 use crate::tree::{NodeId, RuleNode, invoking_states};
 
@@ -604,7 +604,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         expected_tokens(self.atn, state, &follow_states)
     }
 
-    fn notify(&mut self, token_index: usize, message: String) {
+    fn notify(&mut self, token_index: usize, message: Vec<u32>) {
         self.report_fetched();
         let token = &self.input.tokens()[token_index];
         self.host.syntax_error(SyntaxError {
@@ -615,8 +615,8 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         });
     }
 
-    fn token_error_display(&self, token_index: usize) -> String {
-        escape_ws_and_quote(&self.input.token_text(token_index))
+    fn token_error_display(&self, token_index: usize) -> Vec<u32> {
+        escape_ws_and_quote(&self.input.token_code_points(token_index))
     }
 
     fn report_error(&mut self, e: &RecognitionError) {
@@ -630,25 +630,30 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
                 offending_token,
             } => {
                 let input = if self.input.tokens()[*start_token].token_type == EOF {
-                    "<EOF>".to_string()
+                    to_code_points("<EOF>")
                 } else {
-                    self.input.text(*start_token, *offending_token)
+                    self.input.code_points(*start_token, *offending_token)
                 };
-                format!(
-                    "no viable alternative at input {}",
-                    escape_ws_and_quote(&input)
-                )
+                [
+                    to_code_points("no viable alternative at input "),
+                    escape_ws_and_quote(&input),
+                ]
+                .concat()
             }
             RecognitionError::InputMismatch {
                 offending_token,
                 state,
                 ctx,
-            } => format!(
-                "mismatched input {} expecting {}",
+            } => [
+                to_code_points("mismatched input "),
                 self.token_error_display(*offending_token),
-                self.expected_tokens_at(*state, *ctx)
-                    .to_string_with(self.vocabulary)
-            ),
+                to_code_points(&format!(
+                    " expecting {}",
+                    self.expected_tokens_at(*state, *ctx)
+                        .to_string_with(self.vocabulary)
+                )),
+            ]
+            .concat(),
             RecognitionError::FailedPredicate {
                 offending_token,
                 predicate,
@@ -661,7 +666,10 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
                     offending_token: Some(*offending_token),
                     line: token.line,
                     column: token.column,
-                    message: format!("rule {} {message}", self.rule_names[rule_index]),
+                    message: to_code_points(&format!(
+                        "rule {} {message}",
+                        self.rule_names[rule_index]
+                    )),
                 };
                 match *predicate {
                     Some((rule_index, pred_index)) => self
@@ -681,11 +689,15 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         }
         self.begin_error_condition();
         let token = self.current_token().token_index;
-        let message = format!(
-            "extraneous input {} expecting {}",
+        let message = [
+            to_code_points("extraneous input "),
             self.token_error_display(token),
-            self.expected_tokens().to_string_with(self.vocabulary)
-        );
+            to_code_points(&format!(
+                " expecting {}",
+                self.expected_tokens().to_string_with(self.vocabulary)
+            )),
+        ]
+        .concat();
         self.notify(token, message);
     }
 
@@ -695,11 +707,14 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         }
         self.begin_error_condition();
         let token = self.current_token().token_index;
-        let message = format!(
-            "missing {} at {}",
-            self.expected_tokens().to_string_with(self.vocabulary),
-            self.token_error_display(token)
-        );
+        let message = [
+            to_code_points(&format!(
+                "missing {} at ",
+                self.expected_tokens().to_string_with(self.vocabulary)
+            )),
+            self.token_error_display(token),
+        ]
+        .concat();
         self.notify(token, message);
     }
 
@@ -825,7 +840,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             token_type: expected,
             channel: DEFAULT_CHANNEL,
             end: current.start,
-            text: Some(text),
+            text: Some(to_code_points(&text)),
             ..current.clone()
         }
     }
@@ -901,11 +916,11 @@ impl<H: ParserHost> PredictionHost for PredictionHostAdapter<'_, H> {
     }
 }
 
-fn escape_ws_and_quote(s: &str) -> String {
-    format!(
-        "'{}'",
-        s.replace('\n', "\\n")
-            .replace('\r', "\\r")
-            .replace('\t', "\\t")
-    )
+fn escape_ws_and_quote(code_points: &[u32]) -> Vec<u32> {
+    [
+        vec![u32::from('\'')],
+        escape_ws(code_points),
+        vec![u32::from('\'')],
+    ]
+    .concat()
 }

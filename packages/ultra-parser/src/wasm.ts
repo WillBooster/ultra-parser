@@ -120,7 +120,7 @@ const imports = {
     sempred: (ctx: number, ruleIndex: number, predIndex: number, inputIndex: number): number =>
       guardPredicate(parserCall, (h) => h.sempred(ctx, ruleIndex, predIndex, inputIndex)),
     syntax_error: (tokenIndex: number, line: number, column: number, message: number, len: number): number => {
-      const text = readString(message, len);
+      const text = readCodePoints(message, len);
       return guard(parserCall, (h) => h.syntaxError(tokenIndex, line, column, text));
     },
     failed_predicate: (
@@ -131,7 +131,7 @@ const imports = {
       message: number,
       len: number
     ): number => {
-      const text = readString(message, len);
+      const text = readCodePoints(message, len);
       return guard(parserCall, (h) => h.failedPredicate(ctx, ruleIndex, predIndex, tokenIndex, text));
     },
     diagnostic: (
@@ -200,6 +200,27 @@ function runtime(): WasmExports {
 
 function readString(ptr: number, len: number): string {
   return new TextDecoder().decode(new Uint8Array(runtime().memory.buffer, ptr, len));
+}
+
+/** Reads `len` code points, which may be lone surrogates, as a string. */
+function readCodePoints(ptr: number, len: number): string {
+  const codePoints = new Uint32Array(runtime().memory.buffer, ptr, len);
+  let text = '';
+  // Chunks keep the arguments of `String.fromCodePoint` within engines' limits.
+  for (let i = 0; i < len; i += 4096) text += String.fromCodePoint(...codePoints.subarray(i, i + 4096));
+  return text;
+}
+
+/** The code points of `text`; lone surrogates are code points of their own. */
+export function toCodePoints(text: string): Uint32Array {
+  const codePoints = new Uint32Array(text.length);
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.codePointAt(i) ?? 0;
+    codePoints[n++] = c;
+    if (c > 0xffff) i++;
+  }
+  return n === text.length ? codePoints : codePoints.slice(0, n);
 }
 
 /** Copies `values` into the runtime's memory; the caller frees them with {@link free}. */
@@ -390,11 +411,12 @@ export class WasmTokens {
   }
 
   setText(index: number, text: string): void {
-    const [ptr, len] = allocString(text);
+    const codePoints = toCodePoints(text);
+    const ptr = allocInts(codePoints, true);
     try {
-      runtime().tokens_set_text(this.ptr, index, ptr, len);
+      runtime().tokens_set_text(this.ptr, index, ptr, codePoints.length);
     } finally {
-      free(ptr, len);
+      free(ptr, codePoints.length * 4);
     }
   }
 }
