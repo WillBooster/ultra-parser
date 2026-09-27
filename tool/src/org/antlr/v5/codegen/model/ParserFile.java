@@ -9,9 +9,10 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.model.chunk.ActionChunk;
 import org.antlr.v5.codegen.model.chunk.ActionText;
-import org.antlr.v5.parse.ANTLRParser;
+import org.antlr.v5.tool.Attribute;
+import org.antlr.v5.tool.AttributeDict;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.ast.GrammarAST;
+import org.antlr.v5.tool.Rule;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -26,7 +27,7 @@ public class ParserFile extends OutputFile {
 	@ModelElement public Map<String, Action> namedActions;
 	@ModelElement public ActionChunk contextSuperClass;
 	public String grammarName;
-	/** Whether the grammar's code may use the `int` type, so that the file declares it. */
+	/** Whether rule arguments, return values, or locals have the `int` type, which the file declares. */
 	public boolean declaresInt;
 
 	private static final Pattern INT = Pattern.compile("\\bint\\b");
@@ -41,9 +42,12 @@ public class ParserFile extends OutputFile {
 		genListener = g.tool.gen_listener;
 		genVisitor = g.tool.gen_visitor;
 		grammarName = g.name;
-		for (int type : new int[] {ANTLRParser.ACTION, ANTLRParser.SEMPRED, ANTLRParser.ARG_ACTION}) {
-			for (GrammarAST code : g.ast.getNodesWithType(type)) {
-				declaresInt |= INT.matcher(code.getText()).find();
+		for (Rule r : g.rules.values()) {
+			for (AttributeDict dict : new AttributeDict[] {r.args, r.retvals, r.locals}) {
+				if (dict == null) continue;
+				for (Attribute a : dict.attributes.values()) {
+					declaresInt |= a.type != null && INT.matcher(a.type).find();
+				}
 			}
 		}
 

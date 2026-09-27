@@ -38,7 +38,7 @@ import type { <file.grammarName>Visitor } from './<file.grammarName>Visitor.js';
 <endif>
 
 <if(file.declaresInt)>
-// Grammars may declare arguments and return values with Java's int type.
+// Grammars may declare arguments, return values, and locals with Java's int type.
 type int = number;
 <endif>
 

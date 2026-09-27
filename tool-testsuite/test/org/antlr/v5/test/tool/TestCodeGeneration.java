@@ -25,6 +25,15 @@ public class TestCodeGeneration {
 		String parser = generateParser(g);
 		assertTrue(parser.contains("a(xyz: int): AContext"), parser);
 		assertTrue(parser.contains("xyz!: int;"), parser);
+		assertTrue(parser.contains("type int = number;"), parser);
+	}
+
+	/** The `int` alias is declared only for declarations that use it, not for the word in code. */
+	@Test public void testIntAliasOnlyForDeclarations() throws Exception {
+		String parser = generateParser(
+			"grammar T;\n" +
+			"a : 'a' {console.log('int');} ;\n");
+		assertFalse(parser.contains("type int"), parser);
 	}
 
 	@Test public void AssignTokenNamesToStringLiteralsInGeneratedParserRuleContexts() throws Exception {
