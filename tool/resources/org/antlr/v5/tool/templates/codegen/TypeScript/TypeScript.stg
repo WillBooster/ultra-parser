@@ -560,7 +560,7 @@ typedContext(ctx) ::= "<if(ctx.provideCopyFrom)>(localctx as <ctx.name>)<else>lo
 
 // Used when rewriting left-recursive rules; the runtime evaluates the resulting precedence
 // predicates, so the text only shows up in error messages.
-recRuleAltPredicate(ruleName, opPrec) ::= "this.precpred(this._ctx, <opPrec>)"
+recRuleAltPredicate(ruleName, opPrec) ::= "this.precpred(localctx, <opPrec>)"
 recRuleSetReturnAction(src, name) ::= "$<name>=$<src>.<name>;"
 
 LexerFile(lexerFile, lexer, namedActions) ::= <<

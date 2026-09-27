@@ -93,11 +93,11 @@ export class ArithmeticParser extends Parser {
 	private expr_sempred(localctx: ExprContext, predIndex: number): boolean {
 		switch (predIndex) {
 			case 0:
-				return (this.precpred(this._ctx, 6));
+				return (this.precpred(localctx, 6));
 			case 1:
-				return (this.precpred(this._ctx, 4));
+				return (this.precpred(localctx, 4));
 			case 2:
-				return (this.precpred(this._ctx, 3));
+				return (this.precpred(localctx, 3));
 		}
 		return true;
 	}

@@ -83,6 +83,7 @@ public class TypeScriptRunner extends RuntimeRunner {
 			if (!hasGrammarCode(Paths.get(getTempDirPath()))) {
 				command.add("--strict");
 				command.add("--noUnusedLocals");
+				command.add("--noUnusedParameters");
 			}
 			for (GeneratedFile file : generatedState.generatedFiles) {
 				command.add(file.name);

@@ -382,7 +382,7 @@ export abstract class Parser extends Recognizer {
         return this.sempred(ctx >= 0 ? this.#ctx(ctx) : null, ruleIndex, predIndex);
       },
       syntaxError: (tokenIndex, line, column, message) => this.#onSyntaxError(tokenIndex, line, column, message),
-      failedPredicate: (ctx, ruleIndex, predIndex, tokenIndex, message) =>
+      failedPredicate: (ctx, _ruleIndex, predIndex, tokenIndex, message) =>
         this.#onFailedPredicate(ctx, predIndex, tokenIndex, message),
       diagnostic: (kind, decision, ruleIndex, startIndex, stopIndex, alts) =>
         this.#onDiagnostic(kind, decision, ruleIndex, startIndex, stopIndex, alts),
