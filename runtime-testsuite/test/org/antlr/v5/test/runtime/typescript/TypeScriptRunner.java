@@ -66,8 +66,8 @@ public class TypeScriptRunner extends RuntimeRunner {
 	/**
 	 * Bun runs TypeScript without checking types, so the TypeScript compiler checks the generated
 	 * code first, like the Java target's tests compiled it. Grammars without code are checked
-	 * strictly; the code in test grammars is written for Bun and not null-safe, so grammars with
-	 * code are checked without strict mode.
+	 * strictly and for unused declarations; the code in test grammars is written for Bun and not
+	 * null-safe, so grammars with code are checked without these options.
 	 */
 	@Override
 	protected CompiledState compile(RunOptions runOptions, GeneratedState generatedState) {
@@ -82,6 +82,7 @@ public class TypeScriptRunner extends RuntimeRunner {
 				"--typeRoots", rootPath.resolve(Paths.get("node_modules", "@types")).toString(), "--types", "bun"));
 			if (!hasGrammarCode(Paths.get(getTempDirPath()))) {
 				command.add("--strict");
+				command.add("--noUnusedLocals");
 			}
 			for (GeneratedFile file : generatedState.generatedFiles) {
 				command.add(file.name);

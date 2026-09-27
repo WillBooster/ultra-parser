@@ -11,9 +11,6 @@ import {
 import type { ArithmeticListener } from './ArithmeticListener.js';
 import type { ArithmeticVisitor } from './ArithmeticVisitor.js';
 
-// Grammars may declare arguments and return values with Java's int type.
-type int = number;
-
 export class ArithmeticParser extends Parser {
 	static readonly T__0 = 1;
 	static readonly T__1 = 2;

@@ -1,6 +1,6 @@
 // Generated from Arithmetic.g4 by ultra-parser. Do not edit.
 
-import { type CharStream, Lexer, type ParserRuleContext, Token } from 'ultra-parser';
+import { type CharStream, Lexer, Token } from 'ultra-parser';
 
 export class ArithmeticLexer extends Lexer {
 	static readonly T__0 = 1;
