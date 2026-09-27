@@ -62,19 +62,6 @@ public class Generator {
 		}
 
 		String superClass = runOptions.superClass;
-		if (runOptions.superClass != null) {
-			superClass = runOptions.superClass;
-		}
-
-		if (superClass == null && language != null && language.equals("Java")) {
-			if (mainFile.containsParser()) {
-				superClass = JvmRunner.parserHelperFQN.get(language);
-			}
-			else {
-				superClass = JvmRunner.lexerHelperFQN.get(language);
-			}
-		}
-
 		if (superClass != null) {
 			options.add("-DsuperClass=" + superClass);
 		}
@@ -120,7 +107,7 @@ public class Generator {
 		final LexerParserName lexerParserName;
 		List<GeneratedFile> generatedFiles = new ArrayList<>();
 
-		language = language != null ? language : "Java";
+		language = language != null ? language : "TypeScript";
 		if (errorQueue.errors.isEmpty()) {
 			lexerParserName = getLexerParserName(mainFile, grammarFiles, language, outputDirectory);
 			generatedFiles = getGeneratedFiles(runOptions, language, mainGrammarName, outputDirectory, lexerParserName);
@@ -200,17 +187,9 @@ public class Generator {
 
 			if (runOptions.useListener) {
 				generatedFiles.add(new GeneratedFile(mainGrammarName + "Listener" + extensionWithDot, GeneratedFile.Type.Other));
-				String baseListenerSuffix = getBaseListenerSuffix(language);
-				if (baseListenerSuffix != null) {
-					generatedFiles.add(new GeneratedFile(mainGrammarName + baseListenerSuffix + extensionWithDot, GeneratedFile.Type.Other));
-				}
 			}
 			if (runOptions.useVisitor) {
 				generatedFiles.add(new GeneratedFile(mainGrammarName + "Visitor" + extensionWithDot, GeneratedFile.Type.Other));
-				String baseVisitorSuffix = getBaseVisitorSuffix(language);
-				if (baseVisitorSuffix != null) {
-					generatedFiles.add(new GeneratedFile(mainGrammarName + baseVisitorSuffix + extensionWithDot, GeneratedFile.Type.Other));
-				}
 			}
 		}
 
@@ -224,14 +203,6 @@ public class Generator {
 	}
 
 	public static String getExtension(String language) {
-		return language.toLowerCase();
-	}
-
-	private static String getBaseListenerSuffix(String language) {
-		return "BaseListener";
-	}
-
-	private static String getBaseVisitorSuffix(String language) {
-		return "BaseVisitor";
+		return language.equals("TypeScript") ? "ts" : language.toLowerCase();
 	}
 }

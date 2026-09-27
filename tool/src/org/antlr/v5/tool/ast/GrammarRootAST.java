@@ -16,7 +16,7 @@ import java.util.Map;
 public class GrammarRootAST extends GrammarASTWithOptions {
 	public static final Map<String, String> defaultOptions = new HashMap<String, String>();
 	static {
-		defaultOptions.put("language","Java");
+		defaultOptions.put("language","TypeScript");
 	}
 
     public int grammarType; // LEXER, PARSER, GRAMMAR (combined)

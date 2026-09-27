@@ -7,9 +7,13 @@
 package org.antlr.v5.tool;
 
 import org.antlr.v5.Tool;
-import org.antlr.v5.runtime.java._unused.misc.MultiMap;
 import org.antlr.v5.runtime.core.error.RecognitionException;
 import org.antlr.v5.tool.ast.GrammarRootAST;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** */
 public class LexerGrammar extends Grammar {
@@ -19,7 +23,7 @@ public class LexerGrammar extends Grammar {
     public Grammar implicitLexerOwner;
 
 	/** DEFAULT_MODE rules are added first due to grammar syntax order */
-	public MultiMap<String, Rule> modes;
+	public Map<String, List<Rule>> modes;
 
 	public LexerGrammar(Tool tool, GrammarRootAST ast) {
 		super(tool, ast);
@@ -43,8 +47,8 @@ public class LexerGrammar extends Grammar {
 			return false;
 		}
 
-		if ( modes==null ) modes = new MultiMap<String, Rule>();
-		modes.map(r.mode, r);
+		if ( modes==null ) modes = new LinkedHashMap<>();
+		modes.computeIfAbsent(r.mode, mode -> new ArrayList<>()).add(r);
 		return true;
 	}
 

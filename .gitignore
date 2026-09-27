@@ -66,5 +66,7 @@ tool-testsuite/gen
 
 # ultra-parser
 node_modules/
-examples/*/dist/
 .tmp/
+
+/packages/ultra-parser/dist/
+/packages/ultra-parser/ultra_parser.wasm

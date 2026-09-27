@@ -139,7 +139,7 @@ public class CustomDescriptors {
 				"",
 				new String[] { grammar.toString() }, null,
 				 false, false, false, PredictionMode.LL, true,
-				new String[] {"CSharp", "Python3", "Go", "PHP", "Swift", "JavaScript", "TypeScript", "Dart"},
+				null,
 				uri);
 	}
 

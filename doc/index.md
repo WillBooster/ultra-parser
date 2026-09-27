@@ -1,11 +1,11 @@
 # ANTLR 4 Documentation
 
-Please check [Frequently asked questions (FAQ)](faq/index.md) before asking questions on stackoverflow or antlr-discussion list.
+This is ANTLR's documentation of grammars, inherited from upstream. [Getting Started](getting-started.md) and [TypeScript Target](typescript-target.md) describe ultra-parser.
+
+Ask questions and report problems about ultra-parser in the [WillBooster/ultra-parser issues](https://github.com/WillBooster/ultra-parser/issues), not in ANTLR's channels; [CONTRIBUTING.md](/CONTRIBUTING.md) describes how to improve this documentation. ANTLR's upstream [FAQ](faq/index.md) answers many questions about grammars; its installation and contribution steps are for ANTLR's Java runtime and repositories, so set up ultra-parser with [Getting Started](getting-started.md) instead.
 
 Notes:
 <ul>
-<li>To add to or improve this documentation, <a href=https://help.github.com/articles/fork-a-repo>fork</a> the <a href=https://github.com/antlr/antlr4>antlr/antlr4 repo</a> then update this `doc/index.md` or file(s) in that directory.  Submit a <a href=https://help.github.com/articles/creating-a-pull-request>pull request</a> to get your changes incorporated into the main repository. Do not mix code and documentation updates in the sample pull request. <b>You must sign the contributors.txt certificate of origin with your pull request if you've not done so before.</b></li>
-
 <li>Copyright © 2012, The Pragmatic Bookshelf.  Pragmatic Bookshelf grants a nonexclusive, irrevocable, royalty-free, worldwide license to reproduce, distribute, prepare derivative works, and otherwise use this contribution as part of the ANTLR project and associated documentation.</li>
 
 <li>Much of this text was copied with permission from the <a href=http://pragprog.com/book/tpantlr2/the-definitive-antlr-4-reference>The Definitive ANTLR 4 Reference</a>, though it is being morphed over time as the tool changes.</li>
@@ -25,7 +25,7 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 ## Sections
 
-* [Getting Started with ANTLR v4](getting-started.md)
+* [Getting Started with ultra-parser](getting-started.md)
 
 * [Grammar Lexicon](lexicon.md)
 
@@ -43,32 +43,18 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 * [Parse Tree Listeners](listeners.md)
 
-* [Parse Tree Matching and XPath](tree-matching.md)
-
 * [Semantic Predicates](predicates.md)
 
 * [Options](options.md)
 
 * [ANTLR Tool Command Line Options](tool-options.md)
 
-* [Runtime Libraries and Code Generation Targets](targets.md)
+* [TypeScript Target](typescript-target.md)
 
 * [Unicode U+FFFF, U+10FFFF character streams](unicode.md)
 
-* [Parsing binary streams](parsing-binary-files.md)
-
-* [Parser and lexer interpreters](interpreters.md)
-
-* [Writing target-agnostic grammars](target-agnostic-grammars.md)
-
 * [Resources](resources.md)
 
-# Building ANTLR itself
-
-* [Building ANTLR itself](building-antlr.md)
+# Contributing
 
 * [Contributing to ultra-parser](/CONTRIBUTING.md)
-
-* [ANTLR project unit tests](antlr-project-testing.md)
-
-* [Creating an ANTLR Language Target](creating-a-language-target.md)

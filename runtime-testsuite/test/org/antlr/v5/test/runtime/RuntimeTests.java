@@ -7,7 +7,6 @@
 package org.antlr.v5.test.runtime;
 
 import kotlin.Pair;
-import org.antlr.v5.test.runtime.java.JavaRuntimeTests;
 import org.antlr.v5.test.runtime.states.ExecutedState;
 import org.antlr.v5.test.runtime.states.State;
 import org.junit.jupiter.api.DynamicNode;
@@ -30,6 +29,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
  *  It pulls data from {@link RuntimeTestDescriptor} and uses junit to trigger tests.
  *  The only functionality needed to execute a test is defined in {@link RuntimeRunner}.
  *  All the various test rig classes derived from this one.
- *  E.g., see {@link JavaRuntimeTests}.
+ *  E.g., see {@link org.antlr.v5.test.runtime.typescript.TypeScriptRuntimeTests}.
  */
 public abstract class RuntimeTests {
 	protected abstract RuntimeRunner createRuntimeRunner();
@@ -113,10 +113,10 @@ public abstract class RuntimeTests {
 
 	private static void test(RuntimeTestDescriptor descriptor, RuntimeRunner runner) {
 		String targetName = runner.getLanguage();
-		if (descriptor.ignore(targetName)) {
-			System.out.println("Ignore " + descriptor);
-			return;
-		}
+		assumeFalse(descriptor.ignore(targetName), "skipped for " + targetName);
+		// The runtime interprets the ATN without caching DFA states.
+		assumeFalse(descriptor.showDFA || String.join("", descriptor.grammars).contains("<DumpDFA()>"),
+			"the runtime has no DFA to dump");
 
 		Pair<String[], String[]> allGrammars = prepareGrammars(descriptor, runner);
 

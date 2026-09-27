@@ -110,9 +110,7 @@ public class BuildDependencyGenerator {
             }
         }
 
-        // Targets whose runtime interprets the ATN generate no listeners or visitors.
-        boolean interpreted = generator.getTarget().isATNInterpreted();
-        if ( g.tool.gen_listener && !interpreted ) {
+        if ( g.tool.gen_listener ) {
           // add generated listener; e.g., TListener.java
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getListenerFileName(true)));
@@ -123,10 +121,12 @@ public class BuildDependencyGenerator {
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getBaseListenerFileName(true)));
           }
-          files.add(getOutputFile(generator.getBaseListenerFileName(false)));
+          if (generator.getTarget().wantsBaseListener()) {
+            files.add(getOutputFile(generator.getBaseListenerFileName(false)));
+          }
         }
 
-        if ( g.tool.gen_visitor && !interpreted ) {
+        if ( g.tool.gen_visitor ) {
           // add generated visitor; e.g., TVisitor.java
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getVisitorFileName(true)));
@@ -137,7 +137,9 @@ public class BuildDependencyGenerator {
           if (generator.getTarget().needsHeader()) {
             files.add(getOutputFile(generator.getBaseVisitorFileName(true)));
           }
-          files.add(getOutputFile(generator.getBaseVisitorFileName(false)));
+          if (generator.getTarget().wantsBaseVisitor()) {
+            files.add(getOutputFile(generator.getBaseVisitorFileName(false)));
+          }
         }
 
 

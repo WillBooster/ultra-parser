@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import static org.antlr.v5.test.runtime.RuntimeTestUtils.joinLines;
 
@@ -21,6 +22,12 @@ public class Processor {
 	 *  RUNNING clang++ -std=c++17 -I /Users/parrt/antlr/code/antlr4/runtime/Cpp/runtime/src -L. -lantlr4-runtime -pthread -o Test.out Test.cpp TLexer.cpp TParser.cpp TListener.cpp TBaseListener.cpp TVisitor.cpp TBaseVisitor.cpp in /var/folders/w1/_nr4stn13lq0rvjdkwh7q8cc0000gn/T/CppRunner-ForkJoinPool-1-worker-23-1668284191961
 	 */
 	public static final boolean WATCH_COMMANDS_EXEC = false;
+	/**
+	 * Limits the processes running at once to the processors. JUnit's parallel executor adds threads
+	 * while tests wait for their processes, which otherwise starts about a hundred compilers at once
+	 * and exhausts memory.
+	 */
+	private static final Semaphore runningProcesses = new Semaphore(Runtime.getRuntime().availableProcessors());
 	public final String[] arguments;
 	public final String workingDirectory;
 	public final Map<String, String> environmentVariables;
@@ -59,14 +66,23 @@ public class Processor {
 			}
 		}
 
-		Process process = builder.start();
-		StreamReader stdoutReader = new StreamReader(process.getInputStream());
-		StreamReader stderrReader = new StreamReader(process.getErrorStream());
-		stdoutReader.start();
-		stderrReader.start();
-		process.waitFor();
-		stdoutReader.join();
-		stderrReader.join();
+		runningProcesses.acquire();
+		Process process;
+		StreamReader stdoutReader;
+		StreamReader stderrReader;
+		try {
+			process = builder.start();
+			stdoutReader = new StreamReader(process.getInputStream());
+			stderrReader = new StreamReader(process.getErrorStream());
+			stdoutReader.start();
+			stderrReader.start();
+			process.waitFor();
+			stdoutReader.join();
+			stderrReader.join();
+		}
+		finally {
+			runningProcesses.release();
+		}
 
 		String output = stdoutReader.toString();
 		String errors = stderrReader.toString();

@@ -1,0 +1,673 @@
+/*
+ * Copyright (c) 2026-present WillBooster Inc. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+
+// Generates TypeScript for the ultra-parser runtime, which interprets the serialized ATN in
+// WebAssembly. Instead of parsing code, a parser holds the grammar's code as hooks that the runtime
+// reaches through ATN states: each rule function registers the hooks of its elements (actions,
+// labels, arguments, labeled alternatives) and declares its context classes.
+//
+// Args must be <object-model-object>, <fields-resulting-in-STs>.
+
+fileHeader(grammarFileName, ANTLRVersion) ::= <<
+// Generated from <grammarFileName> by ultra-parser. Do not edit.
+>>
+
+ParserFile(file, parser, namedActions, contextSuperClass) ::= <<
+<fileHeader(file.grammarFileName, file.ANTLRVersion)>
+
+import {
+<if(!file.parser.superClass)>
+	Parser,
+<endif>
+	type ParserHooks,
+	ParserRuleContext,
+<if(file.parser.tokenGetters)>
+	type TerminalNode,
+<endif>
+	Token,
+	type TokenStream,
+} from 'ultra-parser';
+<if(file.genListener)>
+import type { <file.grammarName>Listener } from './<file.grammarName>Listener.js';
+<endif>
+<if(file.genVisitor)>
+import type { <file.grammarName>Visitor } from './<file.grammarName>Visitor.js';
+<endif>
+
+<if(file.declaresInt)>
+// Grammars may declare arguments, return values, and locals with Java's int type.
+type int = number;
+<endif>
+
+<namedActions.header>
+<parser>
+>>
+
+ListenerFile(file, header, namedActions) ::= <<
+<fileHeader(file.grammarFileName, file.ANTLRVersion)>
+
+import type { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from 'ultra-parser';
+<header>
+<if(file.listenerNames)>
+import type {
+	<file.listenerNames:{lname | <lname; format="cap">Context,}; separator="\n">
+} from './<file.parserName>.js';
+<endif>
+
+<namedActions.beforeListener>
+
+/** A listener for parse trees produced by `<file.parserName>`. */
+export class <file.grammarName>Listener implements ParseTreeListener {
+	<file.listenerNames:{lname | <listenerMethods(file, lname)>}; separator="\n">
+	visitTerminal?(node: TerminalNode): void;
+	visitErrorNode?(node: ErrorNode): void;
+	enterEveryRule?(ctx: ParserRuleContext): void;
+	exitEveryRule?(ctx: ParserRuleContext): void;
+}
+
+<namedActions.afterListener>
+>>
+
+listenerMethods(file, lname) ::= <<
+/**
+<if(file.listenerLabelRuleNames.(lname))>
+ * Enter a parse tree produced by the `<lname>` labeled alternative in `<file.parserName>.<file.listenerLabelRuleNames.(lname)>`.
+<else>
+ * Enter a parse tree produced by `<file.parserName>.<lname>`.
+<endif>
+ */
+enter<lname; format="cap">?(ctx: <lname; format="cap">Context): void;
+/**
+<if(file.listenerLabelRuleNames.(lname))>
+ * Exit a parse tree produced by the `<lname>` labeled alternative in `<file.parserName>.<file.listenerLabelRuleNames.(lname)>`.
+<else>
+ * Exit a parse tree produced by `<file.parserName>.<lname>`.
+<endif>
+ */
+exit<lname; format="cap">?(ctx: <lname; format="cap">Context): void;
+>>
+
+VisitorFile(file, header, namedActions) ::= <<
+<fileHeader(file.grammarFileName, file.ANTLRVersion)>
+
+import { ParseTreeVisitor } from 'ultra-parser';
+<header>
+<if(file.visitorNames)>
+import type {
+	<file.visitorNames:{lname | <lname; format="cap">Context,}; separator="\n">
+} from './<file.parserName>.js';
+<endif>
+
+<namedActions.beforeVisitor>
+
+/**
+ * A visitor for parse trees produced by `<file.parserName>`.
+ *
+ * @param \<Result> The return type of the visit operation.
+ */
+export class <file.grammarName>Visitor\<Result> extends ParseTreeVisitor\<Result> {
+	<file.visitorNames:{lname | <visitorMethod(file, lname)>}; separator="\n">
+}
+
+<namedActions.afterVisitor>
+>>
+
+visitorMethod(file, lname) ::= <<
+/**
+<if(file.visitorLabelRuleNames.(lname))>
+ * Visit a parse tree produced by the `<lname>` labeled alternative in `<file.parserName>.<file.visitorLabelRuleNames.(lname)>`.
+<else>
+ * Visit a parse tree produced by `<file.parserName>.<lname>`.
+<endif>
+ */
+visit<lname; format="cap">?(ctx: <lname; format="cap">Context): Result;
+>>
+
+Parser(parser, funcs, atn, sempredFuncs, superClass) ::= <<
+<if(superClass)>
+import { <superClass> } from './<superClass>.js';
+
+<endif>
+export class <parser.name> extends <superClass; null="Parser"> {
+	<if(parser.tokens)>
+	<parser.tokens:{k | static readonly <k> = <parser.tokens.(k)>;}; separator="\n">
+	<endif>
+	static readonly EOF = Token.EOF;
+	<parser.rules:{r | static readonly RULE_<r.name> = <r.index>;}; separator="\n">
+
+	static readonly literalNames: (string | null)[] = [
+		<parser.literalNames:{t | <t>}; null="null", separator=", ", wrap>
+	];
+	static readonly symbolicNames: (string | null)[] = [
+		<parser.symbolicNames:{t | <t>}; null="null", separator=", ", wrap>
+	];
+	static readonly ruleNames: string[] = [
+		<parser.ruleNames:{r | "<r>"}; separator=", ", wrap>
+	];
+	<atn>
+
+	get grammarFileName(): string {
+		return "<parser.grammarFileName>";
+	}
+
+	get literalNames(): readonly (string | null)[] {
+		return <parser.name>.literalNames;
+	}
+
+	get symbolicNames(): readonly (string | null)[] {
+		return <parser.name>.symbolicNames;
+	}
+
+	get ruleNames(): readonly string[] {
+		return <parser.name>.ruleNames;
+	}
+
+	get serializedATN(): readonly number[] {
+		return <parser.name>._serializedATN;
+	}
+
+	<namedActions.members>
+
+	constructor(input: TokenStream) {
+		super(input);
+	}
+
+	<funcs:{f | <startRule(f)>}; separator="\n\n">
+<if(sempredFuncs)>
+
+	override sempred(localctx: ParserRuleContext | null, ruleIndex: number, predIndex: number): boolean {
+		switch (ruleIndex) {
+			<parser.sempredFuncs.values:{f | case <f.ruleIndex>:
+	return this.<f.name>_sempred(localctx as <f.ctxType>, predIndex);}; separator="\n">
+		}
+		return true;
+	}
+
+	<sempredFuncs.values; separator="\n\n">
+<endif>
+
+	protected static override registerHooks(h: ParserHooks): void {
+		<funcs; separator="\n">
+	}
+}
+
+<! The argument must be called currentRule because AltLabelStructDecl looks it up by name. !>
+<funcs:{currentRule |
+<if(currentRule.ruleCtx)>
+<currentRule.ruleCtx>
+<endif>
+<if(currentRule.altLabelCtxs)>
+
+<currentRule.altLabelCtxs:{l | <currentRule.altLabelCtxs.(l)>}; separator="\n\n">
+<endif>
+}; separator="\n\n">
+>>
+
+/** The method that parses the input from a rule. */
+startRule(f) ::= <<
+<if(f.currentRule.modifiers)><f.currentRule.modifiers:{m | <m> }><else>public <endif><f.currentRule.methodName>(<f.currentRule.args:{a | <a.escapedName>: <a.type>}; separator=", ">): <f.currentRule.ctxType> {
+	return this.enterStartRule(<parser.name>.RULE_<f.currentRule.name>, (parent, invokingState) =>
+		new <f.currentRule.ctxType>(this, parent, invokingState<f.currentRule.args:{a | , <a.escapedName>}>)
+	);
+}
+>>
+
+/** The signature of a hook, which runs with the parser as `this`. */
+hook(params) ::= "function (this: <parser.name><params:{p | , <p>}>)"
+
+RuleFunction(currentRule, args, code, ruleCtx, altLabelCtxs, namedActions, finallyAction) ::= <<
+<ruleHooks(currentRule, namedActions, finallyAction)>
+<code; separator="\n">
+>>
+
+LeftRecursiveRuleFunction(currentRule, args, code, ruleCtx, altLabelCtxs, namedActions, finallyAction) ::= <<
+<ruleHooks(currentRule, namedActions, finallyAction)>
+<code; separator="\n">
+>>
+
+ruleHooks(currentRule, namedActions, finallyAction) ::= <<
+h.context(<parser.name>.RULE_<currentRule.name>, <currentRule.ctxType>);
+<if(namedActions.init)>
+h.onInit(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
+	<namedActions.init>
+});
+<endif>
+<if(namedActions.after)>
+h.onAfter(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
+	<namedActions.after>
+});
+<endif>
+<if(finallyAction)>
+h.onFinally(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
+	<finallyAction>
+});
+<endif>
+<currentRule.altHooks:{a | <altHook(currentRule, a)>}; separator="\n">
+>>
+
+altHook(currentRule, a) ::= <<
+h.alt(<a.state>, <a.alt>, {
+	<if(a.ctxName)>
+	create: <hook({ctx: <currentRule.ctxType>})> {
+		return new <a.ctxName>(this, ctx);
+	},
+	<endif>
+	<if(a.altNumber)>
+	altNumber: <a.altNumber>,
+	<endif>
+	<if(a.previousLabel)>
+	previous: <hook({localctx: <currentRule.ctxType>, previous: <currentRule.ctxType>})> {
+		(localctx as <a.ctxName; null=currentRule.ctxType>)._<a.previousLabel><if(a.previousIsList)>.push(previous)<else> = previous<endif>;
+	},
+	<endif>
+});
+>>
+
+// Blocks and loops only hold the hooks of their alternatives.
+
+CodeBlockForOuterMostAlt(currentOuterMostAltCodeBlock, locals, preamble, ops) ::= <<
+<ops; separator="\n">
+>>
+
+CodeBlockForAlt(currentAltCodeBlock, locals, preamble, ops) ::= <<
+<ops; separator="\n">
+>>
+
+LL1AltBlock(choice, preamble, alts, error) ::= "<alts; separator=\"\n\">"
+LL1OptionalBlock(choice, alts, error) ::= "<alts; separator=\"\n\">"
+LL1OptionalBlockSingleAlt(choice, expr, alts, preamble, error, followExpr) ::= "<alts; separator=\"\n\">"
+LL1StarBlockSingleAlt(choice, loopExpr, alts, preamble, iteration) ::= "<alts; separator=\"\n\">"
+LL1PlusBlockSingleAlt(choice, loopExpr, alts, preamble, iteration) ::= "<alts; separator=\"\n\">"
+AltBlock(choice, preamble, alts, error) ::= "<alts; separator=\"\n\">"
+OptionalBlock(choice, alts, error) ::= "<alts; separator=\"\n\">"
+StarBlock(choice, alts, sync, iteration) ::= "<alts; separator=\"\n\">"
+PlusBlock(choice, alts, error) ::= "<alts; separator=\"\n\">"
+
+// The runtime syncs, predicts, and recovers.
+
+Sync(s) ::= ""
+ThrowNoViableAlt(t) ::= ""
+ThrowRecognitionException(t) ::= ""
+ThrowEarlyExitException(t) ::= ""
+TestSetInline(s) ::= ""
+CaptureNextToken(d) ::= ""
+CaptureNextTokenType(d) ::= ""
+ExceptionClause(e, catchArg, catchAction) ::= ""
+
+// Elements
+
+InvokeRule(r, argExprsChunks) ::= <<
+<if(argExprsChunks || r.labels)>
+h.invoke(
+	<r.stateNumber>,
+	<if(argExprsChunks)>
+	<hook({localctx: <currentRule.ctxType>, invokingState: number})> {
+		return new <r.ctxName>(this, localctx, invokingState, <argExprsChunks>);
+	},
+	<else>
+	undefined,
+	<endif>
+	<if(r.labels)>
+	<hook({localctx: <currentRule.ctxType>, child: <r.ctxName>})> {
+		<r.labels:{l | <labelref(l)> = child;}; separator="\n">
+	}
+	<endif>
+);
+<endif>
+>>
+
+MatchToken(m) ::= "<tokenLabels(m)>"
+
+MatchSet(m, expr, capture) ::= "<tokenLabels(m)>"
+
+MatchNotSet(m, expr, capture) ::= "<tokenLabels(m)>"
+
+Wildcard(w) ::= "<tokenLabels(w)>"
+
+tokenLabels(m) ::= <<
+<if(m.labels)>
+h.token(<m.stateNumber>, <hook({localctx: <currentRule.ctxType>, token: Token})> {
+	<m.labels:{l | <labelref(l)> = token;}; separator="\n">
+});
+<endif>
+>>
+
+AddToLabelList(a) ::= <<
+h.then(<hook({localctx: <currentRule.ctxType>})> {
+	<ctx(a.label)>._<a.listName>.push(<labelref(a.label)>);
+});
+>>
+
+// Actions
+
+Action(a, chunks) ::= "<chunks>"
+
+InlineAction(a, chunks) ::= <<
+<if(chunks)>
+h.action(<a.stateNumber>, <hook({localctx: <currentRule.ctxType>})> {
+	<chunks>
+});
+<endif>
+>>
+
+ArgAction(a, chunks) ::= "<chunks>"
+
+// Precedence predicates of left-recursive rules run in the runtime.
+SemPred(p, chunks, failChunks) ::= <<
+<if(p.ast.options.p)>
+<elseif(failChunks)>
+h.predicate(<p.predIndex>, <p.predicate>, <hook({localctx: <currentRule.ctxType>})> {
+	return (<failChunks>);
+});
+<elseif(p.msg)>
+h.predicate(<p.predIndex>, <p.predicate>, () => <p.msg>);
+<else>
+h.predicate(<p.predIndex>, <p.predicate>);
+<endif>
+>>
+
+RuleSempredFunction(r, actions) ::= <<
+private <r.name>_sempred(localctx: <r.ctxType>, predIndex: number): boolean {
+	switch (predIndex) {
+		<actions:{index | case <index>:
+	return (<actions.(index)>);}; separator="\n">
+	}
+	return true;
+}
+>>
+
+RuleActionFunction(r, actions) ::= <<
+private <r.name>_action(localctx: ParserRuleContext | null, actionIndex: number): void {
+	switch (actionIndex) {
+		<actions:{index | case <index>:
+	<actions.(index)>
+	break;}; separator="\n">
+	}
+}
+>>
+
+// Lexer actions, which are not model objects
+
+LexerSkipCommand() ::= "this.skip();"
+LexerMoreCommand() ::= "this.more();"
+LexerPopModeCommand() ::= "this.popMode();"
+LexerTypeCommand(arg, grammar) ::= "this._type = <arg>;"
+LexerChannelCommand(arg, grammar) ::= "this._channel = <arg>;"
+LexerModeCommand(arg, grammar) ::= "this.mode(<arg>);"
+LexerPushModeCommand(arg, grammar) ::= "this.pushMode(<arg>);"
+
+// Action chunks
+
+// The grammar's code, which CodeGenerator.tidy leaves as it is.
+ActionText(t) ::= "<\u0001><t.text><\u0002>"
+ActionTemplate(t) ::= "<t.st>"
+ArgRef(a) ::= "localctx.<a.escapedName>"
+LocalRef(a) ::= "localctx.<a.escapedName>"
+RetValueRef(a) ::= "localctx.<a.escapedName>"
+QRetValueRef(a) ::= "<ctx(a)>._<a.dict>.<a.escapedName>"
+/** How to translate $tokenLabel */
+TokenRef(t) ::= "<ctx(t)>._<t.escapedName>"
+LabelRef(t) ::= "<ctx(t)>._<t.escapedName>"
+ListLabelRef(t) ::= "<ctx(t)>._<ListLabelName(t.escapedName)>"
+SetAttr(s, rhsChunks) ::= "<ctx(s)>.<s.escapedName> = <rhsChunks>;"
+
+TokenLabelType() ::= "<file.TokenLabelType; null={Token}>"
+InputSymbolType() ::= "<file.InputSymbolType; null={Token}>"
+
+TokenPropertyRef_text(t) ::= "<ctx(t)>._<t.label>?.text"
+TokenPropertyRef_type(t) ::= "(<ctx(t)>._<t.label>?.type ?? 0)"
+TokenPropertyRef_line(t) ::= "(<ctx(t)>._<t.label>?.line ?? 0)"
+TokenPropertyRef_pos(t) ::= "(<ctx(t)>._<t.label>?.column ?? 0)"
+TokenPropertyRef_channel(t) ::= "(<ctx(t)>._<t.label>?.channel ?? 0)"
+TokenPropertyRef_index(t) ::= "(<ctx(t)>._<t.label>?.tokenIndex ?? 0)"
+TokenPropertyRef_int(t) ::= "(<ctx(t)>._<t.label> ? Number(<ctx(t)>._<t.label>.text) : 0)"
+
+RulePropertyRef_start(r) ::= "<ctx(r)>._<r.label>?.start"
+RulePropertyRef_stop(r) ::= "<ctx(r)>._<r.label>?.stop"
+RulePropertyRef_text(r) ::= "(<ctx(r)>._<r.label> ? this._input.getText(<ctx(r)>._<r.label>.start, <ctx(r)>._<r.label>.stop) : undefined)"
+RulePropertyRef_ctx(r) ::= "<ctx(r)>._<r.label>"
+RulePropertyRef_parser(r) ::= "this"
+
+ThisRulePropertyRef_start(r) ::= "localctx.start"
+ThisRulePropertyRef_stop(r) ::= "localctx.stop"
+ThisRulePropertyRef_text(r) ::= "this._input.getText(localctx.start, this._input.LT(-1))"
+ThisRulePropertyRef_ctx(r) ::= "localctx"
+ThisRulePropertyRef_parser(r) ::= "this"
+
+NonLocalAttrRef(s) ::= "(this.getInvokingContext(<s.ruleIndex>) as <s.ruleName; format=\"cap\">Context).<s.escapedName>"
+SetNonLocalAttr(s, rhsChunks) ::= "(this.getInvokingContext(<s.ruleIndex>) as <s.ruleName; format=\"cap\">Context).<s.escapedName> = <rhsChunks>;"
+
+// Declarations of context fields
+
+AttributeDecl(d) ::= "<d.escapedName><if(!d.initValue)>!<endif>: <d.type><if(d.initValue)> = <d.initValue><endif>"
+TokenDecl(t) ::= "_<t.escapedName>!: <TokenLabelType()>"
+TokenTypeDecl(t) ::= ""
+TokenListDecl(t) ::= "_<t.escapedName>: Token[] = []"
+RuleContextDecl(r) ::= "_<r.escapedName>!: <r.ctxName>"
+RuleContextListDecl(rdecl) ::= "_<rdecl.escapedName>: <rdecl.ctxName>[] = []"
+
+ContextTokenGetterDecl(t) ::= <<
+<t.escapedName>(): TerminalNode<if(t.optional)> | null<endif> {
+	return this.getToken(<parser.name>.<t.name>, 0)<if(!t.optional)>!<endif>;
+}
+>>
+
+ContextTokenListGetterDecl(t) ::= <<
+<t.escapedName>_list(): TerminalNode[] {
+	return this.getTokens(<parser.name>.<t.name>);
+}
+>>
+
+ContextTokenListIndexedGetterDecl(t) ::= <<
+<t.escapedName>(i: number): TerminalNode | null {
+	return this.getToken(<parser.name>.<t.name>, i);
+}
+>>
+
+ContextRuleGetterDecl(r) ::= <<
+<r.escapedName>(): <r.ctxName><if(r.optional)> | null<endif> {
+	return this.getRuleContext(<r.ctxName>, 0)<if(!r.optional)>!<endif>;
+}
+>>
+
+ContextRuleListGetterDecl(r) ::= <<
+<r.escapedName>_list(): <r.ctxName>[] {
+	return this.getRuleContexts(<r.ctxName>);
+}
+>>
+
+ContextRuleListIndexedGetterDecl(r) ::= <<
+<r.escapedName>(i: number): <r.ctxName> | null {
+	return this.getRuleContext(<r.ctxName>, i);
+}
+>>
+
+LexerRuleContext() ::= "ParserRuleContext"
+
+/** The rule context name is the rule followed by a suffix; e.g., r becomes rContext. */
+RuleContextNameSuffix() ::= "Context"
+
+ImplicitTokenLabel(tokenName) ::= "<tokenName>"
+ImplicitRuleLabel(ruleName) ::= "<ruleName>"
+ImplicitSetLabel(id) ::= "_tset<id>"
+ListLabelName(label) ::= "<label>"
+
+StructDecl(struct, ctorAttrs, attrs, getters, dispatchMethods, interfaces, extensionMembers) ::= <<
+export class <struct.escapedName> extends <contextSuperClass; null="ParserRuleContext"><if(interfaces)> implements <interfaces; separator=", "><endif> {
+	readonly parser: <parser.name> | undefined;
+	<attrs:{a | <a>;}; separator="\n">
+
+	constructor(parser?: <parser.name>, parent: ParserRuleContext | null = null, invokingState = -1<struct.ctorAttrs:{a | , <a.escapedName>?: <a.type>}>) {
+		super(parent, invokingState);
+		this.parser = parser;
+		<struct.ctorAttrs:{a | if (<a.escapedName> !== undefined) this.<a.escapedName> = <a.escapedName>;}; separator="\n">
+	}
+
+	<getters:{g | <g>}; separator="\n\n">
+
+	override get ruleIndex(): number {
+		return <parser.name>.RULE_<struct.derivedFromName>;
+	}
+<if(struct.provideCopyFrom)>
+
+	override copyFrom(ctx: <struct.name>): void {
+		super.copyFrom(ctx);
+		<struct.attrs:{a | this.<a.escapedName> = ctx.<a.escapedName>;}; separator="\n">
+	}
+<endif>
+
+	<dispatchMethods; separator="\n\n">
+	<extensionMembers; separator="\n">
+}
+>>
+
+AltLabelStructDecl(struct, attrs, getters, dispatchMethods) ::= <<
+export class <struct.escapedName> extends <struct.parentRule; format="cap">Context {
+	<attrs:{a | <a>;}; separator="\n">
+
+	constructor(parser: <parser.name> | undefined, ctx: <struct.parentRule; format="cap">Context) {
+		super(parser, ctx.parent, ctx.invokingState<currentRule.ruleCtx.ctorAttrs:{a | , ctx.<a.d.escapedName>}>);
+		this.copyFrom(ctx);
+	}
+
+	<getters:{g | <g>}; separator="\n\n">
+
+	<dispatchMethods; separator="\n\n">
+}
+>>
+
+ListenerDispatchMethod(method) ::= <<
+override <if(method.isEnter)>enter<else>exit<endif>Rule(listener: <parser.grammarName>Listener): void {
+	listener.<if(method.isEnter)>enter<else>exit<endif><struct.derivedFromName; format="cap">?.(this);
+}
+>>
+
+VisitorDispatchMethod(method) ::= <<
+override accept\<Result>(visitor: <parser.grammarName>Visitor\<Result>): Result {
+	return visitor.visit<struct.derivedFromName; format="cap"> ? visitor.visit<struct.derivedFromName; format="cap">(this) : visitor.visitChildren(this);
+}
+>>
+
+/** If we don't know location of label def x, use this template */
+labelref(x) ::= "<if(!x.isLocal)><typedContext(x.ctx)>.<endif>_<x.escapedName>"
+
+/** For any action chunk, what is correctly-typed context struct ptr? */
+ctx(actionChunk) ::= "<typedContext(actionChunk.ctx)>"
+
+// Casts localctx only to the context of a labeled alternative.
+typedContext(ctx) ::= "<if(ctx.provideCopyFrom)>(localctx as <ctx.name>)<else>localctx<endif>"
+
+// Used when rewriting left-recursive rules; the runtime evaluates the resulting precedence
+// predicates, so the text only shows up in error messages.
+recRuleAltPredicate(ruleName, opPrec) ::= "this.precpred(localctx, <opPrec>)"
+recRuleSetReturnAction(src, name) ::= "$<name>=$<src>.<name>;"
+
+LexerFile(lexerFile, lexer, namedActions) ::= <<
+<fileHeader(lexerFile.grammarFileName, lexerFile.ANTLRVersion)>
+
+import { type CharStream, <if(!lexer.superClass)>Lexer, <endif><if(lexer.actionFuncs || lexer.sempredFuncs)>type ParserRuleContext, <endif>Token } from 'ultra-parser';
+
+<namedActions.header>
+<lexer>
+>>
+
+Lexer(lexer, atn, actionFuncs, sempredFuncs, superClass) ::= <<
+<if(superClass)>
+import { <superClass> } from './<superClass>.js';
+
+<endif>
+export class <lexer.name> extends <superClass; null="Lexer"> {
+	<if(lexer.tokens)>
+	<lexer.tokens:{k | static readonly <k> = <lexer.tokens.(k)>;}; separator="\n">
+	<endif>
+	static readonly EOF = Token.EOF;
+	<if(lexer.escapedChannels)>
+	<lexer.escapedChannels:{c | static readonly <c> = <lexer.escapedChannels.(c)>;}; separator="\n">
+	<endif>
+	<rest(lexer.escapedModeNames):{m | static readonly <m> = <i>;}; separator="\n">
+
+	static readonly channelNames: string[] = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"<lexer.channelNames:{c | , "<c>"}>];
+	static readonly literalNames: (string | null)[] = [
+		<lexer.literalNames:{t | <t>}; null="null", separator=", ", wrap>
+	];
+	static readonly symbolicNames: (string | null)[] = [
+		<lexer.symbolicNames:{t | <t>}; null="null", separator=", ", wrap>
+	];
+	static readonly modeNames: string[] = [
+		<lexer.modes:{m | "<m>"}; separator=", ", wrap>
+	];
+	static readonly ruleNames: string[] = [
+		<lexer.ruleNames:{r | "<r>"}; separator=", ", wrap>
+	];
+	<atn>
+
+	<namedActions.members>
+
+	constructor(input: CharStream) {
+		super(input);
+	}
+
+	get grammarFileName(): string {
+		return "<lexer.grammarFileName>";
+	}
+
+	get literalNames(): readonly (string | null)[] {
+		return <lexer.name>.literalNames;
+	}
+
+	get symbolicNames(): readonly (string | null)[] {
+		return <lexer.name>.symbolicNames;
+	}
+
+	get ruleNames(): readonly string[] {
+		return <lexer.name>.ruleNames;
+	}
+
+	get serializedATN(): readonly number[] {
+		return <lexer.name>._serializedATN;
+	}
+
+	get channelNames(): readonly string[] {
+		return <lexer.name>.channelNames;
+	}
+
+	get modeNames(): readonly string[] {
+		return <lexer.name>.modeNames;
+	}
+<if(actionFuncs)>
+
+	override action(localctx: ParserRuleContext | null, ruleIndex: number, actionIndex: number): void {
+		switch (ruleIndex) {
+			<lexer.actionFuncs.values:{f | case <f.ruleIndex>:
+	this.<f.name>_action(localctx, actionIndex);
+	break;}; separator="\n">
+		}
+	}
+
+	<actionFuncs.values; separator="\n\n">
+<endif>
+<if(sempredFuncs)>
+
+	override sempred(localctx: ParserRuleContext | null, ruleIndex: number, predIndex: number): boolean {
+		switch (ruleIndex) {
+			<lexer.sempredFuncs.values:{f | case <f.ruleIndex>:
+	return this.<f.name>_sempred(localctx, predIndex);}; separator="\n">
+		}
+		return true;
+	}
+
+	<sempredFuncs.values; separator="\n\n">
+<endif>
+}
+>>
+
+SerializedATN(model) ::= <<
+static readonly _serializedATN: readonly number[] = [
+	<model.serialized; separator=",", wrap>
+];
+>>
+
+codeFileExtension() ::= ".ts"

@@ -3,7 +3,7 @@
 //! The analysis follows rule invocation stacks as deep as the input is nested, so it runs on an
 //! explicit work list instead of recursing, and it interns the stacks so that each one is an id.
 
-use std::collections::{HashMap, HashSet};
+use crate::hash::{FxHashMap, FxHashSet};
 
 use crate::atn::{Atn, StateKind, Transition};
 use crate::interval_set::IntervalSet;
@@ -30,7 +30,7 @@ const EMPTY_STACK: usize = 0;
 struct Stacks {
     /// The parent stack and follow state of each node; entry 0 is the empty stack.
     nodes: Vec<(usize, usize)>,
-    ids: HashMap<(usize, usize), usize>,
+    ids: FxHashMap<(usize, usize), usize>,
 }
 
 impl Stacks {
@@ -68,14 +68,14 @@ enum Work {
 fn analyze(atn: &Atn, state: usize, follow_states: &[usize], in_context: bool) -> IntervalSet {
     let mut stacks = Stacks {
         nodes: vec![(EMPTY_STACK, 0)],
-        ids: HashMap::new(),
+        ids: FxHashMap::default(),
     };
     let mut stack = EMPTY_STACK;
     for &follow_state in follow_states.iter().rev() {
         stack = stacks.push(stack, follow_state);
     }
     let mut look = IntervalSet::new();
-    let mut busy = HashSet::new();
+    let mut busy = FxHashSet::default();
     let mut called_rules = vec![false; atn.rule_to_start_state.len()];
     // Items are pushed in reverse so that they run in the order ANTLR's recursion visits them;
     // the order matters because `busy` keeps the first visit of each state and stack.

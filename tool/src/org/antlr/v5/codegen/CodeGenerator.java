@@ -9,22 +9,18 @@ package org.antlr.v5.codegen;
 import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.model.OutputModelObject;
 import org.antlr.v5.runtime.core.Token;
-import org.antlr.v5.runtime.core.atn.ATNSerializer;
 import org.antlr.v5.tool.ErrorType;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.LexerGrammar;
-import org.antlr.v5.tool.Rule;
 import org.stringtemplate.v4.AutoIndentWriter;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STWriter;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,57 +109,6 @@ public class CodeGenerator {
 	public ST generateBaseVisitor() { return generateBaseVisitor(false); }
 	public ST generateBaseVisitor(boolean header) { return walk(createController().buildBaseVisitorOutputModel(header), header); }
 
-	/**
-	 * Generate the recognizer file of a target whose runtime interprets the ATN (see
-	 * {@link Target#isATNInterpreted()}) from its {@code RecognizerFile} template.
-	 */
-	public ST generateInterpretedRecognizer() {
-		ST st = getTemplates().getInstanceOf("RecognizerFile");
-		st.add("grammarFileName", g.fileName.substring(Math.max(g.fileName.lastIndexOf('/'), g.fileName.lastIndexOf('\\')) + 1));
-		st.add("recognizerName", g.getRecognizerName());
-		st.add("serializedATN", ATNSerializer.Companion.getSerialized(g.atn).toArray());
-		st.add("ruleNames", toTargetStringLiterals(Arrays.asList(g.getRuleNames())));
-		st.add("literalNames", toTargetStringLiterals(Arrays.asList(g.getTokenLiteralNames())));
-		st.add("symbolicNames", toTargetStringLiterals(Arrays.asList(g.getTokenSymbolicNames())));
-		if ( g.isLexer() ) {
-			List<String> channelNames = new ArrayList<>(Arrays.asList("DEFAULT_TOKEN_CHANNEL", "HIDDEN"));
-			channelNames.addAll(g.channelNameToValueMap.keySet());
-			st.add("channelNames", toTargetStringLiterals(channelNames));
-			st.add("modeNames", toTargetStringLiterals(((LexerGrammar)g).modes.keySet()));
-		}
-		Map<String,Integer> tokens = new LinkedHashMap<>();
-		for (Map.Entry<String, Integer> entry : g.tokenNameToTypeMap.entrySet()) {
-			if ( entry.getValue()>=Token.MIN_USER_TOKEN_TYPE ) {
-				tokens.put(entry.getKey(), entry.getValue());
-			}
-		}
-		st.add("tokens", toTargetConstants(tokens));
-		Map<String,Integer> rules = new LinkedHashMap<>();
-		for (Rule r : g.rules.values()) {
-			rules.put(r.name, r.index);
-		}
-		st.add("rules", toTargetConstants(rules));
-		return st;
-	}
-
-	/** Rekeys {@code values} by the target's constant names for their keys. */
-	private Map<String,Integer> toTargetConstants(Map<String,Integer> values) {
-		Map<String,String> constantNames = target.getConstantNames(values.keySet());
-		Map<String,Integer> constants = new LinkedHashMap<>();
-		for (Map.Entry<String,Integer> entry : values.entrySet()) {
-			constants.put(constantNames.get(entry.getKey()), entry.getValue());
-		}
-		return constants;
-	}
-
-	private List<String> toTargetStringLiterals(Collection<String> strings) {
-		List<String> literals = new ArrayList<>(strings.size());
-		for (String s : strings) {
-			literals.add(target.getTargetStringLiteralFromString(s, true));
-		}
-		return literals;
-	}
-
 	/** Generate a token vocab file with all the token names/types.  For example:
 	 *  ID=7
 	 *  FOR=8
@@ -227,20 +172,93 @@ public class CodeGenerator {
 	}
 
 	public void write(ST code, String fileName) {
-		try {
-//			long start = System.currentTimeMillis();
-			Writer w = tool.getOutputFileWriter(g, fileName);
-			STWriter wr = new AutoIndentWriter(w);
+		try (Writer w = tool.getOutputFileWriter(g, fileName)) {
+			StringWriter buf = new StringWriter();
+			STWriter wr = new GrammarCodeWriter(buf);
 			wr.setLineWidth(lineWidth);
 			code.write(wr);
-			w.close();
-//			long stop = System.currentTimeMillis();
+			w.write(tidy(buf.toString()));
 		}
 		catch (IOException ioe) {
 			tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE,
 								  ioe,
 								  fileName);
 		}
+	}
+
+	/** Indents templates' output except the grammar's code, whose whitespace may be significant. */
+	public static class GrammarCodeWriter extends AutoIndentWriter {
+		private boolean inGrammarCode;
+
+		public GrammarCodeWriter(Writer out) {
+			super(out);
+		}
+
+		@Override
+		public int write(String str) throws IOException {
+			int n = 0;
+			int from = 0;
+			for (int i = 0; i < str.length(); i++) {
+				char c = str.charAt(i);
+				if (c == GRAMMAR_CODE_START || c == GRAMMAR_CODE_END) {
+					n += super.write(str.substring(from, i + 1));
+					from = i + 1;
+					inGrammarCode = c == GRAMMAR_CODE_START;
+				}
+			}
+			return n + super.write(str.substring(from));
+		}
+
+		@Override
+		public int indent() throws IOException {
+			return inGrammarCode ? 0 : super.indent();
+		}
+	}
+
+	/** Starts the grammar's code in templates' output, which {@link #tidy} leaves as it is. */
+	public static final char GRAMMAR_CODE_START = '\u0001';
+	/** Ends the grammar's code in templates' output. */
+	public static final char GRAMMAR_CODE_END = '\u0002';
+
+	/**
+	 * Removes the blank lines that templates leave where parts render nothing: trailing
+	 * whitespace, runs of blank lines, and blank lines at the start or end of a block. The
+	 * grammar's code, which templates enclose in {@link #GRAMMAR_CODE_START} and
+	 * {@link #GRAMMAR_CODE_END}, keeps its whitespace, and the markers are removed.
+	 */
+	public static String tidy(String code) {
+		List<String> grammarCode = new ArrayList<>();
+		StringBuilder template = new StringBuilder();
+		int i = 0;
+		while (i < code.length()) {
+			int start = code.indexOf(GRAMMAR_CODE_START, i);
+			int end = start < 0 ? -1 : code.indexOf(GRAMMAR_CODE_END, start);
+			if (end < 0) {
+				template.append(code, i, code.length());
+				break;
+			}
+			template.append(code, i, start).append(GRAMMAR_CODE_START).append(grammarCode.size()).append(GRAMMAR_CODE_END);
+			grammarCode.add(code.substring(start + 1, end));
+			i = end + 1;
+		}
+		String tidied = template.toString()
+			.replaceAll("(?m)[ \\t]+$", "")
+			.replaceAll("\n{3,}", "\n\n")
+			.replaceAll("([{(\\[])\n\n", "$1\n")
+			.replaceAll("\n\n(\t*[})\\]])", "\n$1");
+		StringBuilder result = new StringBuilder();
+		i = 0;
+		while (i < tidied.length()) {
+			int start = tidied.indexOf(GRAMMAR_CODE_START, i);
+			if (start < 0) {
+				result.append(tidied, i, tidied.length());
+				break;
+			}
+			int end = tidied.indexOf(GRAMMAR_CODE_END, start);
+			result.append(tidied, i, start).append(grammarCode.get(Integer.parseInt(tidied.substring(start + 1, end))));
+			i = end + 1;
+		}
+		return result.toString();
 	}
 
 	public String getRecognizerFileName() { return getRecognizerFileName(false); }

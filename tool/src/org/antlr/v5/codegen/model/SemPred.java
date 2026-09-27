@@ -40,8 +40,13 @@ public class SemPred extends Action {
 	 */
 	@ModelElement public List<ActionChunk> failChunks;
 
+	/** The index of the predicate in the grammar, as the ATN refers to it. */
+	public int predIndex;
+
 	public SemPred(OutputModelFactory factory, ActionAST ast) {
 		super(factory,ast);
+		Integer index = factory.getGrammar().sempreds.get(ast);
+		predIndex = index != null ? index : -1;
 
 		assert ast.atnState != null
 			&& ast.atnState.getNumberOfTransitions() == 1

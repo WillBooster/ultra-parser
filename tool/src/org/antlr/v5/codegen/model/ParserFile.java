@@ -9,9 +9,13 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.model.chunk.ActionChunk;
 import org.antlr.v5.codegen.model.chunk.ActionText;
+import org.antlr.v5.tool.Attribute;
+import org.antlr.v5.tool.AttributeDict;
 import org.antlr.v5.tool.Grammar;
+import org.antlr.v5.tool.Rule;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /** */
 public class ParserFile extends OutputFile {
@@ -23,6 +27,10 @@ public class ParserFile extends OutputFile {
 	@ModelElement public Map<String, Action> namedActions;
 	@ModelElement public ActionChunk contextSuperClass;
 	public String grammarName;
+	/** Whether rule arguments, return values, or locals have the `int` type, which the file declares. */
+	public boolean declaresInt;
+
+	private static final Pattern INT = Pattern.compile("\\bint\\b");
 
 	public ParserFile(OutputModelFactory factory, String fileName) {
 		super(factory, fileName);
@@ -34,6 +42,14 @@ public class ParserFile extends OutputFile {
 		genListener = g.tool.gen_listener;
 		genVisitor = g.tool.gen_visitor;
 		grammarName = g.name;
+		for (Rule r : g.rules.values()) {
+			for (AttributeDict dict : new AttributeDict[] {r.args, r.retvals, r.locals}) {
+				if (dict == null) continue;
+				for (Attribute a : dict.attributes.values()) {
+					declaresInt |= a.type != null && INT.matcher(a.type).find();
+				}
+			}
+		}
 
 		if (g.getOptionString("contextSuperClass") != null) {
 			contextSuperClass = new ActionText(null, g.getOptionString("contextSuperClass"));

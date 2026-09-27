@@ -1,0 +1,292 @@
+// Like Java, print null for missing values.
+writeln(s) ::= <<console.log(((v: unknown) => String(v ?? null))(<s>));>>
+write(s) ::= <<process.stdout.write(((v: unknown) => String(v ?? null))(<s>));>>
+writeList(s) ::= <<console.log(<s; separator="+">);>>
+
+False() ::= "false"
+
+True() ::= "true"
+
+Not(v) ::= "!<v>"
+
+Assert(s) ::= <<if (!(<s>)) throw new Error("assertion failed");>>
+
+Cast(t,v) ::= "(<v> as <t>)"
+
+Append(a,b) ::= "<a> + <b>"
+
+AppendStr(a,b) ::= <%<Append(a,b)>%>
+
+Concat(a,b) ::= "<a><b>"
+
+AssertIsList(v) ::= <%if (!Array.isArray(<v>)) { throw new Error('value is not an array'); }%>
+
+AssignLocal(s,v) ::= "<s> = <v>;"
+
+InitIntMember(n,v) ::= <%<n>: number = <v>;%>
+
+InitBooleanMember(n,v) ::= <%<n>: boolean = <v>;%>
+
+InitIntVar(n,v) ::= <%let <n>: number = <v>;%>
+
+IntArg(n) ::= "<n>: number"
+
+// Grammar code refers to rule arguments as attributes, since hooks are functions of their own.
+VarRef(n) ::= "$<n>"
+
+GetMember(n) ::= <%this.<n>%>
+
+SetMember(n,v) ::= <%this.<n> = <v>;%>
+
+AddMember(n,v) ::= <%this.<n> += <v>;%>
+
+MemberEquals(n,v) ::= <%this.<n> === <v>%>
+
+ModMemberEquals(n,m,v) ::= <%this.<n> % <m> === <v>%>
+
+ModMemberNotEquals(n,m,v) ::= <%this.<n> % <m> !== <v>%>
+
+// The runtime keeps no DFA; tests that dump it are skipped.
+DumpDFA() ::= ""
+
+Pass() ::= ""
+
+StringList() ::= "string[]"
+
+BuildParseTrees() ::= "this.buildParseTrees = true;"
+
+// Generated parsers import only what they need, and Bun runs tests without a bundler.
+BailErrorStrategy() ::= <%this._errHandler = new (require('ultra-parser').BailErrorStrategy)();%>
+
+ToStringTree(s) ::= <%<s>.toStringTree(this)%>
+
+Column() ::= "this.column"
+
+Text() ::= "this.text"
+
+ValEquals(a,b) ::= <%<a> === <b>%>
+
+TextEquals(a) ::= <%this.text === "<a>"%>
+
+PlusText(a) ::= <%"<a>" + this.text%>
+
+InputText() ::= "this._input.getText()"
+
+LTEquals(i, v) ::= <%this._input.LT(<i>)?.text === <v>%>
+
+LANotEquals(i, v) ::= <%this._input.LA(<i>) !== <v>%>
+
+TokenStartColumnEquals(i) ::= <%this._tokenStartColumn === <i>%>
+
+ImportListener(X) ::= ""
+
+GetExpectedTokenNames() ::= "this.getExpectedTokens().toString(this.vocabulary)"
+
+ImportRuleInvocationStack() ::= ""
+
+RuleInvocationStack() ::= "`[${this.getRuleInvocationStack().join(', ')}]`"
+
+LL_EXACT_AMBIG_DETECTION() ::= <<this.predictionMode = require('ultra-parser').PredictionMode.LL_EXACT_AMBIG_DETECTION;>>
+
+ParserToken(parser, token) ::= <%<parser>.<token>%>
+
+Production(p) ::= <%<p>%>
+
+Result(r) ::= <%<r>%>
+
+ParserPropertyMember() ::= <<
+@members {
+Property(): boolean {
+	return true;
+}
+}
+>>
+
+ParserPropertyCall(p, call) ::= "<p>.<call>"
+
+PositionAdjustingLexerDef() ::= ""
+
+PositionAdjustingLexer() ::= <<
+
+resetAcceptPosition(index: number, line: number, column: number): void {
+	this._input.seek(index);
+	this.line = line;
+	this.column = column;
+	if (this._input.LA(1) === 10) {
+		this.line++;
+		this.column = 0;
+	} else {
+		this.column++;
+	}
+	this._input.consume();
+}
+
+override emit(): Token {
+	switch (this._type) {
+	case PositionAdjustingLexer.TOKENS:
+		this.handleAcceptPositionForKeyword('tokens');
+		break;
+	case PositionAdjustingLexer.LABEL:
+		this.handleAcceptPositionForIdentifier();
+		break;
+	}
+	return super.emit();
+}
+
+handleAcceptPositionForIdentifier(): boolean {
+	const tokenText = this.text;
+	let identifierLength = 0;
+	while (identifierLength \< tokenText.length && /^[0-9a-zA-Z_]$/.test(tokenText[identifierLength] ?? '')) {
+		identifierLength++;
+	}
+	if (this._input.index > this._tokenStartCharIndex + identifierLength) {
+		const offset = identifierLength - 1;
+		this.resetAcceptPosition(this._tokenStartCharIndex + offset, this._tokenStartLine, this._tokenStartColumn + offset);
+		return true;
+	}
+	return false;
+}
+
+handleAcceptPositionForKeyword(keyword: string): boolean {
+	if (this._input.index > this._tokenStartCharIndex + keyword.length) {
+		const offset = keyword.length - 1;
+		this.resetAcceptPosition(this._tokenStartCharIndex + offset, this._tokenStartLine, this._tokenStartColumn + offset);
+		return true;
+	}
+	return false;
+}
+
+>>
+
+BasicListener(X) ::= <<
+@parser::header {
+import { ParseTreeWalker } from 'ultra-parser';
+
+class LeafListener {
+	visitTerminal(node: TerminalNode): void {
+		console.log(node.symbol.text);
+	}
+}
+}
+>>
+
+WalkListener(s) ::= <<
+ParseTreeWalker.DEFAULT.walk(new LeafListener(), <s>);
+>>
+
+TreeNodeWithAltNumField(X) ::= <<
+@parser::header {
+class MyRuleNode extends ParserRuleContext {
+	altNum = 0;
+
+	override getAltNumber(): number {
+		return this.altNum;
+	}
+
+	override setAltNumber(altNum: number): void {
+		this.altNum = altNum;
+	}
+}
+}
+>>
+
+TokenGetterListener(X) ::= <<
+@parser::header {
+import { ParseTreeWalker } from 'ultra-parser';
+import { <X>Listener as <X>ListenerBase } from './<X>Listener.js';
+
+class LeafListener extends <X>ListenerBase {
+	exitA(ctx: AContext): void {
+		if (ctx.getChildCount() === 2) {
+			console.log(`${ctx.INT(0)!.symbol.text} ${ctx.INT(1)!.symbol.text} [${ctx.INT_list().join(', ')}]`);
+		} else {
+			console.log(String(ctx.ID()!.symbol));
+		}
+	}
+}
+}
+>>
+
+RuleGetterListener(X) ::= <<
+@parser::header {
+import { ParseTreeWalker } from 'ultra-parser';
+import { <X>Listener as <X>ListenerBase } from './<X>Listener.js';
+
+class LeafListener extends <X>ListenerBase {
+	exitA(ctx: AContext): void {
+		if (ctx.getChildCount() === 2) {
+			console.log(`${ctx.b(0)!.start!.text} ${ctx.b(1)!.start!.text} ${ctx.b_list()[0]!.start!.text}`);
+		} else {
+			console.log(ctx.b(0)!.start!.text);
+		}
+	}
+}
+}
+>>
+
+LRListener(X) ::= <<
+@parser::header {
+import { ParseTreeWalker } from 'ultra-parser';
+import { <X>Listener as <X>ListenerBase } from './<X>Listener.js';
+
+class LeafListener extends <X>ListenerBase {
+	exitE(ctx: EContext): void {
+		if (ctx.getChildCount() === 3) {
+			console.log(`${ctx.e(0)!.start!.text} ${ctx.e(1)!.start!.text} ${ctx.e_list()[0]!.start!.text}`);
+		} else {
+			console.log(ctx.INT()!.symbol.text);
+		}
+	}
+}
+}
+>>
+
+LRWithLabelsListener(X) ::= <<
+@parser::header {
+import { ParseTreeWalker } from 'ultra-parser';
+import { <X>Listener as <X>ListenerBase } from './<X>Listener.js';
+
+class LeafListener extends <X>ListenerBase {
+	exitCall(ctx: CallContext): void {
+		console.log(`${ctx.e().start!.text} ${ctx.eList()}`);
+	}
+
+	exitInt(ctx: IntContext): void {
+		console.log(ctx.INT().symbol.text);
+	}
+}
+}
+>>
+
+DeclareContextListGettersFunction() ::= <<
+foo(): void {
+	const s = new SContext(this);
+	const a = s.a_list();
+	const b = s.b_list();
+}
+>>
+
+Declare_foo() ::= <<
+foo(): void {
+	console.log('foo');
+}
+>>
+
+Invoke_foo() ::= "this.foo();"
+
+Declare_pred() ::= <<
+pred(v: boolean): boolean {
+	console.log('eval=' + v);
+	return v;
+}
+>>
+
+Invoke_pred(v) ::= <<this.pred(<v>)>>
+
+ParserTokenType(t) ::= "Parser.<t>"
+ContextRuleFunction(ctx, rule) ::= "<ctx>.<rule>"
+ContextListFunction(ctx, rule) ::= "<ctx>.<rule>_list()"
+StringType() ::= "string | undefined"
+ContextMember(ctx, member) ::= "<ctx>._<member>"
+SubContextLocal(ctx, subctx, local) ::= "<ctx>.<subctx>.<local>"
+SubContextMember(ctx, subctx, member) ::= "<ctx>.<subctx>._<member>"

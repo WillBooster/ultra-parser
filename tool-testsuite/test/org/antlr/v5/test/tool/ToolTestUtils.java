@@ -9,19 +9,15 @@ package org.antlr.v5.test.tool;
 import org.antlr.v5.Tool;
 import org.antlr.v5.automata.LexerATNFactory;
 import org.antlr.v5.automata.ParserATNFactory;
-import org.antlr.v5.runtime.java.CharStreams;
-import org.antlr.v5.runtime.core.CharStream;
-import org.antlr.v5.runtime.core.Lexer;
 import org.antlr.v5.runtime.core.Token;
 import org.antlr.v5.runtime.core.atn.ATN;
 import org.antlr.v5.runtime.core.atn.ATNDeserializer;
 import org.antlr.v5.runtime.core.atn.ATNSerializer;
-import org.antlr.v5.runtime.core.atn.LexerATNSimulator;
 import org.antlr.v5.runtime.core.misc.IntegerList;
 import org.antlr.v5.semantics.SemanticPipeline;
 import org.antlr.v5.test.runtime.*;
 import org.antlr.v5.test.runtime.PredictionMode;
-import org.antlr.v5.test.runtime.java.JavaRunner;
+import org.antlr.v5.test.runtime.typescript.TypeScriptRunner;
 import org.antlr.v5.test.runtime.states.ExecutedState;
 import org.antlr.v5.test.runtime.states.GeneratedState;
 import org.antlr.v5.test.runtime.states.State;
@@ -62,10 +58,10 @@ public class ToolTestUtils {
 	private static ExecutedState execRecognizer(String grammarStr, String startRuleName,
 										 String input, boolean showDiagnosticErrors,
 										 Path workingDir, boolean saveTestDir, boolean profile) {
-		RunOptions runOptions = createExecOptionsForJavaToolTests(grammarStr,
+		RunOptions runOptions = createExecOptions(grammarStr,
 				false, true, startRuleName, input,
 				profile, showDiagnosticErrors);
-		try (JavaRunner runner = new JavaRunner(workingDir, saveTestDir)) {
+		try (TypeScriptRunner runner = new TypeScriptRunner(workingDir, saveTestDir)) {
 			State result = runner.run(runOptions);
 			if (!(result instanceof ExecutedState)) {
 				fail(result.getErrorMessage());
@@ -74,7 +70,7 @@ public class ToolTestUtils {
 		}
 	}
 
-	public static RunOptions createExecOptionsForJavaToolTests(
+	public static RunOptions createExecOptions(
 			String grammarStr,
 			boolean useListener, boolean useVisitor, String startRuleName,
 			String input, boolean profile, boolean showDiagnosticErrors
@@ -177,16 +173,5 @@ public class ToolTestUtils {
 				}
 			}
 		}
-	}
-
-	public static IntegerList getTokenTypesViaATN(String input, LexerATNSimulator lexerATN) {
-		CharStream in = CharStreams.fromString(input);
-		IntegerList tokenTypes = new IntegerList();
-		int ttype;
-		do {
-			ttype = lexerATN.match(in, Lexer.DEFAULT_MODE);
-			tokenTypes.add(ttype);
-		} while ( ttype!= Token.EOF );
-		return tokenTypes;
 	}
 }

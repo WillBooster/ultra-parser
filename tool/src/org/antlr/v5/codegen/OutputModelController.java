@@ -7,16 +7,13 @@
 package org.antlr.v5.codegen;
 
 import org.antlr.runtime.tree.CommonTreeNodeStream;
-import org.antlr.v5.analysis.LeftRecursiveRuleAltInfo;
 import org.antlr.v5.codegen.model.Action;
-import org.antlr.v5.codegen.model.AltBlock;
 import org.antlr.v5.codegen.model.BaseListenerFile;
 import org.antlr.v5.codegen.model.BaseVisitorFile;
 import org.antlr.v5.codegen.model.Choice;
 import org.antlr.v5.codegen.model.CodeBlockForAlt;
 import org.antlr.v5.codegen.model.CodeBlockForOuterMostAlt;
 import org.antlr.v5.codegen.model.LabeledOp;
-import org.antlr.v5.codegen.model.LeftRecursiveRuleFunction;
 import org.antlr.v5.codegen.model.Lexer;
 import org.antlr.v5.codegen.model.LexerFile;
 import org.antlr.v5.codegen.model.ListenerFile;
@@ -27,23 +24,17 @@ import org.antlr.v5.codegen.model.RuleActionFunction;
 import org.antlr.v5.codegen.model.RuleFunction;
 import org.antlr.v5.codegen.model.RuleSempredFunction;
 import org.antlr.v5.codegen.model.SrcOp;
-import org.antlr.v5.codegen.model.StarBlock;
 import org.antlr.v5.codegen.model.VisitorFile;
 import org.antlr.v5.codegen.model.decl.CodeBlock;
-import org.antlr.v5.misc.Utils;
 import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.parse.GrammarASTAdaptor;
 import org.antlr.v5.tool.Alternative;
-import org.antlr.v5.tool.ErrorType;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.LeftRecursiveRule;
 import org.antlr.v5.tool.Rule;
 import org.antlr.v5.tool.ast.ActionAST;
 import org.antlr.v5.tool.ast.BlockAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 import org.antlr.v5.tool.ast.PredAST;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -160,13 +151,7 @@ public class OutputModelController {
 		pushCurrentRule(function);
 		function.fillNamedActions(delegate, r);
 
-		if ( r instanceof LeftRecursiveRule ) {
-			buildLeftRecursiveRuleFunction((LeftRecursiveRule)r,
-										   (LeftRecursiveRuleFunction)function);
-		}
-		else {
-			buildNormalRuleFunction(r, function);
-		}
+		buildNormalRuleFunction(r, function);
 
 		Grammar g = getGrammar();
 		for (ActionAST a : r.actions) {
@@ -182,91 +167,6 @@ public class OutputModelController {
 		}
 
 		popCurrentRule();
-	}
-
-	public void buildLeftRecursiveRuleFunction(LeftRecursiveRule r, LeftRecursiveRuleFunction function) {
-		buildNormalRuleFunction(r, function);
-
-		// now inject code to start alts
-		CodeGenerator gen = delegate.getGenerator();
-		STGroup codegenTemplates = gen.getTemplates();
-
-		// pick out alt(s) for primaries
-		CodeBlockForOuterMostAlt outerAlt = (CodeBlockForOuterMostAlt)function.code.get(0);
-		List<CodeBlockForAlt> primaryAltsCode = new ArrayList<CodeBlockForAlt>();
-		SrcOp primaryStuff = outerAlt.ops.get(0);
-		if ( primaryStuff instanceof Choice ) {
-			Choice primaryAltBlock = (Choice) primaryStuff;
-			primaryAltsCode.addAll(primaryAltBlock.alts);
-		}
-		else { // just a single alt I guess; no block
-			primaryAltsCode.add((CodeBlockForAlt)primaryStuff);
-		}
-
-		// pick out alt(s) for op alts
-		StarBlock opAltStarBlock = (StarBlock)outerAlt.ops.get(1);
-		CodeBlockForAlt altForOpAltBlock = opAltStarBlock.alts.get(0);
-		List<CodeBlockForAlt> opAltsCode = new ArrayList<CodeBlockForAlt>();
-		SrcOp opStuff = altForOpAltBlock.ops.get(0);
-		if ( opStuff instanceof AltBlock ) {
-			AltBlock opAltBlock = (AltBlock)opStuff;
-			opAltsCode.addAll(opAltBlock.alts);
-		}
-		else { // just a single alt I guess; no block
-			opAltsCode.add((CodeBlockForAlt)opStuff);
-		}
-
-		// Insert code in front of each primary alt to create specialized ctx if there was a label
-		for (int i = 0; i < primaryAltsCode.size(); i++) {
-			LeftRecursiveRuleAltInfo altInfo = r.recPrimaryAlts.get(i);
-			if ( altInfo.altLabel==null ) continue;
-			ST altActionST = codegenTemplates.getInstanceOf("recRuleReplaceContext");
-			altActionST.add("ctxName", Utils.capitalize(altInfo.altLabel));
-			Action altAction =
-				new Action(delegate, function.altLabelCtxs.get(altInfo.altLabel), altActionST);
-			CodeBlockForAlt alt = primaryAltsCode.get(i);
-			alt.insertOp(0, altAction);
-		}
-
-		// Insert code to set ctx.stop after primary block and before op * loop
-		ST setStopTokenAST = codegenTemplates.getInstanceOf("recRuleSetStopToken");
-		Action setStopTokenAction = new Action(delegate, function.ruleCtx, setStopTokenAST);
-		outerAlt.insertOp(1, setStopTokenAction);
-
-		// Insert code to set _prevctx at start of * loop
-		ST setPrevCtx = codegenTemplates.getInstanceOf("recRuleSetPrevCtx");
-		Action setPrevCtxAction = new Action(delegate, function.ruleCtx, setPrevCtx);
-		opAltStarBlock.addIterationOp(setPrevCtxAction);
-
-		// Insert code in front of each op alt to create specialized ctx if there was an alt label
-		for (int i = 0; i < opAltsCode.size(); i++) {
-			ST altActionST;
-			LeftRecursiveRuleAltInfo altInfo = r.recOpAlts.getElement(i);
-			String templateName;
-			if ( altInfo.altLabel!=null ) {
-				templateName = "recRuleLabeledAltStartAction";
-				altActionST = codegenTemplates.getInstanceOf(templateName);
-				altActionST.add("currentAltLabel", altInfo.altLabel);
-			}
-			else {
-				templateName = "recRuleAltStartAction";
-				altActionST = codegenTemplates.getInstanceOf(templateName);
-				altActionST.add("ctxName", Utils.capitalize(r.name));
-			}
-			altActionST.add("ruleName", r.name);
-			// add label of any lr ref we deleted
-			altActionST.add("label", altInfo.leftRecursiveRuleRefLabel);
-			if (altActionST.impl.formalArguments.containsKey("isListLabel")) {
-				altActionST.add("isListLabel", altInfo.isListLabel);
-			}
-			else if (altInfo.isListLabel) {
-				delegate.getGenerator().tool.errMgr.toolError(ErrorType.CODE_TEMPLATE_ARG_ISSUE, templateName, "isListLabel");
-			}
-			Action altAction =
-				new Action(delegate, function.altLabelCtxs.get(altInfo.altLabel), altActionST);
-			CodeBlockForAlt alt = opAltsCode.get(i);
-			alt.insertOp(0, altAction);
-		}
 	}
 
 	public void buildNormalRuleFunction(Rule r, RuleFunction function) {

@@ -18,7 +18,7 @@ public class TestLexerActions {
 	@Test public void testActionExecutedInDFA() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {outStream.println(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I\");} ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "34 34");
 		String expecting =
@@ -33,7 +33,7 @@ public class TestLexerActions {
 	@Test public void testActionEvalsAtCorrectIndex() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : [0-9] {outStream.println(\"2nd char: \"+(char)get_input().LA(1));} [0-9]+ ;\n"+
+			"I : [0-9] {console.log(\"2nd char: \"+String.fromCodePoint(this._input.LA(1)));} [0-9]+ ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "123 45");
 		String expecting =
@@ -54,29 +54,31 @@ public class TestLexerActions {
 		String grammar =
 			"lexer grammar L;\n" +
 			"\n" +
-			"@lexer::members\n" +
+			"@lexer::header\n" +
 			"{\n" +
 			"class Marker\n" +
 			"{\n" +
-			"   Marker (Lexer lexer) { this.lexer = lexer; }\n" +
+			"   constructor (private lexer: Lexer) {}\n" +
 			"\n" +
-			"   public String getText ()\n" +
+			"   getText (): string\n" +
 			"   {\n" +
-			"      return lexer.getInputStream().getText (new Interval (start_index, stop_index));\n" +
+			"      return this.lexer.inputStream.getText (this.start_index, this.stop_index);\n" +
 			"   }\n" +
 			"\n" +
-			"   public void start ()  { start_index = lexer.getInputStream().index (); outStream.println (\"Start:\" + start_index);}\n" +
-			"   public void stop () { stop_index = lexer.getInputStream().index (); outStream.println (\"Stop:\" + stop_index);}\n" +
+			"   start (): void  { this.start_index = this.lexer.inputStream.index; console.log (\"Start:\" + this.start_index);}\n" +
+			"   stop (): void { this.stop_index = this.lexer.inputStream.index; console.log (\"Stop:\" + this.stop_index);}\n" +
 			"\n" +
-			"   private int start_index = 0;\n" +
-			"   private int stop_index = 0;\n" +
-			"   private Lexer lexer;\n" +
+			"   private start_index = 0;\n" +
+			"   private stop_index = 0;\n" +
+			"}\n" +
 			"}\n" +
 			"\n" +
-			"Marker m_name = new Marker (this);\n" +
+			"@lexer::members\n" +
+			"{\n" +
+			"m_name = new Marker (this);\n" +
 			"}\n" +
 			"\n" +
-			"HELLO: 'hello' WS { m_name.start (); } NAME { m_name.stop (); } '\\n' { outStream.println (\"Hello: \" + m_name.getText ()); };\n" +
+			"HELLO: 'hello' WS { this.m_name.start (); } NAME { this.m_name.stop (); } '\\n' { console.log (\"Hello: \" + this.m_name.getText ()); };\n" +
 			"NAME: ('a'..'z' | 'A'..'Z')+ ('\\n')?;\n" +
 			"\n" +
 			"fragment WS: [ \\r\\t\\n]+ ;\n";
@@ -94,7 +96,7 @@ public class TestLexerActions {
 	@Test public void test2ActionsIn1Rule() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : [0-9] {outStream.println(\"x\");} [0-9]+ {outStream.println(\"y\");} ;\n"+
+			"I : [0-9] {console.log(\"x\");} [0-9]+ {console.log(\"y\");} ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "123 45");
 		String expecting =
@@ -111,10 +113,10 @@ public class TestLexerActions {
 	@Test public void testAltActionsIn1Rule() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : ( [0-9]+ {outStream.print(\"int\");}\n" +
-			"    | [a-z]+ {outStream.print(\"id\");}\n" +
+			"I : ( [0-9]+ {process.stdout.write(\"int\");}\n" +
+			"    | [a-z]+ {process.stdout.write(\"id\");}\n" +
 			"    )\n" +
-			"    {outStream.println(\" last\");}\n" +
+			"    {console.log(\" last\");}\n" +
 			"    ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "123 ab");
@@ -130,7 +132,7 @@ public class TestLexerActions {
 	@Test public void testActionPlusCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {outStream.println(\"I\");} -> skip ;\n"+
+			"I : '0'..'9'+ {console.log(\"I\");} -> skip ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "34 34");
 		String expecting =
@@ -145,7 +147,7 @@ public class TestLexerActions {
 	@Test public void testSkipCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {outStream.println(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I\");} ;\n"+
 			"WS : (' '|'\\n') -> skip ;";
 		ExecutedState executedState = execLexer(grammar, "34 34");
 		String expecting =
@@ -160,12 +162,12 @@ public class TestLexerActions {
 	@Test public void testMoreCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {outStream.println(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I \" + this.text);} ;\n"+
 			"WS : '#' -> more ;";
 		ExecutedState executedState = execLexer(grammar, "34#10");
 		String expecting =
-			"I\n" +
-			"I\n" +
+			"I 34\n" +
+			"I 10\n" +
 			"[@0,0:1='34',<1>,1:0]\n" +
 			"[@1,2:4='#10',<1>,1:2]\n" +
 			"[@2,5:4='<EOF>',<-1>,1:5]\n";
@@ -175,7 +177,7 @@ public class TestLexerActions {
 	@Test public void testTypeCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {outStream.println(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I\");} ;\n"+
 			"HASH : '#' -> type(HASH) ;";
 		ExecutedState executedState = execLexer(grammar, "34#");
 		String expecting =
@@ -189,7 +191,7 @@ public class TestLexerActions {
 	@Test public void testCombinedCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n" +
-			"I : '0'..'9'+ {outStream.println(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I\");} ;\n"+
 			"HASH : '#' -> type(100), skip, more  ;";
 		ExecutedState executedState = execLexer(grammar, "34#11");
 		String expecting =
@@ -264,7 +266,7 @@ public class TestLexerActions {
 			"fragment WS: [ \\t]+;\n" +
 			"fragment EOL: '\\r'? '\\n';\n" +
 			"\n" +
-			"LINE: WS? ~[\\r\\n]* EOL { !getText().trim().startsWith(\"Item:\") }?;\n" +
+			"LINE: WS? ~[\\r\\n]* EOL { !this.text.trim().startsWith(\"Item:\") }?;\n" +
 			"ITEM: WS? 'Item:' -> pushMode(ITEM_HEADING_MODE);\n" +
 			"\n" +
 			"mode ITEM_HEADING_MODE;\n" +

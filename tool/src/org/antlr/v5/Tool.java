@@ -102,7 +102,6 @@ public class Tool {
 	public String msgFormat = "antlr";
 	public boolean launch_ST_inspector = false;
 	public boolean ST_inspector_wait_for_close = false;
-    public boolean force_atn = false;
     public boolean log = false;
 	public boolean gen_listener = true;
 	public boolean gen_visitor = false;
@@ -112,13 +111,6 @@ public class Tool {
 	public boolean warnings_are_errors = false;
 	public boolean longMessages = false;
 	public boolean exact_output_dir = false;
-
-	/**
-	 * The recognizer that generated each recognizer file of a target whose runtime interprets the
-	 * ATN, keyed by absolute path; such targets may derive the same file name from distinct
-	 * grammar names.
-	 */
-	public final Map<String, String> interpretedRecognizerFiles = new HashMap<>();
 
     public final static Option[] optionDefs = {
 		new Option("outputDirectory",             "-o", OptionArgType.STRING, "specify output directory where all output is generated"),
@@ -137,7 +129,6 @@ public class Tool {
 		new Option("warnings_are_errors",         "-Werror", "treat warnings as errors"),
 		new Option("launch_ST_inspector",         "-XdbgST", "launch StringTemplate visualizer on generated code"),
 		new Option("ST_inspector_wait_for_close", "-XdbgSTWait", "wait for STViz to close before continuing"),
-		new Option("force_atn",                   "-Xforce-atn", "use the ATN simulator for all predictions"),
 		new Option("log",                         "-Xlog", "dump lots of logging info to antlr-timestamp.log"),
 	    new Option("exact_output_dir",            "-Xexact-output-dir", "all output goes into -o dir regardless of paths/package"),
 	};

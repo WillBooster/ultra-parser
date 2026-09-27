@@ -3,8 +3,8 @@
 If you invoke the ANTLR tool without command line arguments, you’ll get a help message:
 
 ```bash
-$ antlr4
-ANTLR Parser Generator  Version 4.7.1
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar
+ANTLR Parser Generator  Version 0.0.1
  -o ___              specify output directory where all output is generated
  -lib ___            specify location of grammars, tokens files
  -atn                generate rule augmented transition network diagrams
@@ -21,7 +21,6 @@ ANTLR Parser Generator  Version 4.7.1
  -Werror             treat warnings as errors
  -XdbgST             launch StringTemplate visualizer on generated code
  -XdbgSTWait         wait for STViz to close before continuing
- -Xforce-atn         use the ATN simulator for all predictions
  -Xlog               dump lots of logging info to antlr-timestamp.log
  -Xexact-output-dir  all output goes into -o dir regardless of paths/package
 ```
@@ -33,10 +32,10 @@ Here are more details on the options:
 ANTLR generates output files in the current directory by default. This option specifies the output directory where ANTLR should generate parsers, listeners, visitors, and tokens files.
  	
 ```bash
-$ antlr4 -o /tmp T.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -o /tmp T.g4
 $ ls /tmp/T*
-/tmp/T.tokens /tmp/TListener.java
-/tmp/TBaseListener.java /tmp/TParser.java
+/tmp/T.interp       /tmp/TLexer.interp  /tmp/TLexer.ts      /tmp/TParser.ts
+/tmp/T.tokens       /tmp/TLexer.tokens  /tmp/TListener.ts
 ```
 
 ## `-lib libdir`
@@ -59,7 +58,7 @@ s : x ;
  	
 ID : [a-z]+ ;
  	
-$ antlr4 -lib /tmp A.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -lib /tmp A.g4
 
 ## `-atn`
 
@@ -75,7 +74,7 @@ b : ID ;
  	
 ID : [a-z]+ ;
  	
-$ antlr4 -atn A.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -atn A.g4
  	
 $ ls *.dot
  	
@@ -107,33 +106,27 @@ Tell ANTLR not to generate a parse tree visitor; this is the default.
 
 ## `-package`
 
-Use this option to specify a package or namespace for ANTLR-generated files. Alternatively, you can add a @header {...} action but that ties the grammar to a specific language. If you use this option and @header, make sure that the header action does not contain a package specification otherwise the generated code will have two of them.
+TypeScript has no packages, so the TypeScript target ignores this option.
 
 ## `-depend`
 
 Instead of generating a parser and/or lexer, generate a list of file dependencies, one per line. The output shows what each grammar depends on and what it generates. This is useful for build tools that need to know ANTLR grammar dependencies. Here’s an example:
  	
 ```bash
-$ antlr4 -depend T.g	
-T.g: A.tokens
-TParser.java : T.g
-T.tokens : T.g
-TLexer.java : T.g
-TListener.java : T.g
-TBaseListener.java : T.g
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -depend T.g4
+T.g4: A.tokens
+TParser.ts : T.g4
+T.tokens : T.g4
+TLexer.ts : T.g4
+TLexer.tokens : T.g4
+TListener.ts : T.g4
 ```
 
-If you use -lib libdir with -depend and grammar option tokenVocab=A, then the dependencies include the library path as well: T.g: libdir/A.tokens. The output is also sensitive to the -o outdir option: outdir/TParser.java : T.g.
+If you use -lib libdir with -depend and grammar option tokenVocab=A, then the dependencies include the library path as well: T.g4: libdir/A.tokens. The output is also sensitive to the -o outdir option: outdir/TParser.ts : T.g4.
 
 ## `-D<option>=value`
 
-Use this option to override or set a grammar-level option in the specified grammar or grammars. This option is useful for generating parsers in different languages without altering the grammar itself. (I expect to have other targets in the near future.)
- 	
-```bash
-$ antlr4 -Dlanguage=Java T.g4 # default
-$ antlr4 -Dlanguage=C T.g4
-error(31): ANTLR cannot generate C code as of version 4.0b3
-```
+Use this option to override or set a grammar-level option in the specified grammar or grammars, such as `-DsuperClass=MyParser`. TypeScript is the only target (`language=TypeScript`) and the default.
 
 ## `-Werror`
 
@@ -148,17 +141,13 @@ ANTLR generates both a parser and a lexer from a combined grammar. To create the
 
 For those building a code generation target, this option brings up a window showing the generated code and the templates used to generate that code. It invokes the StringTemplate inspector window.
 
-## `-Xforce-atn`
-
-ANTLR normally builds traditional “switch on token type” decisions where possible (one token of lookahead is sufficient to distinguish between all alternatives in a decision). To force even these simple decisions into the adaptive LL(*) mechanism, use this option.
-
 ## `-Xlog`
 
 This option creates a log file containing lots of information messages from ANTLR as it processes your grammar. If you would like to see how ANTLR translates your left-recursive rules, turn on this option and look in the resulting log file.
  	
 ```bash
-$ antlr4 -Xlog T.g4 	
-wrote ./antlr-2012-09-06-17.56.19.log
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Xlog T.g4 	
+wrote ./antlr-<timestamp>.log
 ```
 
 ## `-Xexact-output-dir`
@@ -169,10 +158,12 @@ All output goes into `-o` dir regardless of paths/package.
 
 * Output `-o` directory specifier is the exact directory containing the output. Previously it would include the relative path specified on the grammar itself for the purposes of packages.
 
-**new**: `-o /tmp subdir/T.g4` => `/tmp/subdir/T.java`
-**old**: `-o /tmp subdir/T.g4` => `/tmp/T.java`
+**new**: `-o /tmp subdir/T.g4` => `/tmp/subdir/T.ts`
+**old**: `-o /tmp subdir/T.g4` => `/tmp/T.ts`
 
 *  Previously we looked for the tokens vocab file in the `-lib` dir or in the output dir. **New**: also look in the directory containing the grammar, particularly if it it is specified with a path.
+
+The following examples show ANTLR 4.7 and 4.7.1 with their Java target, where this option was introduced.
 
 ### Example for the output directory (4.7)
 

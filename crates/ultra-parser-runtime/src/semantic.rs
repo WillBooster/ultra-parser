@@ -1,7 +1,4 @@
 //! Semantic predicates collected during prediction, ported from ANTLR's `SemanticContext`.
-//!
-//! The runtime interprets grammars without their embedded code, so user predicates always
-//! succeed (like `ParserInterpreter`); only precedence predicates are evaluated.
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum SemanticContext {
@@ -59,13 +56,24 @@ impl SemanticContext {
         }
     }
 
-    /// Evaluates the context while the parser's current precedence is `precedence`.
-    pub(crate) fn eval(&self, precedence: i32) -> bool {
+    /// Evaluates the context while the parser's current precedence is `precedence`; `sempred`
+    /// evaluates user predicates given their rule index, predicate index, and whether they depend
+    /// on the rule context.
+    pub(crate) fn eval(
+        &self,
+        precedence: i32,
+        sempred: &mut dyn FnMut(usize, usize, bool) -> bool,
+    ) -> bool {
         match self {
-            Self::Empty | Self::Predicate { .. } => true,
+            Self::Empty => true,
+            Self::Predicate {
+                rule_index,
+                pred_index,
+                ctx_dependent,
+            } => sempred(*rule_index, *pred_index, *ctx_dependent),
             Self::Precedence(p) => *p >= precedence,
-            Self::And(operands) => operands.iter().all(|c| c.eval(precedence)),
-            Self::Or(operands) => operands.iter().any(|c| c.eval(precedence)),
+            Self::And(operands) => operands.iter().all(|c| c.eval(precedence, sempred)),
+            Self::Or(operands) => operands.iter().any(|c| c.eval(precedence, sempred)),
         }
     }
 

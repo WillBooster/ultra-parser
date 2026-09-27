@@ -22,9 +22,7 @@ import org.antlr.v5.tool.ast.GrammarAST;
 import org.stringtemplate.v4.*;
 import org.stringtemplate.v4.misc.STMessage;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -108,6 +106,11 @@ public abstract class Target {
 	}
 
 	protected abstract Set<String> getReservedWords();
+
+	/** The name of the recognizer's method that parses a rule. */
+	public String getRuleMethodName(String ruleName) {
+		return escapeIfNeeded(ruleName);
+	}
 
 	public String escapeIfNeeded(String identifier) {
 		return getReservedWords().contains(identifier) ? escapeWord(identifier) : identifier;
@@ -661,24 +664,4 @@ public abstract class Target {
 
 	/** @since 4.6 */
 	public boolean needsHeader() { return false; } // Override in targets that need header files.
-
-	/**
-	 * Whether the target's runtime interprets the grammar's ATN instead of running generated
-	 * parsing code. Such targets only generate a recognizer file from the {@code RecognizerFile}
-	 * template, holding the serialized ATN and the grammar's names; see
-	 * {@link CodeGenerator#generateInterpretedRecognizer()}.
-	 */
-	public boolean isATNInterpreted() { return false; }
-
-	/**
-	 * Maps grammar names (token or rule names) to distinct names of constants in the target
-	 * language, for the recognizer file of a target whose runtime interprets the ATN.
-	 */
-	public Map<String, String> getConstantNames(Collection<String> names) {
-		Map<String, String> constantNames = new LinkedHashMap<>();
-		for (String name : names) {
-			constantNames.put(name, escapeIfNeeded(name));
-		}
-		return constantNames;
-	}
 }

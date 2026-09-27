@@ -36,12 +36,6 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>antlr5-java-runtime</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
 			<version>${junit.version}</version>
@@ -52,17 +46,6 @@
 			<artifactId>junit-jupiter-engine</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.json</artifactId>
-			<version>1.1.4</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-		    <groupId>org.openjdk.jol</groupId>
-		    <artifactId>jol-core</artifactId>
-		    <version>0.16</version>
 		</dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -92,24 +75,6 @@
 						<goals>
 							<goal>test-jar</goal>
 						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.antlr</groupId>
-				<artifactId>antlr5-maven-plugin</artifactId>
-				<version>${project.version}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>antlr5</goal>
-						</goals>
-						<configuration>
-							<sourceDirectory>${basedir}/test</sourceDirectory>
-							<outputDirectory>${project.build.directory}/generated-test-sources/antlr5</outputDirectory>
-							<visitor>true</visitor>
-							<generateTestSources>true</generateTestSources>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
