@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "ultra-parser",
+      "name": "ultra-parser-workspace",
       "devDependencies": {
         "@types/bun": "1.4.2",
         "typescript": "5.9.3",
