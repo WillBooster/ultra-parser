@@ -30,7 +30,7 @@ unsafe extern "C" {
         rule_index: u32,
         state: u32,
         start_token: u32,
-        recursive: u32,
+        precedence: i32,
     ) -> i32;
     fn push_recursion(ctx: u32, previous: u32, state: u32, previous_stop: i32) -> i32;
     fn outer_alt(ctx: u32, state: u32, alt: u32) -> i32;
@@ -457,7 +457,7 @@ impl ParserHost for WasmParserHost {
         rule_index: usize,
         state: usize,
         start_token: usize,
-        recursive: bool,
+        precedence: Option<i32>,
     ) {
         if self.aborted {
             return;
@@ -471,7 +471,7 @@ impl ParserHost for WasmParserHost {
                 rule_index as u32,
                 state as u32,
                 start_token as u32,
-                recursive as u32,
+                precedence.unwrap_or(-1),
             )
         };
         self.check(status);

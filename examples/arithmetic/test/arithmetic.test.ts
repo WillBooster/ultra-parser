@@ -380,3 +380,16 @@ test('reports the lexer errors before a token when reading hidden tokens to its 
   expect(stream.getHiddenTokensToLeft(1)).toBeNull();
   expect(log).toEqual(["1:2 token recognition error at: '#'"]);
 });
+
+test('answers precpred with the precedence of the left-recursive rule being parsed', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('2 ^ 3'))));
+  const answers: boolean[] = [];
+  parser.addParseListener({
+    visitTerminal: (node) => {
+      if (node.getText() === '3') answers.push(parser.precpred(parser.context, 5), parser.precpred(parser.context, 6));
+    },
+  });
+  parser.program();
+  expect(answers).toEqual([false, true]);
+  expect(parser.precpred(null, 0)).toBe(true);
+});

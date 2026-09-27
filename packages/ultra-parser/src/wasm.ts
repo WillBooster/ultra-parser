@@ -33,7 +33,7 @@ export interface ParserHost {
     ruleIndex: number,
     state: number,
     startToken: number,
-    recursive: boolean
+    precedence: number
   ): void;
   pushRecursion(ctx: number, previous: number, state: number, previousStop: number): void;
   outerAlt(ctx: number, state: number, alt: number): void;
@@ -101,9 +101,8 @@ const imports = {
       ruleIndex: number,
       state: number,
       startToken: number,
-      recursive: number
-    ): number =>
-      guard(parserCall, (h) => h.enterRule(ctx, parent, invokingState, ruleIndex, state, startToken, recursive !== 0)),
+      precedence: number
+    ): number => guard(parserCall, (h) => h.enterRule(ctx, parent, invokingState, ruleIndex, state, startToken, precedence)),
     fetched: (tokenIndex: number): number => guard(parserCall, (h) => h.fetched(tokenIndex)),
     push_recursion: (ctx: number, previous: number, state: number, previousStop: number): number =>
       guard(parserCall, (h) => h.pushRecursion(ctx, previous, state, previousStop)),

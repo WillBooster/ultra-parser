@@ -116,10 +116,10 @@ impl ParserHost for TreeBuilder<'_> {
         rule_index: usize,
         _state: usize,
         _start_token: usize,
-        recursive: bool,
+        precedence: Option<i32>,
     ) {
         self.rules.insert(ctx, (rule_index, Vec::new()));
-        if let (Some(parent), false) = (parent, recursive) {
+        if let (Some(parent), None) = (parent, precedence) {
             self.add(parent, Node::Rule(ctx));
         }
     }
@@ -235,10 +235,10 @@ impl ParserHost for Recorder {
         rule_index: usize,
         _state: usize,
         _start_token: usize,
-        recursive: bool,
+        precedence: Option<i32>,
     ) {
         self.events.push(format!(
-            "enter {ctx} rule {rule_index} recursive {recursive}"
+            "enter {ctx} rule {rule_index} precedence {precedence:?}"
         ));
     }
 
@@ -293,12 +293,12 @@ fn reports_the_tree_to_the_host() {
     assert_eq!(
         recorder.events,
         [
-            "enter 0 rule 0 recursive false",
-            "enter 1 rule 1 recursive true",
+            "enter 0 rule 0 precedence None",
+            "enter 1 rule 1 precedence Some(0)",
             "token 0 in 1 at Some(11) error false",
             "push 2 over 1",
             "token 1 in 2 at Some(21) error false",
-            "enter 3 rule 1 recursive true",
+            "enter 3 rule 1 precedence Some(4)",
             "token 2 in 3 at Some(11) error false",
             "unroll 3 into Some(2)",
             "unroll 2 into Some(0)",

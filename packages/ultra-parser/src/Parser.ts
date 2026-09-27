@@ -162,6 +162,8 @@ export abstract class Parser extends Recognizer {
   // The contexts whose `finally` hook or exit event started, which each run at most once
   readonly #finallyStarted = new WeakSet<ParserRuleContext>();
   readonly #exitStarted = new WeakSet<ParserRuleContext>();
+  /** The precedences of the left-recursive rules being parsed, like ANTLR's `_precedenceStack`. */
+  #precedenceStack = [0];
   /** Where #loadTokens last loaded the tokens. */
   #loadedTokens: WasmTokens | undefined;
 
@@ -257,12 +259,14 @@ export abstract class Parser extends Recognizer {
       this._ctx,
       this.state,
       startToken,
+      this.#precedenceStack,
     ] as const;
     const tokens = this.#loadTokens();
     const parsing = this.#parsing;
     this.#contexts = [];
     this.#previousContexts = [];
     this.#createRoot = createRoot;
+    this.#precedenceStack = [0];
     this.#parsing = true;
     activeParsers.push(this);
     try {
@@ -289,7 +293,7 @@ export abstract class Parser extends Recognizer {
       if (current) setPredictionMode(current.#mode);
       this.#parsing = parsing;
       if (parsing) {
-        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state] = outer;
+        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state, , this.#precedenceStack] = outer;
         this._input.seek(outer[5]);
       } else {
         this.#contexts = [];
@@ -347,8 +351,8 @@ export abstract class Parser extends Recognizer {
 
   #createHost(): ParserHost {
     return {
-      enterRule: (ctx, parent, invokingState, ruleIndex, state, startToken, recursive) =>
-        this.#onEnterRule(ctx, parent, invokingState, ruleIndex, state, startToken, recursive),
+      enterRule: (ctx, parent, invokingState, ruleIndex, state, startToken, precedence) =>
+        this.#onEnterRule(ctx, parent, invokingState, ruleIndex, state, startToken, precedence),
       fetched: (tokenIndex) => this._input.releaseLexerErrors(tokenIndex),
       pushRecursion: (ctx, previous, state, previousStop) => this.#onPushRecursion(ctx, previous, state, previousStop),
       outerAlt: (ctx, state, alt) => this.#onOuterAlt(ctx, state, alt),
@@ -386,9 +390,12 @@ export abstract class Parser extends Recognizer {
     ruleIndex: number,
     state: number,
     startToken: number,
-    recursive: boolean
+    precedence: number
   ): void {
     const parent = parentId >= 0 ? this.#ctx(parentId) : null;
+    // Left-recursive rules report the precedence they were invoked with; other rules report -1.
+    const recursive = precedence >= 0;
+    if (recursive) this.#precedenceStack.push(precedence);
     this.state = state;
     let ctx: ParserRuleContext;
     if (!parent && this.#createRoot) {
@@ -511,6 +518,7 @@ export abstract class Parser extends Recognizer {
     const parent = parentId >= 0 ? this.#ctx(parentId) : null;
     this._ctx = ctx;
     this.#exitHooks(ctx, stopToken, error);
+    this.#precedenceStack.pop();
     ctx.parent = parent;
     if (this.buildParseTrees && parent) parent.addChild(ctx);
     this.#returned(ctx);
@@ -683,7 +691,8 @@ export abstract class Parser extends Recognizer {
   }
 
   /** Precedence predicates of left-recursive rules run in the runtime; generated code never needs this. */
-  precpred(_localctx: ParserRuleContext | null, _precedence: number): boolean {
-    return true;
+  /** Whether the left-recursive rule being parsed allows an operator of `precedence`, like ANTLR's. */
+  precpred(_localctx: ParserRuleContext | null, precedence: number): boolean {
+    return precedence >= (this.#precedenceStack.at(-1) ?? 0);
   }
 }

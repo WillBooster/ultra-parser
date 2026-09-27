@@ -23,8 +23,9 @@ use crate::tree::{NodeId, RuleNode, invoking_states};
 #[allow(unused_variables)]
 pub trait ParserHost {
     /// The parser entered rule `rule_index` at its start state `state` with a new context `ctx`,
-    /// invoked from `invoking_state` in `parent`. The context of a left-recursive rule
-    /// (`recursive`) becomes a child of its parent only when the rule returns (see `unroll`).
+    /// invoked from `invoking_state` in `parent`. The context of a left-recursive rule, which
+    /// reports the `precedence` it was invoked with, becomes a child of its parent only when the
+    /// rule returns (see `unroll`).
     #[allow(clippy::too_many_arguments)]
     fn enter_rule(
         &mut self,
@@ -34,7 +35,7 @@ pub trait ParserHost {
         rule_index: usize,
         state: usize,
         start_token: usize,
-        recursive: bool,
+        precedence: Option<i32>,
     ) {
     }
 
@@ -332,7 +333,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             node.start,
         );
         self.host
-            .enter_rule(ctx, parent, invoking_state, rule_index, state, start, false);
+            .enter_rule(ctx, parent, invoking_state, rule_index, state, start, None);
         self.host.outer_alt(ctx, state, 1);
     }
 
@@ -363,8 +364,15 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         self.ctx = ctx;
         let start = self.current_token().token_index;
         self.nodes[ctx].start = start;
-        self.host
-            .enter_rule(ctx, parent, invoking_state, rule_index, state, start, true);
+        self.host.enter_rule(
+            ctx,
+            parent,
+            invoking_state,
+            rule_index,
+            state,
+            start,
+            Some(precedence),
+        );
         self.host.outer_alt(ctx, state, 1);
     }
 
