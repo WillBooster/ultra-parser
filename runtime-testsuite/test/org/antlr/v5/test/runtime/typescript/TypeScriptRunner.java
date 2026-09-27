@@ -6,21 +6,27 @@
 
 package org.antlr.v5.test.runtime.typescript;
 
+import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.target.TypeScriptTarget;
+import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.test.runtime.GeneratedFile;
 import org.antlr.v5.test.runtime.Processor;
 import org.antlr.v5.test.runtime.RunOptions;
 import org.antlr.v5.test.runtime.RuntimeRunner;
 import org.antlr.v5.test.runtime.RuntimeTestUtils;
-import org.antlr.v5.test.runtime.Stage;
 import org.antlr.v5.test.runtime.states.CompiledState;
 import org.antlr.v5.test.runtime.states.GeneratedState;
+import org.antlr.v5.tool.ANTLRMessage;
+import org.antlr.v5.tool.ANTLRToolListener;
+import org.antlr.v5.tool.ast.GrammarRootAST;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** Runs the generated TypeScript with Bun against the ultra-parser package of this repository. */
 public class TypeScriptRunner extends RuntimeRunner {
@@ -60,8 +66,8 @@ public class TypeScriptRunner extends RuntimeRunner {
 	/**
 	 * Bun runs TypeScript without checking types, so the TypeScript compiler checks the generated
 	 * code first, like the Java target's tests compiled it. Grammars without code are checked
-	 * strictly; the code in test grammars is written for Bun and not null-safe, so grammars run
-	 * by the runtime tests are checked without strict mode.
+	 * strictly; the code in test grammars is written for Bun and not null-safe, so grammars with
+	 * code are checked without strict mode.
 	 */
 	@Override
 	protected CompiledState compile(RunOptions runOptions, GeneratedState generatedState) {
@@ -74,7 +80,7 @@ public class TypeScriptRunner extends RuntimeRunner {
 				"--noEmit", "--skipLibCheck", "--target", "es2022", "--lib", "es2022,dom",
 				"--module", "nodenext", "--moduleResolution", "nodenext",
 				"--typeRoots", rootPath.resolve(Paths.get("node_modules", "@types")).toString(), "--types", "bun"));
-			if (runOptions.endStage == Stage.Compile) {
+			if (!hasGrammarCode(Paths.get(getTempDirPath()))) {
 				command.add("--strict");
 			}
 			for (GeneratedFile file : generatedState.generatedFiles) {
@@ -86,5 +92,36 @@ public class TypeScriptRunner extends RuntimeRunner {
 		catch (Exception e) {
 			return new CompiledState(generatedState, e);
 		}
+	}
+
+	/**
+	 * Whether the grammars in `directory`, including imported ones, hold code: actions, predicates,
+	 * or arguments.
+	 */
+	private static boolean hasGrammarCode(Path directory) throws IOException {
+		List<String> grammars = new ArrayList<>();
+		try (Stream<Path> files = Files.list(directory)) {
+			for (Path file : files.filter(f -> f.toString().endsWith(".g4")).toList()) {
+				grammars.add(Files.readString(file));
+			}
+		}
+		Tool tool = new Tool();
+		tool.addListener(new ANTLRToolListener() {
+			@Override public void info(String msg) { }
+			@Override public void error(ANTLRMessage msg) { }
+			@Override public void warning(ANTLRMessage msg) { }
+		});
+		for (String grammar : grammars) {
+			GrammarRootAST ast = tool.parseGrammarFromString(grammar);
+			if (ast == null) {
+				return true;
+			}
+			for (int type : new int[] {ANTLRParser.ACTION, ANTLRParser.SEMPRED, ANTLRParser.ARG_ACTION}) {
+				if (!ast.getNodesWithType(type).isEmpty()) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
