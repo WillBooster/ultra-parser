@@ -16,6 +16,8 @@ export class CommonTokenStream {
   private p = -1;
   private fetchedEOF = false;
   private deferredLexerErrors: DeferredLexerError[] = [];
+  /** How many of the deferred lexer errors were reported. */
+  private reportedLexerErrors = 0;
 
   constructor(
     readonly tokenSource: TokenSource,
@@ -47,8 +49,13 @@ export class CommonTokenStream {
 
   /** Reports the deferred errors of the lexer up to the token `tokenIndex`. */
   releaseLexerErrors(tokenIndex: number): void {
-    while (this.deferredLexerErrors.length > 0 && (this.deferredLexerErrors[0]?.tokenIndex ?? 0) <= tokenIndex) {
-      this.deferredLexerErrors.shift()?.report();
+    const errors = this.deferredLexerErrors;
+    while (this.reportedLexerErrors < errors.length) {
+      const error = errors[this.reportedLexerErrors] as DeferredLexerError;
+      if (error.tokenIndex > tokenIndex) break;
+      // Counted first, so that a report that reads the stream does not report the error again.
+      this.reportedLexerErrors++;
+      error.report();
     }
   }
 
@@ -206,9 +213,9 @@ export class CommonTokenStream {
     for (let i = index - 1; i >= 0; i--) {
       const token = this.tokens[i] as Token;
       if (token.channel === Token.DEFAULT_CHANNEL) break;
-      if (channel === -1 || token.channel === channel) hidden.unshift(token);
+      if (channel === -1 || token.channel === channel) hidden.push(token);
     }
-    return hidden.length > 0 ? hidden : null;
+    return hidden.length > 0 ? hidden.reverse() : null;
   }
 }
 

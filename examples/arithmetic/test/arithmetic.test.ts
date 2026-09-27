@@ -295,3 +295,18 @@ test('reports the text of tokens of other classes', () => {
   parser.expr();
   expect(errors[0]).toBe("mismatched input 'custom' expecting {'-', '(', NUMBER}");
 });
+
+test('returns the hidden tokens to the left in order', () => {
+  const input = CharStream.fromString('1 \t2');
+  const tokens = [
+    new CommonToken(ArithmeticParser.NUMBER, Token.DEFAULT_CHANNEL, 0, 0, 1, 0, null, input),
+    new CommonToken(2, Token.HIDDEN_CHANNEL, 1, 1, 1, 1, null, input),
+    new CommonToken(3, Token.HIDDEN_CHANNEL, 2, 2, 1, 2, null, input),
+    new CommonToken(ArithmeticParser.NUMBER, Token.DEFAULT_CHANNEL, 3, 3, 1, 3, null, input),
+    new CommonToken(Token.EOF, Token.DEFAULT_CHANNEL, 4, 3, 1, 4, null, input),
+  ];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const stream = new CommonTokenStream(source);
+  stream.fill();
+  expect(stream.getHiddenTokensToLeft(3)?.map((token) => token.text)).toEqual([' ', '\t']);
+});
