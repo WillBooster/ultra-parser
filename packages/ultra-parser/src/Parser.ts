@@ -239,7 +239,7 @@ export abstract class Parser extends Recognizer {
     // Grammar code may call rule methods while parsing: such a parse reads the tokens the outer
     // parse loaded, whose memory the outer parse still uses (#loadTokens keeps it), and the outer
     // parse continues after it from where it was.
-    const outer = [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, startToken] as const;
+    const outer = [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state, startToken] as const;
     const tokens = this.#loadTokens();
     const parsing = this.#parsing;
     this.#contexts = [];
@@ -252,8 +252,8 @@ export abstract class Parser extends Recognizer {
     } finally {
       this.#parsing = parsing;
       if (parsing) {
-        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx] = outer;
-        this._input.seek(outer[4]);
+        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state] = outer;
+        this._input.seek(outer[5]);
       } else {
         this.#contexts = [];
         this.#previousContexts = [];

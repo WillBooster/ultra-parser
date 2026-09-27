@@ -49,13 +49,21 @@ test('parses from where the previous rule stopped', () => {
 test('continues a parse after grammar code parses again', () => {
   const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 + 2'))));
   let nested = '';
+  let states: number[] = [];
+  let expected = '';
   parser.addParseListener({
     visitTerminal: (node) => {
-      if (node.getText() === '+' && !nested) nested = parser.expr().toStringTree(parser);
+      if (node.getText() !== '+' || nested) return;
+      const state = parser.state;
+      nested = parser.expr().toStringTree(parser);
+      states = [state, parser.state];
+      expected = parser.getExpectedTokens().toString(parser.vocabulary);
     },
   });
   expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
   expect(nested).toBe('(expr 2)');
+  expect(states[1]).toBe(states[0]);
+  expect(expected).not.toBe('');
 });
 
 test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
