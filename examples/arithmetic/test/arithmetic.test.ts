@@ -366,3 +366,17 @@ test('lets go of reported lexer errors when a report throws', () => {
   expect(calls).toBe(2);
   expect((stream as unknown as { deferredLexerErrors: unknown[] }).deferredLexerErrors).toEqual([]);
 });
+
+test('reports the lexer errors before a token when reading hidden tokens to its left', () => {
+  const log: string[] = [];
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 # 2'));
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
+  };
+  lexer.addErrorListener(listener);
+  const stream = new CommonTokenStream(lexer);
+  stream.fill(true);
+  expect(stream.getHiddenTokensToLeft(1)).toBeNull();
+  expect(log).toEqual(["1:2 token recognition error at: '#'"]);
+});

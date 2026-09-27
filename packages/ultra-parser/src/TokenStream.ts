@@ -217,6 +217,8 @@ export class CommonTokenStream {
    */
   getHiddenTokensToLeft(index: number, channel = -1): Token[] | null {
     this.lazyInit();
+    // Like ANTLR's, which can only look left of tokens it has read.
+    this.releaseLexerErrors(index);
     const hidden: Token[] = [];
     for (let i = index - 1; i >= 0; i--) {
       const token = this.tokens[i] as Token;
