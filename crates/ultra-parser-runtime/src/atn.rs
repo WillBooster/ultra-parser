@@ -602,8 +602,9 @@ impl Atn {
         Ok(atn)
     }
 
-    /// Marks the blocks of outermost alternatives like ANTLR's
-    /// `GrammarParserInterpreter.findOuterMostDecisionStates`.
+    /// Marks the blocks of outermost alternatives like ANTLR 4's
+    /// `GrammarParserInterpreter.findOuterMostDecisionStates` (in antlr/antlr4's tool): the block a
+    /// rule starts with, and the star block of a left-recursive rule's operator alternatives.
     fn mark_outer_alt_blocks(&mut self) {
         for rule_start in self.rule_to_start_state.clone() {
             let target = self.states[rule_start].transitions[0].target();
