@@ -167,6 +167,8 @@ All output goes into `-o` dir regardless of paths/package.
 
 *  Previously we looked for the tokens vocab file in the `-lib` dir or in the output dir. **New**: also look in the directory containing the grammar, particularly if it it is specified with a path.
 
+The following examples show ANTLR 4.7 and 4.7.1 with their Java target, where this option was introduced.
+
 ### Example for the output directory (4.7)
 
 Here is the existing 4.7 functionality.
@@ -187,10 +189,11 @@ $ tree /tmp/build
 └── src
     └── pkg
         ├── A.tokens
-        ├── ALexer.ts
+        ├── ABaseListener.java
+        ├── ALexer.java
         ├── ALexer.tokens
-        ├── AListener.ts
-        └── AParser.ts
+        ├── AListener.java
+        └── AParser.java
 ```
 
 Now, let's build a grammar that sits in the current directory:
@@ -200,17 +203,19 @@ $ a4.7 -o /tmp/build B.g4
 $ tree /tmp/build
 /tmp/build
 ├── B.tokens
-├── BLexer.ts
+├── BBaseListener.java
+├── BLexer.java
 ├── BLexer.tokens
-├── BListener.ts
-├── BParser.ts
+├── BListener.java
+├── BParser.java
 └── src
     └── pkg
         ├── A.tokens
-        ├── ALexer.ts
+        ├── ABaseListener.java
+        ├── ALexer.java
         ├── ALexer.tokens
-        ├── AListener.ts
-        └── AParser.ts
+        ├── AListener.java
+        └── AParser.java
 ```
 
 Finally, if we don't specify the output directory, it paid attention to the relative path specified on the input grammar:
@@ -224,10 +229,11 @@ $ tree
     └── pkg
         ├── A.g4
         ├── A.tokens
-        ├── ALexer.ts
+        ├── ABaseListener.java
+        ├── ALexer.java
         ├── ALexer.tokens
-        ├── AListener.ts
-        └── AParser.ts
+        ├── AListener.java
+        └── AParser.java
 ```
 
 ### Example for the output directory (4.7.1 with -Xexact-output-dir)
@@ -240,10 +246,11 @@ $ a4.7.1 -Xexact-output-dir  -o /tmp/build src/pkg/A.g4
 $ tree /tmp/build
 /tmp/build
 ├── A.tokens
-├── ALexer.ts
+├── ABaseListener.java
+├── ALexer.java
 ├── ALexer.tokens
-├── AListener.ts
-└── AParser.ts
+├── AListener.java
+└── AParser.java
 ```
 
 If you use the package option, it still does not change where the output is generated if you use `-o`
@@ -253,10 +260,21 @@ $ a4.7.1 -Xexact-output-dir -package pkg -o /tmp/build src/pkg/A.g4
 $ tree /tmp/build
 /tmp/build
 ├── A.tokens
-├── ALexer.ts
+├── ABaseListener.java
+├── ALexer.java
 ├── ALexer.tokens
-├── AListener.ts
-└── AParser.ts
+├── AListener.java
+└── AParser.java
+```
+
+4.7.1 does however add the package specification into the generated files:
+
+```bash
+$ grep package /tmp/build/A*.java
+/tmp/build/ABaseListener.java:package pkg;
+/tmp/build/ALexer.java:package pkg;
+/tmp/build/AListener.java:package pkg;
+/tmp/build/AParser.java:package pkg;
 ```
 
 Compare this to 4.7:
@@ -268,10 +286,11 @@ beast:/tmp/parrt $ tree /tmp/build
 └── src
     └── pkg
         ├── A.tokens
-        ├── ALexer.ts
+        ├── ABaseListener.java
+        ├── ALexer.java
         ├── ALexer.tokens
-        ├── AListener.ts
-        └── AParser.ts
+        ├── AListener.java
+        └── AParser.java
 ```
 
 ### Example of where it looks for tokens vocab
@@ -297,13 +316,14 @@ In 4.7.1 it looks in the directory containing the grammars as well:
 $ a4.7.1 -o /tmp/build src/pkg/*.g4
 $ tree /tmp/build
 /tmp/build
-├── L.ts
+├── L.java
 ├── L.tokens
-├── P.ts
+├── P.java
 ├── P.tokens
-├── PListener.ts
+├── PBaseListener.java
+├── PListener.java
 └── src
     └── pkg
-        ├── L.ts
+        ├── L.java
         └── L.tokens
 ```
