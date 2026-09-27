@@ -6,9 +6,9 @@ pub type NodeId = usize;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Child {
     Rule(NodeId),
-    /// A matched token (an index into `ParseTree::tokens`).
+    /// A matched token (an index into the parsed tokens).
     Token(usize),
-    /// A token skipped during error recovery (an index into `ParseTree::tokens`).
+    /// A token skipped during error recovery (an index into the parsed tokens).
     SkippedToken(usize),
     /// A token the parser made up during error recovery (an index into
     /// `ParseTree::conjured_tokens`).

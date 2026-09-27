@@ -66,6 +66,17 @@ public class TestParserExec {
 		assertEquals("line 1:6 rule floating_constant DEC:A floating-point constant cannot have internal white space\n", executedState.errors);
 	}
 
+	/** Actions written for ANTLR read token text with {@code $t.getText()}. */
+	@Test public void testTokenGetText() {
+		String grammar =
+			"grammar T;\n" +
+			"s : id=ID {console.log($id.getText() + ' ' + $start.getText());} ;\n" +
+			"ID : [a-z]+ ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "abc", false);
+		assertEquals("abc abc\n", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
 	/**
 	 * This is a regression test for antlr/antlr4#563 "Inconsistent token
 	 * handling in ANTLR4".

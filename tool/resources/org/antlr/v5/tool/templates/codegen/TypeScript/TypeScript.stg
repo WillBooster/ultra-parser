@@ -675,20 +675,4 @@ static readonly _serializedATN: readonly number[] = [
 ];
 >>
 
-/**
- * Using a type to init value map, try to init a type; if not in table
- * must be an object, default value is "null".
- */
-initValue(typeName) ::= <<
-<typescriptTypeInitMap.(typeName)>
->>
-
-typescriptTypeInitMap ::= [
-	"bool":"false",
-	"int":"0",
-	"float":"0.0",
-	"str":"",
-	default:"{}"
-]
-
 codeFileExtension() ::= ".ts"

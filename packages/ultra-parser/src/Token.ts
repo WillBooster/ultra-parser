@@ -19,6 +19,8 @@ export interface Token {
   readonly tokenSource: TokenSource | null;
   /** Whether the lexer set the text instead of using the matched input. */
   readonly hasText: boolean;
+  /** The text, like `text`; grammar actions written for ANTLR call `$t.getText()`. */
+  getText(): string;
 }
 
 export interface TokenSource {
@@ -71,6 +73,10 @@ export class CommonToken implements Token {
 
   get hasText(): boolean {
     return this.explicitText !== undefined;
+  }
+
+  getText(): string {
+    return this.text;
   }
 
   /** Formats the token like ANTLR, e.g., `[@0,0:1='ab',<1>,1:0]`. */
