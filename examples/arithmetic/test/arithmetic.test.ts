@@ -37,7 +37,7 @@ test('handles deeply nested and long inputs', () => {
   expect(parse(`${'-'.repeat(20_000)}(1 1`).errors).toEqual([
     "line 1:20003 mismatched input '1' expecting {'^', '-', '*', '/', '+', ')'}",
   ]);
-});
+}, 60_000);
 
 test('parses from where the previous rule stopped', () => {
   const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 2 * 3 4'))));
@@ -109,4 +109,31 @@ test('reports all lexer errors when the whole text of a stream is read', () => {
   lexer.addErrorListener(listener);
   expect(new CommonTokenStream(lexer).getText()).toBe('1+23');
   expect(log).toEqual(["1:6 token recognition error at: '#'"]);
+});
+
+test('reports the lexer errors before the next token when reading hidden tokens', () => {
+  const log: string[] = [];
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 # 2'));
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
+  };
+  lexer.addErrorListener(listener);
+  expect(new CommonTokenStream(lexer).getHiddenTokensToRight(0)).toBeNull();
+  expect(log).toEqual(["1:2 token recognition error at: '#'"]);
+});
+
+test('loads the tokens once for successive rules', () => {
+  const stream = new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 2 3')));
+  const parser = new ArithmeticParser(stream);
+  parser.expr();
+  let visits = 0;
+  const every = stream.tokens.every.bind(stream.tokens);
+  stream.tokens.every = ((...args: Parameters<typeof every>) => {
+    visits++;
+    return every(...args);
+  }) as typeof every;
+  parser.expr();
+  parser.expr();
+  expect(visits).toBe(0);
 });

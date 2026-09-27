@@ -167,11 +167,14 @@ export class CommonTokenStream {
   getHiddenTokensToRight(index: number, channel = -1): Token[] | null {
     this.lazyInit();
     const hidden: Token[] = [];
-    for (let i = index + 1; i < this.tokens.length; i++) {
+    let i = index + 1;
+    for (; i < this.tokens.length; i++) {
       const token = this.tokens[i] as Token;
       if (token.channel === this.channel || token.type === Token.EOF) break;
       if (channel === -1 || token.channel === channel) hidden.push(token);
     }
+    // Like ANTLR's, the scan reads up to the next token on the channel.
+    this.releaseLexerErrors(i);
     return hidden.length > 0 ? hidden : null;
   }
 

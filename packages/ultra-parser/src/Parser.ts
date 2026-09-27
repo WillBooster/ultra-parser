@@ -159,6 +159,8 @@ export abstract class Parser extends Recognizer {
   #previousContexts: (ParserRuleContext | undefined)[] = [];
   #createRoot: ((parent: ParserRuleContext | null, invokingState: number) => ParserRuleContext) | undefined;
   #ownTokens: WasmTokens | undefined;
+  /** Where #loadTokens last loaded the tokens. */
+  #loadedTokens: WasmTokens | undefined;
 
   constructor(input: CommonTokenStream) {
     super();
@@ -279,9 +281,12 @@ export abstract class Parser extends Recognizer {
    */
   #loadTokens(): WasmTokens {
     const tokens = this._input.tokens;
+    const last = this.#loadedTokens;
+    if (last?.loaded?.tokens === tokens && last.loaded.length === tokens.length) return last;
     const input = tokens[0]?.inputStream ?? null;
     const shared = input && tokens.every((t) => t.inputStream === input);
     const wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
+    this.#loadedTokens = wasmTokens;
     if (wasmTokens.loaded?.tokens === tokens && wasmTokens.loaded.length === tokens.length) return wasmTokens;
     const data = new Int32Array(tokens.length * 6);
     let j = 0;

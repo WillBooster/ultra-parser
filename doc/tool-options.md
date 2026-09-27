@@ -4,7 +4,7 @@ If you invoke the ANTLR tool without command line arguments, you’ll get a help
 
 ```bash
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar
-ANTLR Parser Generator  Version 4.7.1
+ANTLR Parser Generator  Version 0.0.1
  -o ___              specify output directory where all output is generated
  -lib ___            specify location of grammars, tokens files
  -atn                generate rule augmented transition network diagrams
@@ -151,7 +151,7 @@ This option creates a log file containing lots of information messages from ANTL
  	
 ```bash
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Xlog T.g4 	
-wrote ./antlr-2012-09-06-17.56.19.log
+wrote ./antlr-<timestamp>.log
 ```
 
 ## `-Xexact-output-dir`
