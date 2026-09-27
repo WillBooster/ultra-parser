@@ -35,8 +35,8 @@ ANTLR generates output files in the current directory by default. This option sp
 ```bash
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -o /tmp T.g4
 $ ls /tmp/T*
-/tmp/T.tokens /tmp/TLexer.ts
-/tmp/TListener.ts /tmp/TParser.ts
+/tmp/T.interp       /tmp/TLexer.interp  /tmp/TLexer.ts      /tmp/TParser.ts
+/tmp/T.tokens       /tmp/TLexer.tokens  /tmp/TListener.ts
 ```
 
 ## `-lib libdir`
@@ -119,6 +119,7 @@ T.g4: A.tokens
 TParser.ts : T.g4
 T.tokens : T.g4
 TLexer.ts : T.g4
+TLexer.tokens : T.g4
 TListener.ts : T.g4
 ```
 
