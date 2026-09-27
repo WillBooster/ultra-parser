@@ -19,7 +19,9 @@ ParserFile(file, parser, namedActions, contextSuperClass) ::= <<
 <fileHeader(file.grammarFileName, file.ANTLRVersion)>
 
 import {
+<if(!file.parser.superClass)>
 	Parser,
+<endif>
 	type ParserHooks,
 	ParserRuleContext,
 <if(file.parser.tokenGetters)>
@@ -566,7 +568,7 @@ recRuleSetReturnAction(src, name) ::= "$<name>=$<src>.<name>;"
 LexerFile(lexerFile, lexer, namedActions) ::= <<
 <fileHeader(lexerFile.grammarFileName, lexerFile.ANTLRVersion)>
 
-import { type CharStream, Lexer, <if(lexer.actionFuncs || lexer.sempredFuncs)>type ParserRuleContext, <endif>Token } from 'ultra-parser';
+import { type CharStream, <if(!lexer.superClass)>Lexer, <endif><if(lexer.actionFuncs || lexer.sempredFuncs)>type ParserRuleContext, <endif>Token } from 'ultra-parser';
 
 <namedActions.header>
 <lexer>
