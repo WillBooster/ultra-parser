@@ -357,6 +357,8 @@ export class WasmTokens {
   readonly ptr: number;
   /** The tokens last copied in and how many there were, so that unchanged tokens are not copied again. */
   loaded: { tokens: readonly unknown[]; length: number } | undefined;
+  /** How many running parses read the tokens, which must not change until they finish. */
+  parses = 0;
 
   constructor(input: Uint32Array) {
     const data = allocInts(input, true);

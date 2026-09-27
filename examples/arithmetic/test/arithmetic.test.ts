@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { CharStream, CommonTokenStream, type ErrorListener, Token } from 'ultra-parser';
+import { CharStream, CommonToken, CommonTokenStream, type ErrorListener, Token } from 'ultra-parser';
 
 import { evaluate, parse } from '../src/index.js';
 import { ArithmeticLexer } from '../src/generated/ArithmeticLexer.js';
@@ -136,4 +136,24 @@ test('loads the tokens once for successive rules', () => {
   parser.expr();
   parser.expr();
   expect(visits).toBe(0);
+});
+
+test('keeps the tokens of a parse when grammar code parses other tokens of the same input', () => {
+  const input = CharStream.fromString('1 + 2');
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(input)));
+  let nested = '';
+  parser.addParseListener({
+    visitTerminal: (node) => {
+      if (node.getText() !== '+' || nested) return;
+      const tokens = [
+        new CommonToken(ArithmeticLexer.NUMBER, 0, 0, 0, 1, 0, null, input, '9'),
+        new CommonToken(Token.EOF, 0, 1, 0, 1, 1, null, input),
+      ];
+      const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+      const inner = new ArithmeticParser(new CommonTokenStream(source));
+      nested = inner.expr().toStringTree(inner);
+    },
+  });
+  expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
+  expect(nested).toBe('(expr 9)');
 });

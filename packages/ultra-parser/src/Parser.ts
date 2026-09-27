@@ -256,8 +256,13 @@ export abstract class Parser extends Recognizer {
     this.#parsing = true;
     activeParsers.push(this);
     try {
-      const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
-      return this.#contexts[root] as T;
+      tokens.parses++;
+      try {
+        const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
+        return this.#contexts[root] as T;
+      } finally {
+        tokens.parses--;
+      }
     } finally {
       activeParsers.pop();
       // The runtime restores the mode the outer parse started with; the mode may have changed since.
@@ -284,10 +289,18 @@ export abstract class Parser extends Recognizer {
     const last = this.#loadedTokens;
     if (last?.loaded?.tokens === tokens && last.loaded.length === tokens.length) return last;
     const input = tokens[0]?.inputStream ?? null;
-    const shared = input && tokens.every((t) => t.inputStream === input);
-    const wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
+    let shared = input && tokens.every((t) => t.inputStream === input);
+    let wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
+    if (wasmTokens.loaded?.tokens === tokens && wasmTokens.loaded.length === tokens.length) {
+      this.#loadedTokens = wasmTokens;
+      return wasmTokens;
+    }
+    // A parse that grammar code started while another parse reads the memory needs memory of its own.
+    if (wasmTokens.parses > 0) {
+      shared = false;
+      wasmTokens = new WasmTokens(new Uint32Array());
+    }
     this.#loadedTokens = wasmTokens;
-    if (wasmTokens.loaded?.tokens === tokens && wasmTokens.loaded.length === tokens.length) return wasmTokens;
     const data = new Int32Array(tokens.length * 6);
     let j = 0;
     for (const t of tokens) {
