@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { CharStream, CommonToken, CommonTokenStream, type ErrorListener, Token } from 'ultra-parser';
+import { CharStream, CommonToken, CommonTokenStream, type ErrorListener, type ParserHooks, Token } from 'ultra-parser';
 
 import { evaluate, parse } from '../src/index.js';
 import { ArithmeticLexer } from '../src/generated/ArithmeticLexer.js';
@@ -421,3 +421,27 @@ test('leaves deeply nested rules quickly when grammar code throws', () => {
   expect(() => parser.program()).toThrow('stop');
   expect(exits).toBe(20_002);
 }, 60_000);
+
+test('pops the precedence of left-recursive rules left because grammar code threw', () => {
+  const seen: [string, boolean][] = [];
+  class Parser extends ArithmeticParser {
+    protected static override registerHooks(hooks: ParserHooks): void {
+      super.registerHooks(hooks);
+      hooks.onFinally(ArithmeticParser.RULE_expr, function (this: Parser, ctx) {
+        seen.push([ctx.getText(), this.precpred(ctx, 5)]);
+      });
+    }
+  }
+  const parser = new Parser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('2 ^ 3'))));
+  parser.addParseListener({
+    visitTerminal: (node) => {
+      if (node.getText() === '3') throw new Error('stop');
+    },
+  });
+  expect(() => parser.program()).toThrow('stop');
+  // Like ANTLR's, a rule's finally runs before its precedence is popped.
+  expect(seen).toEqual([
+    ['3', false],
+    ['2^', true],
+  ]);
+});
