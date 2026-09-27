@@ -310,3 +310,16 @@ test('returns the hidden tokens to the left in order', () => {
   stream.fill();
   expect(stream.getHiddenTokensToLeft(3)?.map((token) => token.text)).toEqual([' ', '\t']);
 });
+
+test('sends each exit event once when a listener throws at a left-recursive iteration', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1+2'))));
+  let exits = 0;
+  parser.addParseListener({
+    exitEveryRule: () => {
+      exits++;
+      if (exits === 1) throw new Error('stop');
+    },
+  });
+  expect(() => parser.expr()).toThrow('stop');
+  expect(exits).toBe(1);
+});

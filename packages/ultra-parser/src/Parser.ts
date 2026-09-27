@@ -159,8 +159,9 @@ export abstract class Parser extends Recognizer {
   #previousContexts: (ParserRuleContext | undefined)[] = [];
   #createRoot: ((parent: ParserRuleContext | null, invokingState: number) => ParserRuleContext) | undefined;
   #ownTokens: WasmTokens | undefined;
-  /** The context whose `finally` hook and exit event ran and threw, which aborting must not repeat. */
-  #leaving: ParserRuleContext | null = null;
+  // The contexts whose `finally` hook or exit event started, which each run at most once
+  readonly #finallyStarted = new WeakSet<ParserRuleContext>();
+  readonly #exitStarted = new WeakSet<ParserRuleContext>();
   /** Where #loadTokens last loaded the tokens. */
   #loadedTokens: WasmTokens | undefined;
 
@@ -256,7 +257,6 @@ export abstract class Parser extends Recognizer {
       this._ctx,
       this.state,
       startToken,
-      this.#leaving,
     ] as const;
     const tokens = this.#loadTokens();
     const parsing = this.#parsing;
@@ -289,7 +289,7 @@ export abstract class Parser extends Recognizer {
       if (current) setPredictionMode(current.#mode);
       this.#parsing = parsing;
       if (parsing) {
-        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state, , this.#leaving] = outer;
+        [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state] = outer;
         this._input.seek(outer[5]);
       } else {
         this.#contexts = [];
@@ -407,7 +407,7 @@ export abstract class Parser extends Recognizer {
 
   #onPushRecursion(id: number, previousId: number, state: number, previousStop: number): void {
     const previous = this.#ctx(previousId);
-    if (this.#parseListeners.length > 0) this.#triggerExitRuleEvent(previous);
+    this.#sendExitEvent(previous);
     const ctx = this.#newContext(previous.ruleIndex, previous.parent, previous.invokingState);
     previous.parent = ctx;
     previous.invokingState = state;
@@ -445,11 +445,7 @@ export abstract class Parser extends Recognizer {
       this.#hooks.after.get(ctx.ruleIndex)?.call(this, ctx);
     }
     const thrown = this.#leave(ctx);
-    if (thrown) {
-      // The rule has left; aborting the parse continues with the enclosing rules.
-      this.#leaving = ctx;
-      throw thrown.value;
-    }
+    if (thrown) throw thrown.value;
   }
 
   /**
@@ -458,10 +454,7 @@ export abstract class Parser extends Recognizer {
    * to rethrow, which is the last one a `finally` hook or listener threw, if any.
    */
   #abortRules(error: unknown): unknown {
-    let ctx = this._ctx;
-    if (ctx && ctx === this.#leaving) ctx = ctx.parent;
-    this.#leaving = null;
-    for (; ctx && this.#contexts.includes(ctx); ctx = ctx.parent) {
+    for (let ctx = this._ctx; ctx && this.#contexts.includes(ctx); ctx = ctx.parent) {
       this._ctx = ctx;
       const thrown = this.#leave(ctx);
       if (thrown) error = thrown.value;
@@ -470,22 +463,33 @@ export abstract class Parser extends Recognizer {
   }
 
   /**
-   * Runs the `finally` hook and then the exit events of `ctx`, each even when the other throws;
-   * returns the last error thrown, if any.
+   * Runs the `finally` hook and then the exit events of `ctx`, each even when the other throws and
+   * each unless it started before; returns the last error thrown, if any.
    */
   #leave(ctx: ParserRuleContext): { value: unknown } | undefined {
     let thrown: { value: unknown } | undefined;
-    try {
-      this.#hooks.finally.get(ctx.ruleIndex)?.call(this, ctx);
-    } catch (error) {
-      thrown = { value: error };
+    const hook = this.#hooks.finally.get(ctx.ruleIndex);
+    if (hook && !this.#finallyStarted.has(ctx)) {
+      this.#finallyStarted.add(ctx);
+      try {
+        hook.call(this, ctx);
+      } catch (error) {
+        thrown = { value: error };
+      }
     }
     try {
-      this.#triggerExitRuleEvent(ctx);
+      this.#sendExitEvent(ctx);
     } catch (error) {
       thrown = { value: error };
     }
     return thrown;
+  }
+
+  /** Sends the exit events of `ctx` to the parse listeners unless they were sent before. */
+  #sendExitEvent(ctx: ParserRuleContext): void {
+    if (this.#parseListeners.length === 0 || this.#exitStarted.has(ctx)) return;
+    this.#exitStarted.add(ctx);
+    this.#triggerExitRuleEvent(ctx);
   }
 
   #returned(ctx: ParserRuleContext): void {
