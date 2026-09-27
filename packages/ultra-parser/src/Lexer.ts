@@ -295,15 +295,17 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   }
 
   notifyErrorListeners(message: string): void {
-    for (const listener of this.errorListeners) {
-      listener.syntaxError(this, null, this._tokenStartLine, this._tokenStartColumn, message, null);
-    }
+    this.#report(message, null);
   }
 
   #notifyListeners(): void {
     const text = this._input.getText(this._tokenStartCharIndex, this._input.index);
     const message = `token recognition error at: '${this.getErrorDisplay(text)}'`;
-    const e = new RecognitionException(message);
+    this.#report(message, new RecognitionException(message));
+  }
+
+  /** Reports an error at the start of the current token, through `errorSink` if there is one. */
+  #report(message: string, e: RecognitionException | null): void {
     const [line, column] = [this._tokenStartLine, this._tokenStartColumn];
     const report = () => {
       for (const listener of this.errorListeners) listener.syntaxError(this, null, line, column, message, e);

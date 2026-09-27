@@ -445,3 +445,23 @@ test('pops the precedence of left-recursive rules left because grammar code thre
     ['2^', true],
   ]);
 });
+
+test('defers errors that lexer code reports until the parser reaches their token', () => {
+  class Lexer extends ArithmeticLexer {
+    override nextToken(): Token {
+      const token = super.nextToken();
+      if (token.text === '2') this.notifyErrorListeners('action error');
+      return token;
+    }
+  }
+  const log: string[] = [];
+  const lexer = new Lexer(CharStream.fromString('1 2'));
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = { syntaxError: (_recognizer, _symbol, _line, _column, message) => log.push(message) };
+  lexer.addErrorListener(listener);
+  const stream = new CommonTokenStream(lexer);
+  expect(stream.LT(1)?.text).toBe('1');
+  expect(log).toEqual([]);
+  stream.consume();
+  expect(log).toEqual(['action error']);
+});
