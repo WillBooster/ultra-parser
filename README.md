@@ -18,7 +18,7 @@ ANTLR 5 aims at a single runtime in WebAssembly instead of one runtime per langu
 The runtime passes all of ANTLR's runtime tests (`runtime-testsuite/`) except those that print ANTLR's DFA, which the runtime does not build. It differs from ANTLR's TypeScript target in these ways:
 
 - The parser reads all tokens before it parses, so the parser cannot switch lexer modes, and lexer actions run before parser actions. Lexer errors are still reported in ANTLR's order.
-- Prediction does not cache DFA states; it caches only LL(1) sets. Grammars that ANTLR predicts quickly are also fast here, but the same decisions are recomputed each time they are made.
+- Prediction does not cache DFA states across decisions: it caches LL(1) sets and, within one prediction, the prediction contexts it merges. Grammars that ANTLR predicts quickly are also fast here, but the same decisions are recomputed each time they are made.
 - `catch` clauses of rules are ignored, and the runtime has no pluggable error strategies (only the default and `BailErrorStrategy`), token stream rewriters, parse tree patterns, or XPath.
 
 See [doc/typescript-target.md](doc/typescript-target.md) for the generated code and the runtime API.

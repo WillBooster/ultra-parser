@@ -75,6 +75,9 @@ export class CommonToken implements Token {
     this.#line = line;
     this.#column = column;
     this.#explicitText = text;
+    // Parsers reuse their copies of these tokens until the version changes, so their fields must
+    // change only through the setters; subclasses count as other token classes.
+    if (new.target === CommonToken) Object.seal(this);
   }
 
   get type(): number {

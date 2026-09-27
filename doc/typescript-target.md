@@ -18,7 +18,7 @@ const parser = new TParser(new CommonTokenStream(new TLexer(CharStream.fromStrin
 const tree = parser.expr();
 ```
 
-Each parse copies the stream's tokens into the runtime unless the copy is current, which it is when the tokens are `CommonToken`s that have not changed; tokens of other classes are copied for every parse.
+Each parse copies the stream's tokens into the runtime unless the copy is current, which it is when the tokens are of exactly the `CommonToken` class and have not changed; tokens of other classes, including subclasses of `CommonToken`, are copied for every parse.
 
 Context classes have getters for the elements of their rule, as in ANTLR's TypeScript target: `ID()` for a token that appears once, `ID_list()` and `ID(i)` for a token that appears several times, and likewise for rules. Labels are fields with an underscore, e.g., `_op` for `op=('+'|'-')`, and arguments, return values, and locals are fields with their names.
 

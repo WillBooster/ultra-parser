@@ -56,7 +56,7 @@ export class CommonTokenStream {
     const token = this.tokenSource.nextToken();
     token.tokenIndex = this.tokens.length;
     this.#tokens.push(token);
-    if (!(token instanceof CommonToken)) this.#onlyCommonTokens = false;
+    if (Object.getPrototypeOf(token) !== CommonToken.prototype) this.#onlyCommonTokens = false;
     if (token.type === Token.EOF) this.fetchedEOF = true;
   }
 
@@ -70,8 +70,8 @@ export class CommonTokenStream {
   }
 
   /**
-   * Whether all tokens are `CommonToken`s, whose changes parsers notice without comparing every
-   * token; parsers copy other tokens again for every parse.
+   * Whether all tokens are of exactly the `CommonToken` class, whose changes parsers notice without
+   * comparing every token; parsers copy other tokens, including of subclasses, for every parse.
    */
   get onlyCommonTokens(): boolean {
     return this.#onlyCommonTokens;

@@ -242,3 +242,35 @@ test('parses the current tokens after a token of another class changed', () => {
   parser.program();
   expect(parser.numberOfSyntaxErrors).toBe(1);
 });
+
+test('parses the current tokens after a token of a CommonToken subclass changed', () => {
+  class Derived extends CommonToken {
+    #value = 0;
+    override get type(): number {
+      return this.#value;
+    }
+    override set type(value: number) {
+      this.#value = value;
+    }
+  }
+  const input = CharStream.fromString('1');
+  const first = new Derived(ArithmeticParser.NUMBER, 0, 0, 0, 1, 0, null, input, '1');
+  first.type = ArithmeticParser.NUMBER;
+  const eof = new Derived(Token.EOF, 0, 1, 0, 1, 1, null, input, '<EOF>');
+  eof.type = Token.EOF;
+  const tokens: Token[] = [first, eof];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const parser = new ArithmeticParser(new CommonTokenStream(source));
+  parser.removeErrorListeners();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(0);
+  first.type = ArithmeticParser.T__4;
+  parser.reset();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(1);
+});
+
+test('keeps CommonToken fields behind the setters that parsers track', () => {
+  const token = new CommonToken(ArithmeticParser.NUMBER, 0, 0, 0, 1, 0, null, null, '1');
+  expect(() => Object.defineProperty(token, 'type', { value: ArithmeticParser.T__4 })).toThrow(TypeError);
+});
