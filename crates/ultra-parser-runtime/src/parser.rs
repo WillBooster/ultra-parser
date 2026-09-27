@@ -1,7 +1,9 @@
 //! The parser interpreter, ported from ANTLR's `ParserInterpreter`, the parts of `Parser` that
-//! report the parse tree, and `DefaultErrorStrategy`. Where the generated parsers of ANTLR's code generation
-//! targets behave differently from `ParserInterpreter`, it follows the generated parsers: it syncs
-//! at the same states and recovers without adding error nodes.
+//! report the parse tree, and `DefaultErrorStrategy`. Where the generated parsers of ANTLR's code
+//! generation targets behave differently from `ParserInterpreter`, it follows the generated
+//! parsers: it syncs at the same states, and when it recovers from a mismatched token set, it
+//! leaves the token it makes up out of the tree. Like theirs, its other recovery adds error nodes
+//! for skipped tokens and made-up tokens.
 
 use crate::SyntaxError;
 use crate::atn::{Atn, StateKind, Transition};

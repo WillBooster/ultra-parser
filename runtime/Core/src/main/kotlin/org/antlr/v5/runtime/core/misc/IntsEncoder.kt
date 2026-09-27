@@ -12,10 +12,9 @@ package org.antlr.v5.runtime.core.misc
  * | 1xxxxxxx xxxxxxxx yyyyyyyy yyyyyyyy          | 2            | uint (16+ bits) |
  * | 11111111 11111111 11111111 11111111          | 2            | int value -1    |
  *
- * This is only used (other than for testing) by [org.antlr.v4.codegen.model.SerializedJavaATN]
- * to encode ints as char values for the java target, but it is convenient to combine it with the
- * #decodeIntsEncodedAs16BitWords that follows as they are a pair (I did not want to introduce a new class
- * into the runtime). Used only for Java Target.
+ * ANTLR's Java target used it to encode ints as char values; no target of this tool does, as the
+ * TypeScript target emits the ints as they are. It is kept with #decodeIntsEncodedAs16BitWords that
+ * follows, as they are a pair, and the ATN serialization tests use both.
  */
 public fun encodeIntsWith16BitWords(data: IntegerList): IntegerList {
     val data16 = IntegerList((data.size() * 1.5).toInt())

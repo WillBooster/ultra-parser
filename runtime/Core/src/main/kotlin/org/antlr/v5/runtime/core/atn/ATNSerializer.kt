@@ -17,10 +17,9 @@ import org.antlr.v5.runtime.core.transition.*
 /**
  * This class represents a target neutral serializer for ATNs. An ATN is converted to a list of integers
  * that can be converted back to and ATN. We compute the list of integers and then generate an array
- * into the target language for a particular lexer or parser. Java is a special case where we must
- * generate strings instead of arrays, but that is handled outside of this class.
- *
- * See `ATNDeserializer.encodeIntsWith16BitWords` and `org.antlr.v4.codegen.model.SerializedJavaATN`.
+ * into the target language for a particular lexer or parser; the TypeScript target emits it as an
+ * array of numbers. `encodeIntsWith16BitWords` in `misc/IntsEncoder.kt` packs the list into 16-bit
+ * words for targets that need strings, as ANTLR's Java target did.
  */
 public open class ATNSerializer(public var atn: ATN) {
   public companion object {
