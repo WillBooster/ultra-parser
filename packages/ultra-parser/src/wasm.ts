@@ -170,11 +170,21 @@ export function initSync(source: WebAssembly.Module | BufferSource): void {
   wasm = new WebAssembly.Instance(module, imports).exports as unknown as WasmExports;
 }
 
-/** Initializes the runtime, fetching `ultra_parser.wasm` next to this package by default. */
+/**
+ * Initializes the runtime, fetching `ultra_parser.wasm` next to this package by default; `file:`
+ * URLs are read from the file system where it is available.
+ */
 export async function init(source: WasmSource = defaultWasmUrl): Promise<void> {
   if (wasm) return;
   if (source instanceof WebAssembly.Module || ArrayBuffer.isView(source) || source instanceof ArrayBuffer) {
     initSync(source);
+    return;
+  }
+  // Node.js cannot fetch local files, so they are read instead.
+  const url = source instanceof URL ? source : typeof source === 'string' && URL.canParse(source) ? new URL(source) : null;
+  const bytes = url ? readLocalFile(url) : undefined;
+  if (bytes) {
+    initSync(bytes);
     return;
   }
   const response = source instanceof Response ? source : await fetch(source);
@@ -182,17 +192,22 @@ export async function init(source: WasmSource = defaultWasmUrl): Promise<void> {
   wasm ??= instance.exports as unknown as WasmExports;
 }
 
-function runtime(): WasmExports {
-  if (wasm) return wasm;
+/** Reads a `file:` URL in runtimes that can read files (Node.js, Bun, Deno); `undefined` elsewhere. */
+function readLocalFile(url: URL): Uint8Array<ArrayBuffer> | undefined {
+  if (url.protocol !== 'file:') return undefined;
   const fs = (
     globalThis as {
       process?: { getBuiltinModule?: (id: string) => { readFileSync?: (path: URL) => Uint8Array } | undefined };
     }
   ).process?.getBuiltinModule?.('node:fs');
-  if (!fs?.readFileSync || defaultWasmUrl.protocol !== 'file:') {
-    throw new Error('The ultra-parser runtime is not initialized: call init() or initSync() first.');
-  }
-  initSync(fs.readFileSync(defaultWasmUrl) as Uint8Array<ArrayBuffer>);
+  return fs?.readFileSync?.(url) as Uint8Array<ArrayBuffer> | undefined;
+}
+
+function runtime(): WasmExports {
+  if (wasm) return wasm;
+  const bytes = readLocalFile(defaultWasmUrl);
+  if (!bytes) throw new Error('The ultra-parser runtime is not initialized: call init() or initSync() first.');
+  initSync(bytes);
   return wasm as unknown as WasmExports;
 }
 
