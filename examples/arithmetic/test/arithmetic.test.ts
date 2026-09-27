@@ -323,3 +323,21 @@ test('sends each exit event once when a listener throws at a left-recursive iter
   expect(() => parser.expr()).toThrow('stop');
   expect(exits).toBe(1);
 });
+
+test('reports each deferred lexer error once and then lets it go', () => {
+  const log: string[] = [];
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 # 2 # 3'));
+  const stream = new CommonTokenStream(lexer);
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, line, column, message) => {
+      log.push(`${line}:${column} ${message}`);
+      // A report that reads the whole stream drains the queue while it is being drained.
+      stream.getText();
+    },
+  };
+  lexer.addErrorListener(listener);
+  stream.getText();
+  expect(log).toEqual(["1:2 token recognition error at: '#'", "1:6 token recognition error at: '#'"]);
+  expect((stream as unknown as { deferredLexerErrors: unknown[] }).deferredLexerErrors).toEqual([]);
+});

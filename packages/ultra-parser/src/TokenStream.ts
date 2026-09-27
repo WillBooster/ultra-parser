@@ -49,13 +49,17 @@ export class CommonTokenStream {
 
   /** Reports the deferred errors of the lexer up to the token `tokenIndex`. */
   releaseLexerErrors(tokenIndex: number): void {
-    const errors = this.deferredLexerErrors;
-    while (this.reportedLexerErrors < errors.length) {
-      const error = errors[this.reportedLexerErrors] as DeferredLexerError;
+    // The queue is read through `this`, since a report that reads the stream may drain it.
+    while (this.reportedLexerErrors < this.deferredLexerErrors.length) {
+      const error = this.deferredLexerErrors[this.reportedLexerErrors] as DeferredLexerError;
       if (error.tokenIndex > tokenIndex) break;
       // Counted first, so that a report that reads the stream does not report the error again.
       this.reportedLexerErrors++;
       error.report();
+    }
+    if (this.reportedLexerErrors === this.deferredLexerErrors.length) {
+      this.deferredLexerErrors = [];
+      this.reportedLexerErrors = 0;
     }
   }
 
