@@ -7,16 +7,13 @@
 package org.antlr.v5.codegen;
 
 import org.antlr.runtime.tree.CommonTreeNodeStream;
-import org.antlr.v5.analysis.LeftRecursiveRuleAltInfo;
 import org.antlr.v5.codegen.model.Action;
-import org.antlr.v5.codegen.model.AltBlock;
 import org.antlr.v5.codegen.model.BaseListenerFile;
 import org.antlr.v5.codegen.model.BaseVisitorFile;
 import org.antlr.v5.codegen.model.Choice;
 import org.antlr.v5.codegen.model.CodeBlockForAlt;
 import org.antlr.v5.codegen.model.CodeBlockForOuterMostAlt;
 import org.antlr.v5.codegen.model.LabeledOp;
-import org.antlr.v5.codegen.model.LeftRecursiveRuleFunction;
 import org.antlr.v5.codegen.model.Lexer;
 import org.antlr.v5.codegen.model.LexerFile;
 import org.antlr.v5.codegen.model.ListenerFile;
@@ -30,20 +27,15 @@ import org.antlr.v5.codegen.model.SrcOp;
 import org.antlr.v5.codegen.model.StarBlock;
 import org.antlr.v5.codegen.model.VisitorFile;
 import org.antlr.v5.codegen.model.decl.CodeBlock;
-import org.antlr.v5.misc.Utils;
 import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.parse.GrammarASTAdaptor;
 import org.antlr.v5.tool.Alternative;
-import org.antlr.v5.tool.ErrorType;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.LeftRecursiveRule;
 import org.antlr.v5.tool.Rule;
 import org.antlr.v5.tool.ast.ActionAST;
 import org.antlr.v5.tool.ast.BlockAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 import org.antlr.v5.tool.ast.PredAST;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
 
 import java.util.ArrayList;
 import java.util.List;

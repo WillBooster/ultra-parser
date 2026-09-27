@@ -135,15 +135,15 @@ export class ParserHooks {
 const hooksCache = new WeakMap<object, ParserHooks>();
 
 /**
- * A parser, like ANTLR's `Parser`. The runtime parses the tokens; this class builds the parse tree
- * and runs the grammar code as the runtime reports its progress.
- */
-/**
  * The parsers whose parses are running, innermost last; the runtime predicts with the innermost
  * parser's mode, as grammar code of one parser may call rules of another.
  */
 const activeParsers: Parser[] = [];
 
+/**
+ * A parser, like ANTLR's `Parser`. The runtime parses the tokens; this class builds the parse tree
+ * and runs the grammar code as the runtime reports its progress.
+ */
 export abstract class Parser extends Recognizer {
   _input: CommonTokenStream;
   /** The context of the rule being parsed. */
