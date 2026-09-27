@@ -211,3 +211,34 @@ test('parses the current tokens after a token changed', () => {
   parser.program();
   expect(parser.numberOfSyntaxErrors).toBe(1);
 });
+
+test('parses the current tokens after a token of another class changed', () => {
+  const input = CharStream.fromString('1');
+  const token = (type: number, text: string): Token => ({
+    type,
+    channel: Token.DEFAULT_CHANNEL,
+    start: 0,
+    stop: 0,
+    line: 1,
+    column: 0,
+    tokenIndex: -1,
+    text,
+    inputStream: input,
+    tokenSource: null,
+    hasText: true,
+    getText() {
+      return this.text;
+    },
+  });
+  const first = token(ArithmeticParser.NUMBER, '1');
+  const tokens = [first, token(Token.EOF, '<EOF>')];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const parser = new ArithmeticParser(new CommonTokenStream(source));
+  parser.removeErrorListeners();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(0);
+  first.type = ArithmeticParser.T__4;
+  parser.reset();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(1);
+});

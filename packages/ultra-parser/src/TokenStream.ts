@@ -1,4 +1,4 @@
-import { Token, type TokenSource } from './Token.js';
+import { CommonToken, Token, type TokenSource } from './Token.js';
 
 /** A lexer error that waits until the parser fetches the token it precedes. */
 interface DeferredLexerError {
@@ -12,6 +12,7 @@ interface DeferredLexerError {
  */
 export class CommonTokenStream {
   readonly #tokens: Token[] = [];
+  #onlyCommonTokens = true;
   private p = -1;
   private fetchedEOF = false;
   private deferredLexerErrors: DeferredLexerError[] = [];
@@ -55,6 +56,7 @@ export class CommonTokenStream {
     const token = this.tokenSource.nextToken();
     token.tokenIndex = this.tokens.length;
     this.#tokens.push(token);
+    if (!(token instanceof CommonToken)) this.#onlyCommonTokens = false;
     if (token.type === Token.EOF) this.fetchedEOF = true;
   }
 
@@ -65,6 +67,14 @@ export class CommonTokenStream {
   /** The tokens read so far; they change only as the stream reads more. */
   get tokens(): readonly Token[] {
     return this.#tokens;
+  }
+
+  /**
+   * Whether all tokens are `CommonToken`s, whose changes parsers notice without comparing every
+   * token; parsers copy other tokens again for every parse.
+   */
+  get onlyCommonTokens(): boolean {
+    return this.#onlyCommonTokens;
   }
 
   get size(): number {

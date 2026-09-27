@@ -308,12 +308,14 @@ export abstract class Parser extends Recognizer {
     const version = tokenVersion();
     const holds = (memory: WasmTokens | undefined): boolean =>
       memory?.loaded?.tokens === tokens && memory.loaded.length === tokens.length && memory.loaded.version === version;
+    // Tokens of other classes cannot report changes, so they are copied for every parse.
+    const unchanged = this._input.onlyCommonTokens;
     const last = this.#loadedTokens;
-    if (last && holds(last)) return last;
+    if (unchanged && last && holds(last)) return last;
     const input = tokens[0]?.inputStream ?? null;
     let shared = input && tokens.every((t) => t.inputStream === input);
     let wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
-    if (holds(wasmTokens)) {
+    if (unchanged && holds(wasmTokens)) {
       this.#loadedTokens = wasmTokens;
       return wasmTokens;
     }
