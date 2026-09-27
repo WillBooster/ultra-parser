@@ -9,7 +9,7 @@ use crate::config::{AltSet, Config, ConfigSet};
 use crate::context::{Ctx, EMPTY_RETURN_STATE, PredictionContext};
 use crate::semantic::SemanticContext;
 use crate::token::{EOF, EPSILON, TokenStream};
-use crate::tree::{NodeId, ParseTree, RuleNode};
+use crate::tree::{NodeId, RuleNode, invoking_states};
 
 /// How the parser predicts alternatives, like ANTLR's `PredictionMode`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -198,7 +198,7 @@ impl Simulator<'_, '_, '_, '_, '_> {
                 }
                 // Only full-context prediction needs the invocation stack, which is as long as
                 // the input is nested.
-                let invoking_states = ParseTree::invoking_states(self.outer.nodes, self.outer.ctx);
+                let invoking_states = invoking_states(self.outer.nodes, self.outer.ctx);
                 let s0 = self.compute_start_state(self.decision_state, &invoking_states, true);
                 self.report(
                     DiagnosticKind::AttemptingFullContext,

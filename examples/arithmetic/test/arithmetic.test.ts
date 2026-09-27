@@ -157,3 +157,19 @@ test('keeps the tokens of a parse when grammar code parses other tokens of the s
   expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
   expect(nested).toBe('(expr 9)');
 });
+
+test('bounds hidden tokens by the default channel on a stream of another channel', () => {
+  const input = CharStream.fromString('a b');
+  const tokens = [
+    new CommonToken(1, Token.DEFAULT_CHANNEL, 0, 0, 1, 0, null, input),
+    new CommonToken(2, Token.HIDDEN_CHANNEL, 1, 1, 1, 1, null, input),
+    new CommonToken(3, Token.DEFAULT_CHANNEL, 2, 2, 1, 2, null, input),
+    new CommonToken(Token.EOF, Token.DEFAULT_CHANNEL, 3, 2, 1, 3, null, input),
+  ];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const stream = new CommonTokenStream(source, Token.HIDDEN_CHANNEL);
+  stream.fill();
+  expect(stream.getHiddenTokensToRight(1)).toBeNull();
+  expect(stream.getHiddenTokensToLeft(1)).toBeNull();
+  expect(stream.getHiddenTokensToRight(0)?.map((token) => token.text)).toEqual([' ']);
+});

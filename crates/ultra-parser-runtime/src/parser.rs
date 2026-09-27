@@ -12,7 +12,7 @@ use crate::token::{
     DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream, Tokens,
     Vocabulary,
 };
-use crate::tree::{Child, NodeId, ParseTree, RuleNode};
+use crate::tree::{NodeId, RuleNode, invoking_states};
 
 /// Receives what the parser builds and runs the grammar code that the ATN refers to. Rule
 /// contexts are identified by their node in the parse tree the parser returns.
@@ -182,7 +182,6 @@ pub(crate) struct Parser<'a, 't, 'h, H: ParserHost> {
     mode: PredictionMode,
     host: &'h mut H,
     nodes: Vec<RuleNode>,
-    conjured_tokens: Vec<Token>,
     ctx: NodeId,
     state: usize,
     precedence_stack: Vec<i32>,
@@ -217,7 +216,6 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             mode,
             host,
             nodes: Vec::new(),
-            conjured_tokens: Vec::new(),
             ctx: 0,
             state: 0,
             precedence_stack: Vec::new(),
@@ -240,7 +238,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         }
     }
 
-    pub(crate) fn parse(mut self, start_rule: usize) -> ParseTree {
+    pub(crate) fn parse(mut self, start_rule: usize) -> NodeId {
         let start_state = self.atn.rule_to_start_state[start_rule];
         let is_left_recursive = self.atn.states[start_state].is_left_recursive_rule;
         let root = self.new_node(None, None, start_rule);
@@ -277,11 +275,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             previous = p;
         };
         self.report_fetched();
-        ParseTree {
-            nodes: self.nodes,
-            root: result,
-            conjured_tokens: self.conjured_tokens,
-        }
+        result
     }
 
     fn new_node(
@@ -293,9 +287,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         self.nodes.push(RuleNode {
             rule_index,
             parent,
-            children: Vec::new(),
             start: 0,
-            stop: None,
             invoking_state,
             error: false,
         });
@@ -315,7 +307,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
     }
 
     fn invoking_states(&self, ctx: NodeId) -> Vec<usize> {
-        ParseTree::invoking_states(&self.nodes, ctx)
+        invoking_states(&self.nodes, ctx)
     }
 
     fn follow_state(&self, invoking_state: usize) -> usize {
@@ -338,9 +330,6 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             node.rule_index,
             node.start,
         );
-        if let Some(parent) = parent {
-            self.nodes[parent].children.push(Child::Rule(ctx));
-        }
         self.host
             .enter_rule(ctx, parent, invoking_state, rule_index, state, start, false);
         self.host.outer_alt(ctx, state, 1);
@@ -354,8 +343,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         };
         let stop = stop.map(|t| t.token_index);
         let ctx = self.ctx;
-        let node = &mut self.nodes[ctx];
-        node.stop = stop;
+        let node = &self.nodes[ctx];
         self.state = node.invoking_state.unwrap_or(usize::MAX);
         if let Some(parent) = node.parent {
             self.ctx = parent;
@@ -385,11 +373,9 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         let previous_node = &mut self.nodes[previous];
         previous_node.parent = Some(ctx);
         previous_node.invoking_state = Some(state);
-        previous_node.stop = stop;
         let start = previous_node.start;
         self.ctx = ctx;
         self.nodes[ctx].start = start;
-        self.nodes[ctx].children.push(Child::Rule(previous));
         self.host.push_recursion(ctx, previous, state, stop);
     }
 
@@ -397,11 +383,9 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         self.precedence_stack.pop();
         let stop = self.lt(-1).map(|t| t.token_index);
         let ret = self.ctx;
-        self.nodes[ret].stop = stop;
         self.nodes[ret].parent = parent;
         if let Some(parent) = parent {
             self.ctx = parent;
-            self.nodes[parent].children.push(Child::Rule(ret));
         }
         let error = self.nodes[ret].error;
         self.host.unroll(ret, parent, stop, error);
@@ -414,20 +398,11 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             self.input.consume();
         }
         let error = self.error_recovery_mode;
-        let child = if error {
-            Child::SkippedToken(token.token_index)
-        } else {
-            Child::Token(token.token_index)
-        };
-        self.nodes[self.ctx].children.push(child);
         self.host.token(self.ctx, state, token.token_index, error);
     }
 
     fn add_conjured_token(&mut self, state: usize, token: Token) {
         self.host.conjure(self.ctx, state, &token, true);
-        self.conjured_tokens.push(token);
-        let child = Child::ConjuredToken(self.conjured_tokens.len() - 1);
-        self.nodes[self.ctx].children.push(child);
     }
 
     /// Matches a token of `token_type` like `Parser.match`.

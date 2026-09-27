@@ -1,106 +1,25 @@
-use crate::token::{Token, Tokens};
-
 pub type NodeId = usize;
 
-/// A child of a rule node.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Child {
-    Rule(NodeId),
-    /// A matched token (an index into the parsed tokens).
-    Token(usize),
-    /// A token skipped during error recovery (an index into the parsed tokens).
-    SkippedToken(usize),
-    /// A token the parser made up during error recovery (an index into
-    /// `ParseTree::conjured_tokens`).
-    ConjuredToken(usize),
-}
-
+/// A rule invocation the parser tracks; the host builds the parse tree from the parser's events.
 #[derive(Clone, Debug)]
-pub struct RuleNode {
-    pub rule_index: usize,
-    pub parent: Option<NodeId>,
-    pub children: Vec<Child>,
+pub(crate) struct RuleNode {
+    pub(crate) rule_index: usize,
+    pub(crate) parent: Option<NodeId>,
     /// Index of the first token of the rule.
-    pub start: usize,
-    /// Index of the last token of the rule; `None` when the rule matched nothing at the start of
-    /// the input.
-    pub stop: Option<usize>,
+    pub(crate) start: usize,
     /// The ATN state that invoked the rule; `None` for the root.
     pub(crate) invoking_state: Option<usize>,
     /// Whether the rule ended early because of a syntax error in it.
-    pub error: bool,
+    pub(crate) error: bool,
 }
 
-/// A parse tree stored as an arena of rule nodes; tokens are indexes into the parsed tokens.
-#[derive(Clone, Debug)]
-pub struct ParseTree {
-    pub nodes: Vec<RuleNode>,
-    pub root: NodeId,
-    /// Tokens made up during error recovery, such as `<missing ')'>`. They take the position of the
-    /// token where they were made up.
-    pub conjured_tokens: Vec<Token>,
-}
-
-impl ParseTree {
-    /// Formats the tree as an S-expression like ANTLR's `Trees.toStringTree`, e.g.,
-    /// `(expr (expr 1) + (expr 2))`.
-    pub fn to_string_tree(&self, tokens: &Tokens, rule_names: &[String]) -> String {
-        let mut buf = String::new();
-        // Trees are as deep as the input is long (e.g., left-recursive rules nest one node per
-        // operator), so the walk keeps its own stack of (node, next child) instead of recursing.
-        let mut stack = vec![(self.root, 0)];
-        while let Some((id, next)) = stack.last_mut() {
-            let node = &self.nodes[*id];
-            if *next == 0 {
-                let name = &rule_names[node.rule_index];
-                if node.children.is_empty() {
-                    buf.push_str(name);
-                    stack.pop();
-                    continue;
-                }
-                buf.push('(');
-                buf.push_str(name);
-            }
-            let Some(&child) = node.children.get(*next) else {
-                buf.push(')');
-                stack.pop();
-                continue;
-            };
-            *next += 1;
-            buf.push(' ');
-            match child {
-                Child::Rule(child) => stack.push((child, 0)),
-                Child::Token(i) | Child::SkippedToken(i) => {
-                    push_escaped(&mut buf, &tokens.text(&tokens.tokens[i]))
-                }
-                Child::ConjuredToken(i) => {
-                    push_escaped(&mut buf, &tokens.text(&self.conjured_tokens[i]))
-                }
-            }
-        }
-        buf
+/// The invoking states of the rule invocations from `ctx` outwards, excluding the root.
+pub(crate) fn invoking_states(nodes: &[RuleNode], mut ctx: NodeId) -> Vec<usize> {
+    let mut states = Vec::new();
+    while let (Some(parent), Some(invoking_state)) = (nodes[ctx].parent, nodes[ctx].invoking_state)
+    {
+        states.push(invoking_state);
+        ctx = parent;
     }
-
-    /// The invoking states of the rule invocations from `ctx` outwards, excluding the root.
-    pub(crate) fn invoking_states(nodes: &[RuleNode], mut ctx: NodeId) -> Vec<usize> {
-        let mut states = Vec::new();
-        while let (Some(parent), Some(invoking_state)) =
-            (nodes[ctx].parent, nodes[ctx].invoking_state)
-        {
-            states.push(invoking_state);
-            ctx = parent;
-        }
-        states
-    }
-}
-
-fn push_escaped(buf: &mut String, text: &str) {
-    for c in text.chars() {
-        match c {
-            '\t' => buf.push_str("\\t"),
-            '\n' => buf.push_str("\\n"),
-            '\r' => buf.push_str("\\r"),
-            c => buf.push(c),
-        }
-    }
+    states
 }

@@ -703,7 +703,7 @@ pub unsafe extern "C" fn parse(
     let (grammar, tokens) = unsafe { (&*grammar, &*tokens) };
     let outer_mode = PREDICTION_MODE.replace(mode);
     let mut host = WasmParserHost { aborted: false };
-    let tree = grammar.parse(
+    let root = grammar.parse(
         tokens,
         start_token,
         start_rule,
@@ -711,5 +711,5 @@ pub unsafe extern "C" fn parse(
         &mut host,
     );
     PREDICTION_MODE.set(outer_mode);
-    if host.aborted { -1 } else { tree.root as i32 }
+    if host.aborted { -1 } else { root as i32 }
 }

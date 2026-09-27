@@ -29,7 +29,7 @@ pub use prediction::{Diagnostic, DiagnosticKind, PredictionMode};
 pub use token::{
     DEFAULT_CHANNEL, EOF, HIDDEN_CHANNEL, Token, Tokens, Vocabulary, code_points_to_string,
 };
-pub use tree::{Child, NodeId, ParseTree, RuleNode};
+pub use tree::NodeId;
 
 use atn::{Atn, GrammarType};
 
@@ -121,8 +121,8 @@ impl Grammar {
     }
 
     /// Parses `tokens`, which must end with an EOF token, from token `start_token` (or the next
-    /// token on the default channel) with rule `start_rule`. A tree is produced even for invalid
-    /// input, thanks to error recovery.
+    /// token on the default channel) with rule `start_rule`, reporting the parse tree to `host`,
+    /// and returns the root context. Error recovery produces a tree even for invalid input.
     pub fn parse<H: ParserHost>(
         &self,
         tokens: &Tokens,
@@ -130,7 +130,7 @@ impl Grammar {
         start_rule: usize,
         mode: PredictionMode,
         host: &mut H,
-    ) -> ParseTree {
+    ) -> NodeId {
         assert!(!self.is_lexer(), "parse needs a parser grammar");
         assert!(
             tokens.tokens.last().is_some_and(|t| t.token_type == EOF),

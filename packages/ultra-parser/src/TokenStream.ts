@@ -163,28 +163,34 @@ export class CommonTokenStream {
     return text;
   }
 
-  /** The hidden tokens right of token `index`, up to the next token on the channel. */
+  /**
+   * The hidden tokens right of token `index`, up to the next token on the default channel (on any
+   * channel but the default one, or on `channel`), like ANTLR's.
+   */
   getHiddenTokensToRight(index: number, channel = -1): Token[] | null {
     this.lazyInit();
     const hidden: Token[] = [];
     let i = index + 1;
     for (; i < this.tokens.length; i++) {
       const token = this.tokens[i] as Token;
-      if (token.channel === this.channel || token.type === Token.EOF) break;
+      if (token.channel === Token.DEFAULT_CHANNEL || token.type === Token.EOF) break;
       if (channel === -1 || token.channel === channel) hidden.push(token);
     }
-    // Like ANTLR's, the scan reads up to the next token on the channel.
+    // Like ANTLR's, the scan reads up to the next token on the default channel.
     this.releaseLexerErrors(i);
     return hidden.length > 0 ? hidden : null;
   }
 
-  /** The hidden tokens left of token `index`, up to the previous token on the channel. */
+  /**
+   * The hidden tokens left of token `index`, up to the previous token on the default channel (on
+   * any channel but the default one, or on `channel`), like ANTLR's.
+   */
   getHiddenTokensToLeft(index: number, channel = -1): Token[] | null {
     this.lazyInit();
     const hidden: Token[] = [];
     for (let i = index - 1; i >= 0; i--) {
       const token = this.tokens[i] as Token;
-      if (token.channel === this.channel) break;
+      if (token.channel === Token.DEFAULT_CHANNEL) break;
       if (channel === -1 || token.channel === channel) hidden.unshift(token);
     }
     return hidden.length > 0 ? hidden : null;

@@ -1,7 +1,11 @@
 //! Lexes and parses with the grammar of `examples/arithmetic`, reading the ATNs and names from the
 //! TypeScript that the tool generated for it.
 
-use ultra_parser_runtime::{Grammar, NodeId, ParserHost, PredictionMode, SyntaxError, Vocabulary};
+use std::collections::HashMap;
+
+use ultra_parser_runtime::{
+    Grammar, NodeId, ParserHost, PredictionMode, SyntaxError, Token, Tokens, Vocabulary,
+};
 
 /// Reads the static array `name` of the recognizer that the tool generated for the example.
 fn generated_array(recognizer: &str, name: &str) -> Vec<String> {
@@ -63,14 +67,118 @@ fn grammars() -> (Grammar, Grammar) {
     (lexer, parser)
 }
 
+/// Builds the parse tree from the events of the parser, as `ultra-parser`'s `Parser` does, and
+/// collects the syntax errors.
+struct TreeBuilder<'a> {
+    tokens: &'a Tokens,
+    rules: HashMap<NodeId, (usize, Vec<Node>)>,
+    errors: Vec<String>,
+}
+
+enum Node {
+    Rule(NodeId),
+    Token(String),
+}
+
+impl TreeBuilder<'_> {
+    fn add(&mut self, ctx: NodeId, node: Node) {
+        self.rules
+            .get_mut(&ctx)
+            .expect("a rule context")
+            .1
+            .push(node);
+    }
+
+    fn to_string_tree(&self, ctx: NodeId, rule_names: &[String]) -> String {
+        let (rule_index, children) = &self.rules[&ctx];
+        let name = &rule_names[*rule_index];
+        if children.is_empty() {
+            return name.clone();
+        }
+        let children: Vec<String> = children
+            .iter()
+            .map(|child| match child {
+                Node::Rule(child) => self.to_string_tree(*child, rule_names),
+                Node::Token(text) => text.clone(),
+            })
+            .collect();
+        format!("({name} {})", children.join(" "))
+    }
+}
+
+impl ParserHost for TreeBuilder<'_> {
+    fn enter_rule(
+        &mut self,
+        ctx: NodeId,
+        parent: Option<NodeId>,
+        _invoking_state: Option<usize>,
+        rule_index: usize,
+        _state: usize,
+        _start_token: usize,
+        recursive: bool,
+    ) {
+        self.rules.insert(ctx, (rule_index, Vec::new()));
+        if let (Some(parent), false) = (parent, recursive) {
+            self.add(parent, Node::Rule(ctx));
+        }
+    }
+
+    fn push_recursion(
+        &mut self,
+        ctx: NodeId,
+        previous: NodeId,
+        _state: usize,
+        _previous_stop: Option<usize>,
+    ) {
+        let rule_index = self.rules[&previous].0;
+        self.rules
+            .insert(ctx, (rule_index, vec![Node::Rule(previous)]));
+    }
+
+    fn unroll(
+        &mut self,
+        ctx: NodeId,
+        parent: Option<NodeId>,
+        _stop_token: Option<usize>,
+        _error: bool,
+    ) {
+        if let Some(parent) = parent {
+            self.add(parent, Node::Rule(ctx));
+        }
+    }
+
+    fn token(&mut self, ctx: NodeId, _state: Option<usize>, token_index: usize, _error: bool) {
+        let text = self
+            .tokens
+            .text(&self.tokens.tokens[token_index])
+            .into_owned();
+        self.add(ctx, Node::Token(text));
+    }
+
+    fn conjure(&mut self, ctx: NodeId, _state: usize, token: &Token, add_to_tree: bool) {
+        if add_to_tree {
+            let text = self.tokens.text(token).into_owned();
+            self.add(ctx, Node::Token(text));
+        }
+    }
+
+    fn syntax_error(&mut self, error: SyntaxError) {
+        self.errors.push(error.to_string());
+    }
+}
+
 fn parse(source: &str) -> (String, Vec<String>) {
     let (lexer, parser) = grammars();
     let (tokens, lexer_errors) = lexer.tokenize(source);
-    let mut errors = lexer_errors;
-    let tree = parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut errors);
+    let mut builder = TreeBuilder {
+        tokens: &tokens,
+        rules: HashMap::new(),
+        errors: lexer_errors.iter().map(ToString::to_string).collect(),
+    };
+    let root = parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut builder);
     (
-        tree.to_string_tree(&tokens, parser.rule_names()),
-        errors.iter().map(ToString::to_string).collect(),
+        builder.to_string_tree(root, parser.rule_names()),
+        builder.errors,
     )
 }
 
