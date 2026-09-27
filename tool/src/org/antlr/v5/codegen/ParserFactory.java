@@ -196,7 +196,7 @@ public class ParserFactory extends DefaultOutputModelFactory {
 	public Choice getChoiceBlock(BlockAST blkAST, List<CodeBlockForAlt> alts, GrammarAST labelAST) {
 		int decision = ((DecisionState) blkAST.atnState).getDecision();
 		Choice c;
-		if ( !g.tool.force_atn && AnalysisPipeline.disjoint(g.decisionLOOK.get(decision)) ) {
+		if ( AnalysisPipeline.disjoint(g.decisionLOOK.get(decision)) ) {
 			c = getLL1ChoiceBlock(blkAST, alts);
 		}
 		else {
@@ -220,21 +220,19 @@ public class ParserFactory extends DefaultOutputModelFactory {
 
 	@Override
 	public Choice getEBNFBlock(GrammarAST ebnfRoot, List<CodeBlockForAlt> alts) {
-		if (!g.tool.force_atn) {
-			int decision;
-			if ( ebnfRoot.getType()==ANTLRParser.POSITIVE_CLOSURE ) {
-				decision = ((PlusLoopbackState) ebnfRoot.atnState).getDecision();
-			}
-			else if ( ebnfRoot.getType()==ANTLRParser.CLOSURE ) {
-				decision = ((StarLoopEntryState) ebnfRoot.atnState).getDecision();
-			}
-			else {
-				decision = ((DecisionState) ebnfRoot.atnState).getDecision();
-			}
+		int decision;
+		if ( ebnfRoot.getType()==ANTLRParser.POSITIVE_CLOSURE ) {
+			decision = ((PlusLoopbackState) ebnfRoot.atnState).getDecision();
+		}
+		else if ( ebnfRoot.getType()==ANTLRParser.CLOSURE ) {
+			decision = ((StarLoopEntryState) ebnfRoot.atnState).getDecision();
+		}
+		else {
+			decision = ((DecisionState) ebnfRoot.atnState).getDecision();
+		}
 
-			if ( AnalysisPipeline.disjoint(g.decisionLOOK.get(decision)) ) {
-				return getLL1EBNFBlock(ebnfRoot, alts);
-			}
+		if ( AnalysisPipeline.disjoint(g.decisionLOOK.get(decision)) ) {
+			return getLL1EBNFBlock(ebnfRoot, alts);
 		}
 
 		return getComplexEBNFBlock(ebnfRoot, alts);
