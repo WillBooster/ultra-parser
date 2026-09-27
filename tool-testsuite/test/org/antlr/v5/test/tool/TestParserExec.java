@@ -139,6 +139,18 @@ public class TestParserExec {
 		assertEquals("", executedState.errors);
 	}
 
+	/** Literals of named tokens give contexts token getters, which compile with their types. */
+	@Test public void testTokenGettersOfLiterals() {
+		String grammar =
+			"grammar T;\n" +
+			"s : '{' '}' ;\n" +
+			"LBRACE : '{' ;\n" +
+			"RBRACE : '}' ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "{}", false);
+		assertEquals("", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
 	/** Actions written for ANTLR read token text with {@code $t.getText()}. */
 	@Test public void testTokenGetText() {
 		String grammar =

@@ -64,6 +64,8 @@ public class RuleFunction extends OutputModelObject {
 	public final Rule rule;
 	public final AltLabelStructDecl[] altToContext;
 	public boolean hasLookaheadBlock;
+	/** Whether a context of this rule has token getters, which return terminal nodes. */
+	public boolean hasTokenGetters;
 	/** What the parser does when it chooses each outermost alternative. */
 	public final List<AltHook> altHooks = new ArrayList<>();
 
@@ -299,6 +301,7 @@ public class RuleFunction extends OutputModelObject {
 			}
 		}
 		else {
+			hasTokenGetters = true;
 			if ( needList ) {
 				if(factory.getGenerator().getTarget().supportsOverloadedMethods())
 					decls.add( new ContextTokenListGetterDecl(factory, refLabelName) );

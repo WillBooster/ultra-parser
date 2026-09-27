@@ -20,4 +20,12 @@ public class Parser extends Recognizer {
 		super(factory);
 		this.file = file; // who contains us?
 	}
+
+	/** Whether a rule context has token getters, which return terminal nodes. */
+	public boolean hasTokenGetters() {
+		for (RuleFunction f : funcs) {
+			if (f.hasTokenGetters) return true;
+		}
+		return false;
+	}
 }

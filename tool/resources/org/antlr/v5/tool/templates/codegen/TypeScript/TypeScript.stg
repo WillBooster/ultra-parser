@@ -22,7 +22,7 @@ import {
 	Parser,
 	type ParserHooks,
 	ParserRuleContext,
-<if(file.hasTokenRefs)>
+<if(file.parser.tokenGetters)>
 	type TerminalNode,
 <endif>
 	Token,

@@ -11,7 +11,6 @@ import org.antlr.v5.codegen.model.chunk.ActionChunk;
 import org.antlr.v5.codegen.model.chunk.ActionText;
 import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.Rule;
 import org.antlr.v5.tool.ast.GrammarAST;
 
 import java.util.Map;
@@ -29,8 +28,6 @@ public class ParserFile extends OutputFile {
 	public String grammarName;
 	/** Whether the grammar's code may use the `int` type, so that the file declares it. */
 	public boolean declaresInt;
-	/** Whether parser rules reference tokens, whose context getters return terminal nodes. */
-	public boolean hasTokenRefs;
 
 	private static final Pattern INT = Pattern.compile("\\bint\\b");
 
@@ -48,9 +45,6 @@ public class ParserFile extends OutputFile {
 			for (GrammarAST code : g.ast.getNodesWithType(type)) {
 				declaresInt |= INT.matcher(code.getText()).find();
 			}
-		}
-		for (Rule r : g.rules.values()) {
-			hasTokenRefs |= !Grammar.isTokenName(r.name) && !r.ast.getNodesWithType(ANTLRParser.TOKEN_REF).isEmpty();
 		}
 
 		if (g.getOptionString("contextSuperClass") != null) {
