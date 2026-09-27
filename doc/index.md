@@ -2,7 +2,7 @@
 
 This is ANTLR's documentation of grammars, inherited from upstream. [Getting Started](getting-started.md) and [TypeScript Target](typescript-target.md) describe ultra-parser.
 
-Ask questions and report problems about ultra-parser in the [WillBooster/ultra-parser issues](https://github.com/WillBooster/ultra-parser/issues), not in ANTLR's channels; [CONTRIBUTING.md](/CONTRIBUTING.md) describes how to improve this documentation. The ANTLR [FAQ](faq/index.md) answers many questions about grammars.
+Ask questions and report problems about ultra-parser in the [WillBooster/ultra-parser issues](https://github.com/WillBooster/ultra-parser/issues), not in ANTLR's channels; [CONTRIBUTING.md](/CONTRIBUTING.md) describes how to improve this documentation. ANTLR's upstream [FAQ](faq/index.md) answers many questions about grammars; its installation and contribution steps are for ANTLR's Java runtime and repositories, so set up ultra-parser with [Getting Started](getting-started.md) instead.
 
 Notes:
 <ul>
