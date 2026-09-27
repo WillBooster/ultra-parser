@@ -212,11 +212,6 @@ startRule(f) ::= <<
 /** The signature of a hook, which runs with the parser as `this`. */
 hook(params) ::= "function (this: <parser.name><params:{p | , <p>}>)"
 
-/** Grammar code sees the arguments of the rule as variables, as in a rule function. */
-ruleArgs(currentRule) ::= <<
-<currentRule.args:{a | let <a.escapedName> = localctx.<a.escapedName>;}; separator="\n">
->>
-
 RuleFunction(currentRule, args, code, ruleCtx, altLabelCtxs, namedActions, finallyAction) ::= <<
 <ruleHooks(currentRule, namedActions, finallyAction)>
 <code; separator="\n">
@@ -231,19 +226,16 @@ ruleHooks(currentRule, namedActions, finallyAction) ::= <<
 h.context(<parser.name>.RULE_<currentRule.name>, <currentRule.ctxType>);
 <if(namedActions.init)>
 h.onInit(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
-	<ruleArgs(currentRule)>
 	<namedActions.init>
 });
 <endif>
 <if(namedActions.after)>
 h.onAfter(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
-	<ruleArgs(currentRule)>
 	<namedActions.after>
 });
 <endif>
 <if(finallyAction)>
 h.onFinally(<parser.name>.RULE_<currentRule.name>, <hook({localctx: <currentRule.ctxType>})> {
-	<ruleArgs(currentRule)>
 	<finallyAction>
 });
 <endif>
@@ -307,7 +299,6 @@ h.invoke(
 	<r.stateNumber>,
 	<if(argExprsChunks)>
 	<hook({localctx: <currentRule.ctxType>, invokingState: number})> {
-		<ruleArgs(currentRule)>
 		return new <r.ctxName>(this, localctx, invokingState, <argExprsChunks>);
 	},
 	<else>
@@ -351,7 +342,6 @@ Action(a, chunks) ::= "<chunks>"
 InlineAction(a, chunks) ::= <<
 <if(chunks)>
 h.action(<a.stateNumber>, <hook({localctx: <currentRule.ctxType>})> {
-	<ruleArgs(currentRule)>
 	<chunks>
 });
 <endif>
@@ -364,7 +354,6 @@ SemPred(p, chunks, failChunks) ::= <<
 <if(p.ast.options.p)>
 <elseif(failChunks)>
 h.predicate(<p.predIndex>, <p.predicate>, <hook({localctx: <currentRule.ctxType>})> {
-	<ruleArgs(currentRule)>
 	return (<failChunks>);
 });
 <elseif(p.msg)>

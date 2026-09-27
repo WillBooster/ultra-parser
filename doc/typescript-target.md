@@ -40,7 +40,7 @@ ID : [a-z]+ ;
 WS : [ \t\r\n]+ -> skip ;
 ```
 
-Unlike ANTLR's generated code, parser actions do not run inside rule methods; they are hooks that the runtime calls when it passes their place in the grammar. They see the rule context as `localctx`, which `$ctx`, `$x`, `$x.text`, and so on refer to, and the rule's arguments as variables. `$text`, `this._input`, `this._ctx`, `this.state`, `getExpectedTokens()`, and `getRuleInvocationStack()` reflect the position of the hook.
+Unlike ANTLR's generated code, parser actions do not run inside rule methods; they are hooks that the runtime calls when it passes their place in the grammar. They see the rule context as `localctx`, which `$ctx`, `$x`, `$x.text`, and so on refer to; since each hook is a function of its own, grammar code refers to the rule's arguments as `$x` (the context's field), which every hook of the rule shares. `$text`, `this._input`, `this._ctx`, `this.state`, `getExpectedTokens()`, and `getRuleInvocationStack()` reflect the position of the hook.
 
 The parser reads all tokens before it parses, so lexer actions run before parser actions, and the parser cannot switch lexer modes. `catch` clauses of rules are ignored.
 

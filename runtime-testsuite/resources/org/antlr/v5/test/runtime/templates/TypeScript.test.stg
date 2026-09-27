@@ -31,7 +31,8 @@ InitIntVar(n,v) ::= <%let <n>: number = <v>;%>
 
 IntArg(n) ::= "<n>: number"
 
-VarRef(n) ::= "<n>"
+// Grammar code refers to rule arguments as attributes, since hooks are functions of their own.
+VarRef(n) ::= "$<n>"
 
 GetMember(n) ::= <%this.<n>%>
 

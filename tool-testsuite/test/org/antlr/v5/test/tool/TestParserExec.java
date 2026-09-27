@@ -115,6 +115,18 @@ public class TestParserExec {
 		assertEquals("", executedState.errors);
 	}
 
+		/** An argument written by one action is what later actions of the rule read. */
+	@Test public void testArgumentWrittenByAnAction() {
+		String grammar =
+			"grammar T;\n" +
+			"s : a[1] ;\n" +
+			"a[int i] : {$i = $i + 1;} ID {console.log($i);} ;\n" +
+			"ID : [a-z]+ ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "abc", false);
+		assertEquals("2\n", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
 		/** Arguments may have names that strict code and modules cannot bind. */
 	@Test public void testStrictModeArgumentNames() {
 		String grammar =
