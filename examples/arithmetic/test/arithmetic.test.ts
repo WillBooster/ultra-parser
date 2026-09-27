@@ -63,7 +63,7 @@ test('continues a parse after grammar code parses again', () => {
   expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
   expect(nested).toBe('(expr 2)');
   expect(states[1]).toBe(states[0]);
-  expect(expected).not.toBe('');
+  expect(expected).toBe("{'-', '+'}");
 });
 
 test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
@@ -172,4 +172,12 @@ test('bounds hidden tokens by the default channel on a stream of another channel
   expect(stream.getHiddenTokensToRight(1)).toBeNull();
   expect(stream.getHiddenTokensToLeft(1)).toBeNull();
   expect(stream.getHiddenTokensToRight(0)?.map((token) => token.text)).toEqual([' ']);
+});
+
+test('rejects the expected tokens of an invalid state without breaking the runtime', () => {
+  const parser = new ArithmeticParser(new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1'))));
+  parser.program();
+  expect(parser.state).toBe(-1);
+  expect(() => parser.getExpectedTokens()).toThrow(RangeError);
+  expect(parse('1 + 2').errors).toEqual([]);
 });

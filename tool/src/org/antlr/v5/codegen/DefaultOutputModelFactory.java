@@ -6,7 +6,6 @@
 
 package org.antlr.v5.codegen;
 
-import org.antlr.v5.codegen.model.Action;
 import org.antlr.v5.codegen.model.CodeBlockForOuterMostAlt;
 import org.antlr.v5.codegen.model.OutputModelObject;
 import org.antlr.v5.codegen.model.RuleFunction;
@@ -14,9 +13,6 @@ import org.antlr.v5.codegen.model.SrcOp;
 import org.antlr.v5.codegen.model.decl.CodeBlock;
 import org.antlr.v5.tool.Alternative;
 import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.Rule;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
 
 import java.util.ArrayList;
 import java.util.Arrays;

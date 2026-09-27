@@ -260,6 +260,9 @@ export abstract class Parser extends Recognizer {
       try {
         const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
         return this.#contexts[root] as T;
+      } catch (error) {
+        this.#abortRules();
+        throw error;
       } finally {
         tokens.parses--;
       }
@@ -423,6 +426,18 @@ export abstract class Parser extends Recognizer {
     this.#triggerExitRuleEvent(ctx);
   }
 
+  /**
+   * Leaves the rules being parsed when grammar code threw, running their `finally` hooks and exit
+   * events as the `finally` blocks of ANTLR's generated rule methods do.
+   */
+  #abortRules(): void {
+    for (let ctx = this._ctx; ctx && this.#contexts.includes(ctx); ctx = ctx.parent) {
+      this._ctx = ctx;
+      this.#hooks.finally.get(ctx.ruleIndex)?.call(this, ctx);
+      this.#triggerExitRuleEvent(ctx);
+    }
+  }
+
   #returned(ctx: ParserRuleContext): void {
     this.state = ctx.invokingState;
     this._ctx = ctx.parent;
@@ -451,6 +466,8 @@ export abstract class Parser extends Recognizer {
     const ctx = this.#ctx(id);
     const token = this._input.get(tokenIndex);
     this._input.seek(tokenIndex + 1);
+    // Like ANTLR's generated parsers, which set the state before matching, listeners see it.
+    if (state >= 0) this.state = state;
     if (this.buildParseTrees || this.#parseListeners.length > 0) {
       if (error) {
         const node = ctx.addErrorNode(token);
@@ -461,7 +478,6 @@ export abstract class Parser extends Recognizer {
       }
     }
     if (error || state < 0) return;
-    this.state = state;
     for (const hook of this.#hooks.tokens.get(state) ?? []) hook.call(this, ctx, token);
   }
 

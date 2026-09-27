@@ -299,6 +299,8 @@ export class WasmGrammar {
     try {
       const ptr = runtime().grammar_expected_tokens(this.ptr, state, states, invokingStates.length);
       const n = readResult(ptr, 0, 1)[0] ?? 0;
+      // Like ANTLR's ATN.getExpectedTokens, e.g., for the state -1 after the start rule returned.
+      if (n < 0) throw new RangeError('Invalid state number.');
       const data = readResult(ptr, 1, n * 2);
       const intervals: [number, number][] = [];
       for (let i = 0; i < n; i++) intervals.push([data[i * 2] ?? 0, data[i * 2 + 1] ?? 0]);

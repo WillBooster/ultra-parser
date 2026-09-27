@@ -153,15 +153,19 @@ impl Grammar {
     }
 
     /// The tokens that can follow `state` in a rule invoked from `invoking_states`, innermost
-    /// first (`ATN.getExpectedTokens`).
-    pub fn expected_tokens(&self, state: usize, invoking_states: &[usize]) -> IntervalSet {
-        let follow_states: Vec<usize> = invoking_states
+    /// first (`ATN.getExpectedTokens`), or `None` when a state is not in the ATN or an invoking
+    /// state does not invoke a rule.
+    pub fn expected_tokens(&self, state: usize, invoking_states: &[usize]) -> Option<IntervalSet> {
+        if state >= self.atn.states.len() {
+            return None;
+        }
+        let follow_states = invoking_states
             .iter()
-            .map(|&s| match self.atn.states[s].transitions[0] {
-                atn::Transition::Rule { follow_state, .. } => follow_state,
-                _ => panic!("state {s} does not invoke a rule"),
+            .map(|&s| match self.atn.states.get(s)?.transitions.first()? {
+                atn::Transition::Rule { follow_state, .. } => Some(*follow_state),
+                _ => None,
             })
-            .collect();
-        parser::expected_tokens(&self.atn, state, &follow_states)
+            .collect::<Option<Vec<usize>>>()?;
+        Some(parser::expected_tokens(&self.atn, state, &follow_states))
     }
 }

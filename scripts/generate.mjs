@@ -12,6 +12,8 @@ if (!fs.existsSync(toolJar)) {
 
 for (const example of fs.readdirSync(path.join(rootDir, 'examples'))) {
   const grammarDir = path.join(rootDir, 'examples', example, 'grammar');
+  // Skip entries that are not examples, such as .DS_Store.
+  if (!fs.existsSync(grammarDir)) continue;
   const generatedDir = path.join(rootDir, 'examples', example, 'src', 'generated');
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ultra-parser-'));
   const grammars = fs.readdirSync(grammarDir).filter((file) => file.endsWith('.g4'));

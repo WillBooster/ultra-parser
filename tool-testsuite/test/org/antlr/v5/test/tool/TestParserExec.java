@@ -66,6 +66,27 @@ public class TestParserExec {
 		assertEquals("line 1:6 rule floating_constant DEC:A floating-point constant cannot have internal white space\n", executedState.errors);
 	}
 
+	/** Like the finally blocks of ANTLR's generated rule methods, finally runs when grammar code throws. */
+	@Test public void testFinallyRunsWhenGrammarCodeThrows() {
+		String grammar =
+			"grammar T;\n" +
+			"s : {\n" +
+			"  try { this.a(); } catch (e) { console.log('caught ' + (e as Error).message); }\n" +
+			"} ;\n" +
+			"a\n" +
+			"@after {console.log('after a');}\n" +
+			"  : e ;\n" +
+			"finally {console.log('finally a');}\n" +
+			"e : e '+' e | b ;\n" +
+			"b : ID {if ($ID.text === 'b') throw new Error('boom');} ;\n" +
+			"finally {console.log('finally b');}\n" +
+			"ID : [a-z]+ ;\n" +
+			"WS : [ \\t\\n]+ -> skip ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "a + b", false);
+		assertEquals("finally b\nfinally b\nfinally a\ncaught boom\n", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
 	/** Arguments may have names that strict code and modules cannot bind. */
 	@Test public void testStrictModeArgumentNames() {
 		String grammar =

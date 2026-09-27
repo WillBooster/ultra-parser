@@ -244,7 +244,7 @@ pub unsafe extern "C" fn grammar_lexer_actions(grammar: *const Grammar) -> *cons
 }
 
 /// The tokens that can follow `state` in a rule invoked from the given invoking states,
-/// innermost first, as `[n, (from, to)...]`.
+/// innermost first, as `[n, (from, to)...]`, or `[-1]` for a state that is not in the ATN.
 ///
 /// # Safety
 ///
@@ -259,7 +259,9 @@ pub unsafe extern "C" fn grammar_expected_tokens(
     // SAFETY: guaranteed by the caller.
     let (grammar, invoking_states) = unsafe { (&*grammar, slice(invoking_states, n)) };
     let invoking_states: Vec<usize> = invoking_states.iter().map(|&s| s as usize).collect();
-    let set = grammar.expected_tokens(state, &invoking_states);
+    let Some(set) = grammar.expected_tokens(state, &invoking_states) else {
+        return result([-1]);
+    };
     let intervals = set.intervals();
     result(
         std::iter::once(intervals.len() as i32).chain(intervals.iter().flat_map(|&(a, b)| [a, b])),
@@ -298,7 +300,8 @@ pub unsafe extern "C" fn tokens_free(tokens: *mut Tokens) {
 ///
 /// # Safety
 ///
-/// `tokens` must be a live token list and `data` must point to `6 * n` values.
+/// `tokens` must be a live token list and `data` must point to `6 * n` values. No lexer match or
+/// parse may be reading `tokens`, including from its host callbacks, since they borrow the tokens.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tokens_set(tokens: *mut Tokens, data: *const i32, n: usize) {
     // SAFETY: guaranteed by the caller.
@@ -324,7 +327,7 @@ pub unsafe extern "C" fn tokens_set(tokens: *mut Tokens, data: *const i32, n: us
 /// # Safety
 ///
 /// `tokens` must be a live token list with a token `index`, and `text` must point to `len` bytes
-/// of UTF-8.
+/// of UTF-8. No lexer match or parse may be reading `tokens`, including from its host callbacks.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tokens_set_text(
     tokens: *mut Tokens,
@@ -375,7 +378,9 @@ impl LexerHost for WasmLexerHost {
 ///
 /// # Safety
 ///
-/// `grammar` must be a live lexer grammar and `tokens` a live token list.
+/// `grammar` must be a live lexer grammar and `tokens` a live token list, which must not change
+/// (`tokens_set`, `tokens_set_text`, `tokens_free`) until the match returns, even from a host
+/// callback.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn lexer_match(
     grammar: *const Grammar,
@@ -690,7 +695,9 @@ impl ParserHost for WasmParserHost {
 ///
 /// # Safety
 ///
-/// `grammar` must be a live parser grammar and `tokens` a live token list ending with EOF.
+/// `grammar` must be a live parser grammar and `tokens` a live token list ending with EOF, which
+/// must not change (`tokens_set`, `tokens_set_text`, `tokens_free`) until the parse returns, even
+/// from a host callback; a host that parses other tokens from a callback needs another list.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn parse(
     grammar: *const Grammar,
