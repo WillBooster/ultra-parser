@@ -19,13 +19,10 @@ import org.antlr.v5.parse.GrammarTreeVisitor;
 import org.antlr.v5.parse.TokenVocabParser;
 import org.antlr.v5.runtime.core.*;
 import org.antlr.v5.runtime.core.atn.ATN;
-import org.antlr.v5.runtime.core.atn.ATNDeserializer;
-import org.antlr.v5.runtime.core.atn.ATNSerializer;
 import org.antlr.v5.runtime.core.context.SemanticContext;
 import org.antlr.v5.runtime.core.dfa.DFA;
 import org.antlr.v5.runtime.core.error.RecognitionException;
 import org.antlr.v5.runtime.core.misc.IntSet;
-import org.antlr.v5.runtime.core.misc.IntegerList;
 import org.antlr.v5.runtime.core.misc.Interval;
 import org.antlr.v5.runtime.core.misc.IntervalSet;
 import org.antlr.v5.tool.ast.ActionAST;
@@ -1306,44 +1303,5 @@ public class Grammar implements AttributeResolver {
 		if ( stateToGrammarRegionMap==null ) return Interval.Companion.getINVALID();
 
 		return stateToGrammarRegionMap.get(atnStateNumber);
-	}
-
-	public LexerInterpreter createLexerInterpreter(CharStream input) {
-		if (this.isParser()) {
-			throw new IllegalStateException("A lexer interpreter can only be created for a lexer or combined grammar.");
-		}
-
-		if (this.isCombined()) {
-			return implicitLexer.createLexerInterpreter(input);
-		}
-
-		List<String> allChannels = new ArrayList<String>();
-		allChannels.add("DEFAULT_TOKEN_CHANNEL");
-		allChannels.add("HIDDEN");
-		allChannels.addAll(channelValueToNameList);
-
-		// must run ATN through serializer to set some state flags
-		IntegerList serialized = ATNSerializer.Companion.getSerialized(atn);
-		ATN deserializedATN = new ATNDeserializer().deserialize(serialized.toArray());
-		return new LexerInterpreter(
-				fileName,
-				getVocabulary(),
-				Arrays.asList(getRuleNames()),
-				allChannels,
-				((LexerGrammar)this).modes.keySet(),
-				deserializedATN,
-				input);
-	}
-
-	public ParserInterpreter createParserInterpreter(TokenStream tokenStream) {
-		if (this.isLexer()) {
-			throw new IllegalStateException("A parser interpreter can only be created for a parser or combined grammar.");
-		}
-
-		// must run ATN through serializer to set some state flags
-		IntegerList serialized = ATNSerializer.Companion.getSerialized(atn);
-		ATN deserializedATN = new ATNDeserializer().deserialize(serialized.toArray());
-
-		return new ParserInterpreter(fileName, getVocabulary(), Arrays.asList(getRuleNames()), deserializedATN, tokenStream);
 	}
 }
