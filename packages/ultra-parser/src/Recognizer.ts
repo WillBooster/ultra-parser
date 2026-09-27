@@ -9,7 +9,10 @@ const vocabularies = new WeakMap<object, Vocabulary>();
 /** What lexers and parsers share, like ANTLR's `Recognizer`. Generated recognizers provide the grammar. */
 export abstract class Recognizer {
   #listeners: ErrorListener[] = [ConsoleErrorListener.INSTANCE];
-  /** The ATN state the recognizer is in, where grammar code can see it. */
+  /**
+   * The ATN state a parser is in, where its grammar code can see it. Lexers leave it at -1, as
+   * ANTLR's lexers do.
+   */
   state = -1;
 
   abstract get grammarFileName(): string;
