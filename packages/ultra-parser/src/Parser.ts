@@ -159,7 +159,7 @@ export abstract class Parser extends Recognizer {
   #previousContexts: (ParserRuleContext | undefined)[] = [];
   #createRoot: ((parent: ParserRuleContext | null, invokingState: number) => ParserRuleContext) | undefined;
   #ownTokens: WasmTokens | undefined;
-  /** The context whose `finally` hook and exit events are running, which aborting must not repeat. */
+  /** The context whose `finally` hook and exit event ran and threw, which aborting must not repeat. */
   #leaving: ParserRuleContext | null = null;
   /** Where #loadTokens last loaded the tokens. */
   #loadedTokens: WasmTokens | undefined;
@@ -438,10 +438,12 @@ export abstract class Parser extends Recognizer {
     } else {
       this.#hooks.after.get(ctx.ruleIndex)?.call(this, ctx);
     }
-    this.#leaving = ctx;
-    this.#hooks.finally.get(ctx.ruleIndex)?.call(this, ctx);
-    this.#triggerExitRuleEvent(ctx);
-    this.#leaving = null;
+    const thrown = this.#leave(ctx);
+    if (thrown) {
+      // The rule has left; aborting the parse continues with the enclosing rules.
+      this.#leaving = ctx;
+      throw thrown.value;
+    }
   }
 
   /**
@@ -451,19 +453,33 @@ export abstract class Parser extends Recognizer {
    */
   #abortRules(error: unknown): unknown {
     let ctx = this._ctx;
-    // A rule whose `finally` hook or exit event threw has left already, as in a Java `finally`.
     if (ctx && ctx === this.#leaving) ctx = ctx.parent;
     this.#leaving = null;
     for (; ctx && this.#contexts.includes(ctx); ctx = ctx.parent) {
       this._ctx = ctx;
-      try {
-        this.#hooks.finally.get(ctx.ruleIndex)?.call(this, ctx);
-        this.#triggerExitRuleEvent(ctx);
-      } catch (thrown) {
-        error = thrown;
-      }
+      const thrown = this.#leave(ctx);
+      if (thrown) error = thrown.value;
     }
     return error;
+  }
+
+  /**
+   * Runs the `finally` hook and then the exit events of `ctx`, each even when the other throws;
+   * returns the last error thrown, if any.
+   */
+  #leave(ctx: ParserRuleContext): { value: unknown } | undefined {
+    let thrown: { value: unknown } | undefined;
+    try {
+      this.#hooks.finally.get(ctx.ruleIndex)?.call(this, ctx);
+    } catch (error) {
+      thrown = { value: error };
+    }
+    try {
+      this.#triggerExitRuleEvent(ctx);
+    } catch (error) {
+      thrown = { value: error };
+    }
+    return thrown;
   }
 
   #returned(ctx: ParserRuleContext): void {

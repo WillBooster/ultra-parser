@@ -89,7 +89,7 @@ public class TestParserExec {
 
 	/**
 	 * Like Java finally blocks, a finally that throws still lets the enclosing rules' finally run,
-	 * and the last error propagates; the rule whose finally threw does not run it again.
+	 * and the last error propagates; every rule runs its finally and exit event once.
 	 */
 	@Test public void testFinallyThatThrowsUnwindsEnclosingRules() {
 		String grammar =
@@ -98,6 +98,7 @@ public class TestParserExec {
 			"failIn = '';\n" +
 			"}\n" +
 			"r : {\n" +
+			"  this.addParseListener({exitEveryRule: (ctx) => console.log('exit ' + this.ruleNames[ctx.ruleIndex])});\n" +
 			"  for (const place of ['action', 'finally']) {\n" +
 			"    this.failIn = place;\n" +
 			"    try { this.s(); } catch (e) { console.log('caught ' + (e as Error).message); }\n" +
@@ -109,8 +110,8 @@ public class TestParserExec {
 			"finally {console.log('inner finally'); throw new Error('cleanup');}\n" +
 			"ID : [a-z]+ ;\n";
 		ExecutedState executedState = execParser(grammar, "r", "a", false);
-		assertEquals("inner finally\nouter finally\ncaught cleanup\n" +
-			"inner finally\nouter finally\ncaught cleanup\n", executedState.output);
+		assertEquals("inner finally\nexit t\nouter finally\nexit s\ncaught cleanup\n" +
+			"inner finally\nexit t\nouter finally\nexit s\ncaught cleanup\nexit r\n", executedState.output);
 		assertEquals("", executedState.errors);
 	}
 
