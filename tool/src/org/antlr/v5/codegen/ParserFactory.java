@@ -7,7 +7,6 @@
 package org.antlr.v5.codegen;
 
 import org.antlr.v5.analysis.AnalysisPipeline;
-import org.antlr.v5.codegen.model.Action;
 import org.antlr.v5.codegen.model.AddToLabelList;
 import org.antlr.v5.codegen.model.AltBlock;
 import org.antlr.v5.codegen.model.Choice;
