@@ -181,3 +181,21 @@ test('rejects the expected tokens of an invalid state without breaking the runti
   expect(() => parser.getExpectedTokens()).toThrow(RangeError);
   expect(parse('1 + 2').errors).toEqual([]);
 });
+
+test('parses the tokens on the channel of the token stream', () => {
+  const input = CharStream.fromString('1 2');
+  const tokens = [
+    new CommonToken(ArithmeticParser.NUMBER, Token.DEFAULT_CHANNEL, 0, 0, 1, 0, null, input),
+    new CommonToken(ArithmeticParser.NUMBER, Token.HIDDEN_CHANNEL, 2, 2, 1, 2, null, input),
+    new CommonToken(Token.EOF, Token.DEFAULT_CHANNEL, 3, 2, 1, 3, null, input),
+  ];
+  const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+  const parser = new ArithmeticParser(new CommonTokenStream(source, Token.HIDDEN_CHANNEL));
+  const errors: string[] = [];
+  parser.removeErrorListeners();
+  const listener: ErrorListener = { syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message) };
+  parser.addErrorListener(listener);
+  expect(parser.getCurrentToken().text).toBe('2');
+  expect(parser.expr().toStringTree(parser)).toBe('(expr 2)');
+  expect(errors).toEqual([]);
+});

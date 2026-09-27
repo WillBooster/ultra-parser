@@ -15,7 +15,7 @@ interface WasmExports {
   tokens_set(tokens: number, data: number, n: number): void;
   tokens_set_text(tokens: number, index: number, text: number, len: number): void;
   lexer_match(grammar: number, tokens: number, mode: number, index: number, line: number, column: number): number;
-  parse(grammar: number, tokens: number, startToken: number, startRule: number, mode: number): number;
+  parse(grammar: number, tokens: number, startToken: number, channel: number, startRule: number, mode: number): number;
   set_prediction_mode(mode: number): void;
 }
 
@@ -342,13 +342,13 @@ export class WasmGrammar {
   }
 
   /** Parses `tokens` from token `startToken` with `startRule`, reporting to `host`; returns the id of the root context. */
-  parse(tokens: WasmTokens, startToken: number, startRule: number, mode: number, host: ParserHost): number {
+  parse(tokens: WasmTokens, startToken: number, channel: number, startRule: number, mode: number, host: ParserHost): number {
     const previous = parserCall;
     const call: Call<ParserHost> = { host };
     parserCall = call;
     let root: number;
     try {
-      root = runtime().parse(this.ptr, tokens.ptr, startToken, startRule, mode);
+      root = runtime().parse(this.ptr, tokens.ptr, startToken, channel, startRule, mode);
     } finally {
       parserCall = previous;
     }

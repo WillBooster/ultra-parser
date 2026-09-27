@@ -4,7 +4,8 @@
 use std::collections::HashMap;
 
 use ultra_parser_runtime::{
-    Grammar, NodeId, ParserHost, PredictionMode, SyntaxError, Token, Tokens, Vocabulary,
+    DEFAULT_CHANNEL, Grammar, NodeId, ParserHost, PredictionMode, SyntaxError, Token, Tokens,
+    Vocabulary,
 };
 
 /// Reads the static array `name` of the recognizer that the tool generated for the example.
@@ -175,7 +176,14 @@ fn parse(source: &str) -> (String, Vec<String>) {
         rules: HashMap::new(),
         errors: lexer_errors.iter().map(ToString::to_string).collect(),
     };
-    let root = parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut builder);
+    let root = parser.parse(
+        &tokens,
+        0,
+        DEFAULT_CHANNEL,
+        0,
+        PredictionMode::Ll,
+        &mut builder,
+    );
     (
         builder.to_string_tree(root, parser.rule_names()),
         builder.errors,
@@ -274,7 +282,14 @@ fn reports_the_tree_to_the_host() {
     let (lexer, parser) = grammars();
     let (tokens, _) = lexer.tokenize("1+2");
     let mut recorder = Recorder::default();
-    parser.parse(&tokens, 0, 0, PredictionMode::Ll, &mut recorder);
+    parser.parse(
+        &tokens,
+        0,
+        DEFAULT_CHANNEL,
+        0,
+        PredictionMode::Ll,
+        &mut recorder,
+    );
     assert_eq!(
         recorder.events,
         [

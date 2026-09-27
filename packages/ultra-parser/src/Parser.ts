@@ -258,7 +258,14 @@ export abstract class Parser extends Recognizer {
     try {
       tokens.parses++;
       try {
-        const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
+        const root = this.grammar.parse(
+          tokens,
+          startToken,
+          this._input.channel,
+          ruleIndex,
+          this.#mode,
+          this.#createHost()
+        );
         return this.#contexts[root] as T;
       } catch (error) {
         this.#abortRules();

@@ -85,9 +85,10 @@ impl Vocabulary {
     }
 }
 
-/// A view over lexed tokens that skips tokens off the default channel, like `CommonTokenStream`.
+/// A view over lexed tokens that skips tokens off one channel, like `CommonTokenStream`.
 pub(crate) struct TokenStream<'a> {
     tokens: &'a Tokens,
+    channel: i32,
     p: usize,
     /// The highest token index that ANTLR's `BufferedTokenStream`, which lexes lazily, would have
     /// fetched so far; the host reports lexer errors when their tokens are fetched.
@@ -95,11 +96,11 @@ pub(crate) struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    /// Starts at token `start`, or the next one on the default channel; `tokens` must end with an
-    /// EOF token.
-    pub(crate) fn new(tokens: &'a Tokens, start: usize) -> Self {
+    /// Starts at token `start`, or the next one on `channel`; `tokens` must end with an EOF token.
+    pub(crate) fn new(tokens: &'a Tokens, start: usize, channel: i32) -> Self {
         let mut stream = Self {
             tokens,
+            channel,
             p: 0,
             fetched: Cell::new(0),
         };
@@ -183,7 +184,7 @@ impl<'a> TokenStream<'a> {
             return tokens.len() - 1;
         }
         self.fetch(i);
-        while tokens[i].channel != DEFAULT_CHANNEL {
+        while tokens[i].channel != self.channel {
             if tokens[i].token_type == EOF {
                 return i;
             }
@@ -195,7 +196,7 @@ impl<'a> TokenStream<'a> {
 
     fn previous_on_channel(&self, mut i: isize) -> isize {
         let tokens = self.tokens();
-        while i >= 0 && tokens[i as usize].channel != DEFAULT_CHANNEL {
+        while i >= 0 && tokens[i as usize].channel != self.channel {
             if tokens[i as usize].token_type == EOF {
                 return i;
             }
@@ -243,7 +244,7 @@ mod tests {
                 token(EOF, DEFAULT_CHANNEL, 3),
             ],
         };
-        let stream = TokenStream::new(&tokens, 2);
+        let stream = TokenStream::new(&tokens, 2, DEFAULT_CHANNEL);
         assert_eq!(stream.lt(-1).map(|t| t.token_index), Some(0));
         assert_eq!(stream.lt(-2), None);
     }

@@ -688,9 +688,8 @@ impl ParserHost for WasmParserHost {
     }
 }
 
-/// Parses `tokens` from token `start_token` with rule `start_rule`, reporting to the host as it
-/// goes. Returns the id of
-/// the root context, or -1 when the host aborted. `mode` is 0 for SLL, 1 for LL, and 2 for LL
+/// Parses the tokens on `channel` of `tokens` from token `start_token` with rule `start_rule`,
+/// reporting to the host as it goes. Returns the id of the root context, or -1 when the host aborted. `mode` is 0 for SLL, 1 for LL, and 2 for LL
 /// with exact ambiguity detection.
 ///
 /// # Safety
@@ -703,6 +702,7 @@ pub unsafe extern "C" fn parse(
     grammar: *const Grammar,
     tokens: *const Tokens,
     start_token: usize,
+    channel: i32,
     start_rule: usize,
     mode: u32,
 ) -> i32 {
@@ -713,6 +713,7 @@ pub unsafe extern "C" fn parse(
     let root = grammar.parse(
         tokens,
         start_token,
+        channel,
         start_rule,
         prediction_mode(mode),
         &mut host,

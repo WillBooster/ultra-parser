@@ -121,13 +121,15 @@ impl Grammar {
         lexer::tokenize(&self.atn, source.chars().map(u32::from).collect(), &mut ())
     }
 
-    /// Parses `tokens`, which must end with an EOF token, from token `start_token` (or the next
-    /// token on the default channel) with rule `start_rule`, reporting the parse tree to `host`,
-    /// and returns the root context. Error recovery produces a tree even for invalid input.
+    /// Parses the tokens on `channel` of `tokens`, which must end with an EOF token, from token
+    /// `start_token` (or the next token on the channel) with rule `start_rule`, reporting the parse
+    /// tree to `host`, and returns the root context. Error recovery produces a tree even for
+    /// invalid input.
     pub fn parse<H: ParserHost>(
         &self,
         tokens: &Tokens,
         start_token: usize,
+        channel: i32,
         start_rule: usize,
         mode: PredictionMode,
         host: &mut H,
@@ -145,8 +147,7 @@ impl Grammar {
             &self.atn,
             &self.vocabulary,
             &self.rule_names,
-            tokens,
-            start_token,
+            token::TokenStream::new(tokens, start_token, channel),
             mode,
             host,
         )

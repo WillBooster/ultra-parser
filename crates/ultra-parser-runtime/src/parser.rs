@@ -9,7 +9,7 @@ use crate::interval_set::IntervalSet;
 use crate::ll1;
 use crate::prediction::{self, Diagnostic, Outer, PredictionHost, PredictionMode};
 use crate::token::{
-    DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream, Tokens,
+    DEFAULT_CHANNEL, EOF, EPSILON, INVALID_TYPE, MIN_USER_TOKEN_TYPE, Token, TokenStream,
     Vocabulary,
 };
 use crate::tree::{NodeId, RuleNode, invoking_states};
@@ -203,8 +203,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
         atn: &'a Atn,
         vocabulary: &'a Vocabulary,
         rule_names: &'a [String],
-        tokens: &'t Tokens,
-        start_token: usize,
+        input: TokenStream<'t>,
         mode: PredictionMode,
         host: &'h mut H,
     ) -> Self {
@@ -212,7 +211,7 @@ impl<'a, 't, 'h, H: ParserHost> Parser<'a, 't, 'h, H> {
             atn,
             vocabulary,
             rule_names,
-            input: TokenStream::new(tokens, start_token),
+            input,
             mode,
             host,
             nodes: Vec::new(),
