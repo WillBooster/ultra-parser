@@ -87,7 +87,34 @@ public class TestParserExec {
 		assertEquals("", executedState.errors);
 	}
 
-	/** Arguments may have names that strict code and modules cannot bind. */
+	/**
+	 * Like Java finally blocks, a finally that throws still lets the enclosing rules' finally run,
+	 * and the last error propagates; the rule whose finally threw does not run it again.
+	 */
+	@Test public void testFinallyThatThrowsUnwindsEnclosingRules() {
+		String grammar =
+			"grammar T;\n" +
+			"@parser::members {\n" +
+			"failIn = '';\n" +
+			"}\n" +
+			"r : {\n" +
+			"  for (const place of ['action', 'finally']) {\n" +
+			"    this.failIn = place;\n" +
+			"    try { this.s(); } catch (e) { console.log('caught ' + (e as Error).message); }\n" +
+			"  }\n" +
+			"} ;\n" +
+			"s : t ;\n" +
+			"finally {console.log('outer finally');}\n" +
+			"t : ID {if (this.failIn === 'action') throw new Error('boom');} ;\n" +
+			"finally {console.log('inner finally'); throw new Error('cleanup');}\n" +
+			"ID : [a-z]+ ;\n";
+		ExecutedState executedState = execParser(grammar, "r", "a", false);
+		assertEquals("inner finally\nouter finally\ncaught cleanup\n" +
+			"inner finally\nouter finally\ncaught cleanup\n", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
+		/** Arguments may have names that strict code and modules cannot bind. */
 	@Test public void testStrictModeArgumentNames() {
 		String grammar =
 			"grammar T;\n" +
