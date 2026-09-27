@@ -211,10 +211,19 @@ impl Simulator<'_, '_, '_, '_, '_> {
                 let Some(predicates) = &step.predicates else {
                     return Ok(step.prediction);
                 };
+                let stop_index = self.input.index();
                 self.input.seek(self.start_index);
                 let alts = self.eval_predicates(predicates, true);
                 if alts.len() == 0 {
                     return Err(self.no_viable_alt());
+                }
+                if alts.len() > 1 {
+                    // Report after evaluating predicates, so that only viable alternatives count.
+                    self.report(
+                        DiagnosticKind::Ambiguity { exact: false },
+                        stop_index,
+                        &alts,
+                    );
                 }
                 return Ok(alts.min());
             }

@@ -22,23 +22,25 @@ export class CommonTokenStream {
   ) {}
 
   /**
-   * Reads all tokens from the token source. With `deferLexerErrors`, the errors of a lexer are
-   * reported by {@link releaseLexerErrors} instead: ANTLR lexes as the parser needs tokens, so it
-   * reports each lexer error when the parser gets to the token after the error.
+   * Reads all tokens from the token source. ANTLR lexes as tokens are needed, so it reports each
+   * lexer error when a token after the error is first needed; the stream reads all tokens at once
+   * but keeps the errors of a lexer until then: until a token is looked at, or until a parser
+   * reports it has read the token, unless `deferLexerErrors` is false.
    */
   fill(deferLexerErrors = false): void {
-    const source = this.tokenSource as TokenSource & { errorSink?: ((report: () => void) => void) | null };
-    if (deferLexerErrors && !this.fetchedEOF && 'errorSink' in source) {
-      source.errorSink = (report) => this.deferredLexerErrors.push({ tokenIndex: this.tokens.length, report });
+    if (!this.fetchedEOF) {
+      const source = this.tokenSource as TokenSource & { errorSink?: ((report: () => void) => void) | null };
+      const deferring = 'errorSink' in source;
+      if (deferring) {
+        source.errorSink = (report) => this.deferredLexerErrors.push({ tokenIndex: this.tokens.length, report });
+      }
       try {
         while (!this.fetchedEOF) this.fetch();
       } finally {
-        source.errorSink = null;
+        if (deferring) source.errorSink = null;
       }
-    } else {
-      while (!this.fetchedEOF) this.fetch();
-      this.releaseLexerErrors(this.tokens.length);
     }
+    if (!deferLexerErrors) this.releaseLexerErrors(this.tokens.length);
     if (this.p < 0) this.p = this.nextTokenOnChannel(0);
   }
 
@@ -57,7 +59,7 @@ export class CommonTokenStream {
   }
 
   private lazyInit(): void {
-    if (this.p < 0) this.fill();
+    if (this.p < 0) this.fill(true);
   }
 
   get size(): number {
@@ -71,6 +73,7 @@ export class CommonTokenStream {
 
   get(i: number): Token {
     this.lazyInit();
+    this.releaseLexerErrors(i);
     const token = this.tokens[i];
     if (!token) throw new RangeError(`token index ${i} out of range 0..${this.tokens.length - 1}`);
     return token;
@@ -78,6 +81,7 @@ export class CommonTokenStream {
 
   getTokens(start = 0, stop = this.tokens.length - 1, types?: ReadonlySet<number>): Token[] {
     this.lazyInit();
+    this.releaseLexerErrors(stop);
     return this.tokens.slice(start, stop + 1).filter((t) => !types || types.has(t.type));
   }
 
@@ -117,6 +121,13 @@ export class CommonTokenStream {
 
   private nextTokenOnChannel(i: number): number {
     if (i >= this.tokens.length) return this.tokens.length - 1;
+    const next = this.#scanOnChannel(i);
+    // Like ANTLR's lazy stream, looking at a token reports the lexer errors before it.
+    this.releaseLexerErrors(next);
+    return next;
+  }
+
+  #scanOnChannel(i: number): number {
     let token = this.tokens[i];
     while (token && token.channel !== this.channel) {
       if (token.type === Token.EOF) return i;

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { CharStream, CommonTokenStream, Token } from 'ultra-parser';
+import { CharStream, CommonTokenStream, type ErrorListener, Token } from 'ultra-parser';
 
 import { evaluate, parse } from '../src/index.js';
 import { ArithmeticLexer } from '../src/generated/ArithmeticLexer.js';
@@ -56,4 +56,32 @@ test('continues a parse after grammar code parses again', () => {
   });
   expect(parser.program().toStringTree(parser)).toBe('(program (expr (expr 1) + (expr 2)) <EOF>)');
   expect(nested).toBe('(expr 2)');
+});
+
+test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
+  const run = (parseAll: (parser: ArithmeticParser, log: string[]) => void): string[] => {
+    const log: string[] = [];
+    const listener: ErrorListener = {
+      syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
+    };
+    const lexer = new ArithmeticLexer(CharStream.fromString('1 2 3 4 # 5'));
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(listener);
+    const parser = new ArithmeticParser(new CommonTokenStream(lexer));
+    parser.removeErrorListeners();
+    parser.addErrorListener(listener);
+    parseAll(parser, log);
+    return log;
+  };
+  const expected = ['(expr 1)', '(expr 2)', '(expr 3)', "1:8 token recognition error at: '#'", '(expr 4)', '(expr 5)'];
+  expect(
+    run((parser, log) => {
+      while (parser.getCurrentToken().type !== Token.EOF) log.push(parser.expr().toStringTree(parser));
+    })
+  ).toEqual(expected);
+  expect(
+    run((parser, log) => {
+      for (let i = 0; i < 5; i++) log.push(parser.expr().toStringTree(parser));
+    })
+  ).toEqual(expected);
 });

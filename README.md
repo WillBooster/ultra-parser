@@ -31,7 +31,7 @@ Generate TypeScript from a grammar with the tool (Java 21 or later; see "Develop
 java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -visitor -o src/generated Expr.g4
 ```
 
-Then parse with the `ultra-parser` package:
+Then parse with the `ultra-parser` package, which is not published to npm yet: after `bun run build`, add `packages/ultra-parser` of this repository to your project, e.g., with `bun add /path/to/ultra-parser/packages/ultra-parser`.
 
 ```ts
 import { CharStream, CommonTokenStream } from 'ultra-parser';

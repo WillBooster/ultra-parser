@@ -33,7 +33,7 @@ Here are more details on the options:
 ANTLR generates output files in the current directory by default. This option specifies the output directory where ANTLR should generate parsers, listeners, visitors, and tokens files.
  	
 ```bash
-$ antlr4 -o /tmp T.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -o /tmp T.g4
 $ ls /tmp/T*
 /tmp/T.tokens /tmp/TLexer.ts
 /tmp/TListener.ts /tmp/TParser.ts

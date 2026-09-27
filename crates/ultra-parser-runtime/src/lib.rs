@@ -90,10 +90,6 @@ impl Grammar {
         &self.rule_names
     }
 
-    pub fn vocabulary(&self) -> &Vocabulary {
-        &self.vocabulary
-    }
-
     /// The actions that `LexerMatch::actions` refer to.
     pub fn lexer_actions(&self) -> &[LexerAction] {
         &self.atn.lexer_actions
@@ -167,9 +163,5 @@ impl Grammar {
             })
             .collect();
         parser::expected_tokens(&self.atn, state, &follow_states)
-    }
-
-    pub fn state_count(&self) -> usize {
-        self.atn.states.len()
     }
 }

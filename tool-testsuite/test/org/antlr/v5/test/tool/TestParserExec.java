@@ -6,8 +6,12 @@
 
 package org.antlr.v5.test.tool;
 
+import org.antlr.v5.test.runtime.PredictionMode;
+import org.antlr.v5.test.runtime.RunOptions;
+import org.antlr.v5.test.runtime.Stage;
 import org.antlr.v5.test.runtime.states.ExecutedState;
-import org.antlr.v5.test.runtime.states.GeneratedState;
+import org.antlr.v5.test.runtime.states.State;
+import org.antlr.v5.test.runtime.typescript.TypeScriptRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,7 +19,7 @@ import java.nio.file.Path;
 
 import static org.antlr.v5.test.tool.ToolTestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /** Test parser execution.
  *
@@ -91,10 +95,15 @@ public class TestParserExec {
 			"    | '«' '/' ID '»'\n" +
 			"    ;";
 
-		GeneratedState lexerState = generate(lexerGrammar, null, tempDir, null, true);
-		assertFalse(lexerState.containsErrors(), lexerState.getErrorMessage());
-		GeneratedState parserState = generate(parserGrammar, null, tempDir, null, true);
-		assertFalse(parserState.containsErrors(), parserState.getErrorMessage());
+		RunOptions runOptions = new RunOptions(new String[] {parserGrammar, lexerGrammar}, null, false, false, "file",
+				"«id» text «/id»", false, false, false, false, Stage.Execute, null, PredictionMode.LL, true, null);
+		try (TypeScriptRunner runner = new TypeScriptRunner(tempDir, false)) {
+			State state = runner.run(runOptions);
+			assertInstanceOf(ExecutedState.class, state, state.getErrorMessage());
+			ExecutedState executedState = (ExecutedState) state;
+			assertEquals("", executedState.output);
+			assertEquals("", executedState.errors);
+		}
 	}
 
 	/**

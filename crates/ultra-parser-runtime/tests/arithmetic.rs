@@ -1,91 +1,65 @@
-//! Lexes and parses with the grammar of `examples/arithmetic`, whose ATNs the tool generated.
+//! Lexes and parses with the grammar of `examples/arithmetic`, reading the ATNs and names from the
+//! TypeScript that the tool generated for it.
 
 use ultra_parser_runtime::{Grammar, NodeId, ParserHost, PredictionMode, SyntaxError, Vocabulary};
 
-#[rustfmt::skip]
-const LEXER_ATN: &[i32] = &[
-    4, 0, 9, 34, 6, -1, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3,
-    7, 3, 2, 4, 7, 4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8,
-    7, 8, 4, 7, 20, 8, 7, 11, 7, 12, 7, 21, 1, 7, 4, 7, 25, 8, 7, 11,
-    7, 12, 7, 26, 3, 7, 29, 8, 7, 4, 8, 31, 8, 8, 11, 8, 12, 8, 32, 0,
-    0, 9, 1, 1, 3, 2, 5, 3, 7, 4, 9, 5, 11, 6, 13, 7, 15, 8, 17, 9,
-    1, 0, 2, 1, 0, 48, 57, 3, 0, 9, 10, 13, 13, 32, 32, 37, 0, 1, 1, 0,
-    0, 0, 0, 3, 1, 0, 0, 0, 0, 5, 1, 0, 0, 0, 0, 7, 1, 0, 0, 0,
-    0, 9, 1, 0, 0, 0, 0, 11, 1, 0, 0, 0, 0, 13, 1, 0, 0, 0, 0, 15,
-    1, 0, 0, 0, 0, 17, 1, 0, 0, 0, 1, 2, 5, 94, 0, 0, 3, 4, 5, 45,
-    0, 0, 5, 6, 5, 42, 0, 0, 7, 8, 5, 47, 0, 0, 9, 10, 5, 43, 0, 0,
-    11, 12, 5, 40, 0, 0, 13, 14, 5, 41, 0, 0, 15, 19, 1, 0, 0, 0, 17, 30,
-    1, 0, 0, 0, 19, 20, 7, 0, 0, 0, 20, 21, 1, 0, 0, 0, 21, 19, 1, 0,
-    0, 0, 21, 22, 1, 0, 0, 0, 22, 28, 1, 0, 0, 0, 23, 24, 5, 46, 0, 0,
-    24, 25, 7, 0, 0, 0, 25, 26, 1, 0, 0, 0, 26, 24, 1, 0, 0, 0, 26, 27,
-    1, 0, 0, 0, 27, 29, 1, 0, 0, 0, 28, 23, 1, 0, 0, 0, 28, 29, 1, 0,
-    0, 0, 29, 16, 1, 0, 0, 0, 30, 31, 7, 1, 0, 0, 31, 32, 1, 0, 0, 0,
-    32, 30, 1, 0, 0, 0, 32, 33, 1, 0, 0, 0, 33, 18, 6, 8, 0, 0, 5, 0,
-    21, 26, 28, 32, 1, 6, 0, 0,
-];
+/// Reads the static array `name` of the recognizer that the tool generated for the example.
+fn generated_array(recognizer: &str, name: &str) -> Vec<String> {
+    let path = format!(
+        "{}/../../examples/arithmetic/src/generated/{recognizer}.ts",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let source = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let start = source
+        .find(&format!("static readonly {name}"))
+        .unwrap_or_else(|| panic!("{path} has no {name}"));
+    let open = start + source[start..].find("= [").expect("array") + 3;
+    let close = open + source[open..].find("];").expect("end of array");
+    source[open..close]
+        .split(',')
+        .map(str::trim)
+        .filter(|item| !item.is_empty())
+        .map(str::to_string)
+        .collect()
+}
 
-#[rustfmt::skip]
-const PARSER_ATN: &[i32] = &[
-    4, 1, 9, 29, 2, 0, 7, 0, 2, 1, 7, 1, 1, 0, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 13, 8, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 1, 24, 8, 1, 10, 1, 12, 1,
-    27, 9, 1, 1, 1, 0, 1, 2, 2, 0, 2, 0, 2, 1, 0, 3, 4, 2, 0, 2,
-    2, 5, 5, 31, 0, 4, 3, 2, 1, 0, 2, 12, 1, 0, 0, 0, 4, 1, 5, 0,
-    0, 1, 5, 6, 6, 1, -1, 0, 6, 7, 5, 2, 0, 0, 7, 13, 3, 2, 1, 5,
-    8, 9, 5, 6, 0, 0, 9, 10, 3, 2, 1, 0, 10, 13, 5, 7, 0, 0, 11, 13,
-    5, 8, 0, 0, 12, 5, 1, 0, 0, 0, 12, 8, 1, 0, 0, 0, 12, 11, 1, 0,
-    0, 0, 13, 25, 1, 0, 0, 0, 14, 15, 10, 6, 0, 0, 15, 16, 5, 1, 0, 0,
-    16, 24, 3, 2, 1, 6, 17, 18, 10, 4, 0, 0, 18, 19, 7, 0, 0, 0, 19, 24,
-    3, 2, 1, 5, 20, 21, 10, 3, 0, 0, 21, 22, 7, 1, 0, 0, 22, 24, 3, 2,
-    1, 4, 23, 14, 1, 0, 0, 0, 23, 17, 1, 0, 0, 0, 23, 20, 1, 0, 0, 0,
-    24, 27, 1, 0, 0, 0, 25, 23, 1, 0, 0, 0, 25, 26, 1, 0, 0, 0, 26, 3,
-    1, 0, 0, 0, 27, 25, 1, 0, 0, 0, 3, 12, 23, 25,
-];
+fn atn(recognizer: &str) -> Vec<i32> {
+    generated_array(recognizer, "_serializedATN")
+        .iter()
+        .map(|n| n.parse().expect("an integer"))
+        .collect()
+}
 
-fn names(names: &[&str]) -> Vec<String> {
-    names.iter().map(|name| name.to_string()).collect()
+fn names(recognizer: &str, name: &str) -> Vec<Option<String>> {
+    generated_array(recognizer, name)
+        .into_iter()
+        .map(|item| (item != "null").then(|| item.trim_matches('"').to_string()))
+        .collect()
 }
 
 fn grammars() -> (Grammar, Grammar) {
+    let rule_names = |recognizer| {
+        names(recognizer, "ruleNames")
+            .into_iter()
+            .flatten()
+            .collect()
+    };
     let vocabulary = Vocabulary {
-        literal_names: [
-            None,
-            Some("'^'"),
-            Some("'-'"),
-            Some("'*'"),
-            Some("'/'"),
-            Some("'+'"),
-            Some("'('"),
-            Some("')'"),
-        ]
-        .into_iter()
-        .map(|name: Option<&str>| name.map(str::to_string))
-        .collect(),
-        symbolic_names: [
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            Some("NUMBER"),
-            Some("WS"),
-        ]
-        .into_iter()
-        .map(|name: Option<&str>| name.map(str::to_string))
-        .collect(),
+        literal_names: names("ArithmeticParser", "literalNames"),
+        symbolic_names: names("ArithmeticParser", "symbolicNames"),
     };
     let lexer = Grammar::new(
-        LEXER_ATN,
-        names(&[
-            "T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "NUMBER", "WS",
-        ]),
+        &atn("ArithmeticLexer"),
+        rule_names("ArithmeticLexer"),
         vocabulary.clone(),
     )
     .unwrap();
-    let parser = Grammar::new(PARSER_ATN, names(&["program", "expr"]), vocabulary).unwrap();
+    let parser = Grammar::new(
+        &atn("ArithmeticParser"),
+        rule_names("ArithmeticParser"),
+        vocabulary,
+    )
+    .unwrap();
     (lexer, parser)
 }
 

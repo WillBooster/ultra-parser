@@ -355,6 +355,8 @@ const tokensRegistry = new FinalizationRegistry<number>((ptr) => wasm?.tokens_fr
 /** An input and its tokens in the runtime's memory. */
 export class WasmTokens {
   readonly ptr: number;
+  /** The tokens last copied in and how many there were, so that unchanged tokens are not copied again. */
+  loaded: { tokens: readonly unknown[]; length: number } | undefined;
 
   constructor(input: Uint32Array) {
     const data = allocInts(input, true);

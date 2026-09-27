@@ -152,7 +152,7 @@ export abstract class Parser extends Recognizer {
   #contexts: ParserRuleContext[] = [];
   #previousContexts: (ParserRuleContext | undefined)[] = [];
   #createRoot: ((parent: ParserRuleContext | null, invokingState: number) => ParserRuleContext) | undefined;
-  #tokens: WasmTokens | undefined;
+  #ownTokens: WasmTokens | undefined;
 
   constructor(input: CommonTokenStream) {
     super();
@@ -237,10 +237,10 @@ export abstract class Parser extends Recognizer {
     this._input.fill(true);
     const startToken = this._input.index;
     // Grammar code may call rule methods while parsing: such a parse reads the tokens the outer
-    // parse loaded, whose memory the outer parse still uses, and the outer parse continues after it
-    // from where it was.
+    // parse loaded, whose memory the outer parse still uses (#loadTokens keeps it), and the outer
+    // parse continues after it from where it was.
     const outer = [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, startToken] as const;
-    const tokens = this.#parsing && this.#tokens ? this.#tokens : this.#loadTokens();
+    const tokens = this.#loadTokens();
     const parsing = this.#parsing;
     this.#contexts = [];
     this.#previousContexts = [];
@@ -258,17 +258,20 @@ export abstract class Parser extends Recognizer {
         this.#contexts = [];
         this.#previousContexts = [];
         this.#createRoot = undefined;
-        this.#tokens = undefined;
       }
     }
   }
 
-  /** Copies the tokens into the runtime's memory, sharing the input they come from. */
+  /**
+   * Copies the tokens into the runtime's memory, sharing the input they come from, unless they are
+   * there already, as when rules are parsed one after another.
+   */
   #loadTokens(): WasmTokens {
     const tokens = this._input.tokens;
     const input = tokens[0]?.inputStream ?? null;
     const shared = input && tokens.every((t) => t.inputStream === input);
-    const wasmTokens = shared ? (input as CharStream).wasm : new WasmTokens(new Uint32Array());
+    const wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
+    if (wasmTokens.loaded?.tokens === tokens && wasmTokens.loaded.length === tokens.length) return wasmTokens;
     const data = new Int32Array(tokens.length * 6);
     let j = 0;
     for (const t of tokens) {
@@ -280,11 +283,11 @@ export abstract class Parser extends Recognizer {
       data[j++] = t.column;
     }
     wasmTokens.setTokens(data);
-    this.#tokens = wasmTokens;
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i] as Token;
       if (!shared || t.hasText) wasmTokens.setText(i, t.text);
     }
+    wasmTokens.loaded = { tokens, length: tokens.length };
     return wasmTokens;
   }
 

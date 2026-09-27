@@ -179,7 +179,7 @@ public class CodeGenerator {
 	public void write(ST code, String fileName) {
 		try (Writer w = tool.getOutputFileWriter(g, fileName)) {
 			StringWriter buf = new StringWriter();
-			STWriter wr = new AutoIndentWriter(buf);
+			STWriter wr = new GrammarCodeWriter(buf);
 			wr.setLineWidth(lineWidth);
 			code.write(wr);
 			w.write(tidy(buf.toString()));
@@ -188,6 +188,35 @@ public class CodeGenerator {
 			tool.errMgr.toolError(ErrorType.CANNOT_WRITE_FILE,
 								  ioe,
 								  fileName);
+		}
+	}
+
+	/** Indents templates' output except the grammar's code, whose whitespace may be significant. */
+	public static class GrammarCodeWriter extends AutoIndentWriter {
+		private boolean inGrammarCode;
+
+		public GrammarCodeWriter(Writer out) {
+			super(out);
+		}
+
+		@Override
+		public int write(String str) throws IOException {
+			int n = 0;
+			int from = 0;
+			for (int i = 0; i < str.length(); i++) {
+				char c = str.charAt(i);
+				if (c == GRAMMAR_CODE_START || c == GRAMMAR_CODE_END) {
+					n += super.write(str.substring(from, i + 1));
+					from = i + 1;
+					inGrammarCode = c == GRAMMAR_CODE_START;
+				}
+			}
+			return n + super.write(str.substring(from));
+		}
+
+		@Override
+		public int indent() throws IOException {
+			return inGrammarCode ? 0 : super.indent();
 		}
 	}
 

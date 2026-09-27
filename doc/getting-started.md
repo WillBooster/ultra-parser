@@ -39,7 +39,7 @@ Generate the lexer, the parser, a listener, and a visitor:
 java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -visitor -o src/generated Expr.g4
 ```
 
-Then parse an expression and print its tree:
+The `ultra-parser` package is not published to npm yet. Build it as above and add it to your project from this repository, e.g., with `bun add /path/to/ultra-parser/packages/ultra-parser` (Node.js loads its `dist/` output, which `bun run build` creates). Then parse an expression and print its tree:
 
 ```ts
 import { CharStream, CommonTokenStream } from 'ultra-parser';
