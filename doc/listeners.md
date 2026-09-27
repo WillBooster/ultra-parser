@@ -94,7 +94,7 @@ console.log(counter.nums); // 3
 console.log(counter.execExitS); // true
 ```
 
-If a listener method throws, the parse stops without calling any more listener methods or grammar code, and the exception propagates out of the rule function that started the parse:
+If a listener method throws, the parse stops matching input and leaves the open rules, innermost first, as the `finally` blocks of ANTLR's generated rule methods do: each runs its `finally` action and sends its exit events to the listeners. Then the exception propagates out of the rule function that started the parse, unless a `finally` action or listener throws another one, which propagates instead:
 
 ```ts
 class ErrorListener extends CalcNoLRListener {
