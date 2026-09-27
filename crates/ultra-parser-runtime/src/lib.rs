@@ -4,7 +4,8 @@
 //! [`Grammar::match_token`] and [`Grammar::parse`] interpret it like ANTLR's `LexerATNSimulator`
 //! and generated parsers do, including adaptive LL(*) prediction and ANTLR's default error
 //! recovery. The grammar's code (actions and predicates) runs in a host: [`LexerHost`] and
-//! [`ParserHost`] receive what the ATN refers to and what the parser builds.
+//! [`ParserHost`] receive what the ATN refers to and what the parser recognizes, from which the
+//! host builds the parse tree.
 
 mod atn;
 mod config;

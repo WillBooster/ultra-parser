@@ -1,5 +1,5 @@
-//! The parser interpreter, ported from ANTLR's `ParserInterpreter`, the tree-building parts of
-//! `Parser`, and `DefaultErrorStrategy`. Where the generated parsers of ANTLR's code generation
+//! The parser interpreter, ported from ANTLR's `ParserInterpreter`, the parts of `Parser` that
+//! report the parse tree, and `DefaultErrorStrategy`. Where the generated parsers of ANTLR's code generation
 //! targets behave differently from `ParserInterpreter`, it follows the generated parsers: it syncs
 //! at the same states and recovers without adding error nodes.
 
@@ -14,8 +14,8 @@ use crate::token::{
 };
 use crate::tree::{NodeId, RuleNode, invoking_states};
 
-/// Receives what the parser builds and runs the grammar code that the ATN refers to. Rule
-/// contexts are identified by their node in the parse tree the parser returns.
+/// Receives what the parser recognizes, from which it builds the parse tree, and runs the grammar
+/// code that the ATN refers to. Rule contexts are identified by the node ids the parser assigns.
 ///
 /// Every method has a default that does nothing, lets predicates succeed, or ignores errors.
 #[allow(unused_variables)]
