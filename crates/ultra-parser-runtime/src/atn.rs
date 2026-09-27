@@ -396,6 +396,24 @@ impl Atn {
         if rule_to_stop_state.contains(&usize::MAX) {
             return Err(AtnError::new("a rule has no stop state"));
         }
+        // Only the token start states of lexer modes belong to no rule.
+        for (i, state) in states.iter().enumerate() {
+            let in_rule = state.rule_index < n_rules;
+            if state.kind != StateKind::Invalid
+                && in_rule == (state.kind == StateKind::TokenStart && state.rule_index == NO_RULE)
+            {
+                return Err(AtnError::new(format!(
+                    "state {i} has an invalid rule index"
+                )));
+            }
+        }
+        for (rule, &s) in rule_to_start_state.iter().enumerate() {
+            if states[s].kind != StateKind::RuleStart || states[s].rule_index != rule {
+                return Err(AtnError::new(format!(
+                    "rule {rule} does not start at its rule start state"
+                )));
+            }
+        }
 
         // Modes
         let mut mode_to_start_state = Vec::new();
@@ -442,7 +460,13 @@ impl Atn {
                     to: arg2,
                 },
                 3 => Transition::Rule {
-                    target: check_state(as_usize(arg1)?)?,
+                    target: check_state(as_usize(arg1)?).and_then(|s| {
+                        if states[s].kind == StateKind::RuleStart {
+                            Ok(s)
+                        } else {
+                            Err(AtnError::new(format!("state {s} does not start a rule")))
+                        }
+                    })?,
                     rule_index: as_usize(arg2)?,
                     precedence: arg3,
                     follow_state: trg,
@@ -594,8 +618,8 @@ impl Atn {
             lexer_actions,
             next_tokens: (0..state_count).map(|_| OnceLock::new()).collect(),
         };
-        atn.mark_precedence_decisions();
         atn.verify()?;
+        atn.mark_precedence_decisions();
         if atn.grammar_type == GrammarType::Parser {
             atn.mark_outer_alt_blocks();
         }
@@ -659,6 +683,12 @@ impl Atn {
                 "a state mixes epsilon and non-epsilon transitions",
             )?;
             match state.kind {
+                StateKind::RuleStart => {
+                    check(
+                        state.transitions.len() == 1,
+                        "a rule start state needs one transition",
+                    )?;
+                }
                 StateKind::PlusBlockStart | StateKind::LoopEnd => {
                     check(
                         state.loop_back_state.is_some(),
@@ -710,5 +740,51 @@ impl Atn {
     /// includes `EPSILON` when the end of the rule is reachable.
     pub fn next_tokens(&self, state: usize) -> &IntervalSet {
         self.next_tokens[state].get_or_init(|| crate::ll1::look(self, state))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A parser ATN of rule 0, `r : ;`, with `edges`.
+    fn parser_atn(edges: &[[i32; 6]]) -> Vec<i32> {
+        // version, parser, max token type, states (rule start, rule stop), non-greedy states,
+        // left-recursive rule starts, rules, modes, sets
+        let mut data = vec![SERIALIZED_VERSION, 1, 1, 2, 2, 0, 7, 0, 0, 0, 1, 0, 0, 0];
+        data.push(edges.len() as i32);
+        data.extend(edges.iter().flatten());
+        data.push(0); // decisions
+        data
+    }
+
+    #[test]
+    fn loads_a_well_formed_atn() {
+        if let Err(error) = Atn::deserialize(&parser_atn(&[[0, 1, 1, 0, 0, 0]])) {
+            panic!("{error}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_rule_start_without_transitions() {
+        let error = Atn::deserialize(&parser_atn(&[])).unwrap_err();
+        assert!(error.to_string().contains("rule start"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_rule_transition_to_a_state_that_starts_no_rule() {
+        let error = Atn::deserialize(&parser_atn(&[[0, 1, 3, 1, 0, 0]])).unwrap_err();
+        assert!(
+            error.to_string().contains("does not start a rule"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_state_of_an_unknown_rule() {
+        let mut data = parser_atn(&[[0, 1, 1, 0, 0, 0]]);
+        data[5] = 3; // the rule start state belongs to rule 3
+        let error = Atn::deserialize(&data).unwrap_err();
+        assert!(error.to_string().contains("invalid rule index"), "{error}");
     }
 }
