@@ -166,7 +166,7 @@ impl<'a> TokenStream<'a> {
         let mut i = self.p as isize;
         for _ in 0..k {
             if i <= 0 {
-                break;
+                return None;
             }
             i = self.previous_on_channel(i - 1);
         }
@@ -212,5 +212,39 @@ impl<'a> TokenStream<'a> {
             .take_while(|t| t.token_type != EOF)
             .map(|t| self.tokens.text(t))
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn token(token_type: i32, channel: i32, index: usize) -> Token {
+        Token {
+            token_type,
+            channel,
+            start: index,
+            end: index + 1,
+            line: 1,
+            column: index,
+            token_index: index,
+            text: None,
+        }
+    }
+
+    #[test]
+    fn lookbehind_past_the_first_token_on_the_channel_is_none() {
+        let tokens = Tokens {
+            input: "a b".chars().map(u32::from).collect(),
+            tokens: vec![
+                token(1, DEFAULT_CHANNEL, 0),
+                token(2, HIDDEN_CHANNEL, 1),
+                token(1, DEFAULT_CHANNEL, 2),
+                token(EOF, DEFAULT_CHANNEL, 3),
+            ],
+        };
+        let stream = TokenStream::new(&tokens, 2);
+        assert_eq!(stream.lt(-1).map(|t| t.token_index), Some(0));
+        assert_eq!(stream.lt(-2), None);
     }
 }

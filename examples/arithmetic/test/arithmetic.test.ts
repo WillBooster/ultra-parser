@@ -85,3 +85,8 @@ test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
     })
   ).toEqual(expected);
 });
+
+test('returns all tokens from a stream that has not been read', () => {
+  const tokens = new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 + 2'))).getTokens();
+  expect(tokens.map((token) => token.text)).toEqual(['1', '+', '2', '<EOF>']);
+});

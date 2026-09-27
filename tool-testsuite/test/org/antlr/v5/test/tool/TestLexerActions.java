@@ -162,12 +162,12 @@ public class TestLexerActions {
 	@Test public void testMoreCommand() throws Exception {
 		String grammar =
 			"lexer grammar L;\n"+
-			"I : '0'..'9'+ {console.log(\"I\");} ;\n"+
+			"I : '0'..'9'+ {console.log(\"I \" + this.text);} ;\n"+
 			"WS : '#' -> more ;";
 		ExecutedState executedState = execLexer(grammar, "34#10");
 		String expecting =
-			"I\n" +
-			"I\n" +
+			"I 34\n" +
+			"I #10\n" +
 			"[@0,0:1='34',<1>,1:0]\n" +
 			"[@1,2:4='#10',<1>,1:2]\n" +
 			"[@2,5:4='<EOF>',<-1>,1:5]\n";

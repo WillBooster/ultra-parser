@@ -45,8 +45,6 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   line = 1;
   /** The column of the lexer's position in the input. */
   column = 0;
-  /** Where the current match started; tokens with `more` consist of several matches. */
-  #matchStartIndex = 0;
   /** Receives the reports of errors instead of the error listeners, e.g., to defer them. */
   errorSink: ((report: () => void) => void) | null = null;
 
@@ -115,7 +113,6 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   /** Matches one rule and runs its actions, like `LexerATNSimulator.match`; returns the token type. */
   #matchToken(): number {
     const start = this._input.index;
-    this.#matchStartIndex = start;
     const result = this.grammar.matchToken(this._input.wasm, this._mode, start, this.line, this.column, this);
     this._input.seek(result.index);
     this.line = result.line;
@@ -276,9 +273,9 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
     this._channel = channel;
   }
 
-  /** The text of the current match, or the text an action set. */
+  /** The text of the current token, including the matches before `more`, or the text an action set. */
   get text(): string {
-    return this._text ?? this._input.getText(this.#matchStartIndex, this._input.index - 1);
+    return this._text ?? this._input.getText(this._tokenStartCharIndex, this._input.index - 1);
   }
 
   set text(text: string) {

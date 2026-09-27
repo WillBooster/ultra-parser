@@ -79,10 +79,11 @@ export class CommonTokenStream {
     return token;
   }
 
-  getTokens(start = 0, stop = this.tokens.length - 1, types?: ReadonlySet<number>): Token[] {
+  getTokens(start = 0, stop?: number, types?: ReadonlySet<number>): Token[] {
     this.lazyInit();
-    this.releaseLexerErrors(stop);
-    return this.tokens.slice(start, stop + 1).filter((t) => !types || types.has(t.type));
+    const end = stop ?? this.tokens.length - 1;
+    this.releaseLexerErrors(end);
+    return this.tokens.slice(start, end + 1).filter((t) => !types || types.has(t.type));
   }
 
   seek(index: number): void {
