@@ -199,3 +199,15 @@ test('parses the tokens on the channel of the token stream', () => {
   expect(parser.expr().toStringTree(parser)).toBe('(expr 2)');
   expect(errors).toEqual([]);
 });
+
+test('parses the current tokens after a token changed', () => {
+  const stream = new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1')));
+  const parser = new ArithmeticParser(stream);
+  parser.removeErrorListeners();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(0);
+  (stream.tokens[0] as Token).type = ArithmeticParser.T__4;
+  parser.reset();
+  parser.program();
+  expect(parser.numberOfSyntaxErrors).toBe(1);
+});

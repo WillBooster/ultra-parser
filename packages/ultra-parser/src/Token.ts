@@ -40,26 +40,99 @@ export const Token = {
   HIDDEN_CHANNEL: 1,
 } as const;
 
+let version = 0;
+
+/** A number that changes whenever a `CommonToken` changes, so that parsers copy changed tokens again. */
+export function tokenVersion(): number {
+  return version;
+}
+
 export class CommonToken implements Token {
   tokenIndex = -1;
-  private explicitText: string | undefined;
+  #type: number;
+  #channel: number;
+  #start: number;
+  #stop: number;
+  #line: number;
+  #column: number;
+  #explicitText: string | undefined;
 
   constructor(
-    public type: number,
-    public channel: number,
-    public start: number,
-    public stop: number,
-    public line: number,
-    public column: number,
+    type: number,
+    channel: number,
+    start: number,
+    stop: number,
+    line: number,
+    column: number,
     readonly tokenSource: TokenSource | null,
     readonly inputStream: CharStream | null,
     text?: string
   ) {
-    this.explicitText = text;
+    this.#type = type;
+    this.#channel = channel;
+    this.#start = start;
+    this.#stop = stop;
+    this.#line = line;
+    this.#column = column;
+    this.#explicitText = text;
+  }
+
+  get type(): number {
+    return this.#type;
+  }
+
+  set type(type: number) {
+    this.#type = type;
+    version++;
+  }
+
+  get channel(): number {
+    return this.#channel;
+  }
+
+  set channel(channel: number) {
+    this.#channel = channel;
+    version++;
+  }
+
+  get start(): number {
+    return this.#start;
+  }
+
+  set start(start: number) {
+    this.#start = start;
+    version++;
+  }
+
+  get stop(): number {
+    return this.#stop;
+  }
+
+  set stop(stop: number) {
+    this.#stop = stop;
+    version++;
+  }
+
+  get line(): number {
+    return this.#line;
+  }
+
+  set line(line: number) {
+    this.#line = line;
+    version++;
+  }
+
+  get column(): number {
+    return this.#column;
+  }
+
+  set column(column: number) {
+    this.#column = column;
+    version++;
   }
 
   get text(): string {
-    if (this.explicitText !== undefined) return this.explicitText;
+    if (this.#explicitText !== undefined) return this.#explicitText;
     const input = this.inputStream;
     if (!input) return '';
     const n = input.size;
@@ -68,11 +141,12 @@ export class CommonToken implements Token {
   }
 
   set text(text: string) {
-    this.explicitText = text;
+    this.#explicitText = text;
+    version++;
   }
 
   get hasText(): boolean {
-    return this.explicitText !== undefined;
+    return this.#explicitText !== undefined;
   }
 
   getText(): string {

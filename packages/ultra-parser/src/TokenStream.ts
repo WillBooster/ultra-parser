@@ -11,7 +11,7 @@ interface DeferredLexerError {
  * `CommonTokenStream`. The parser reads all tokens before it parses.
  */
 export class CommonTokenStream {
-  readonly tokens: Token[] = [];
+  readonly #tokens: Token[] = [];
   private p = -1;
   private fetchedEOF = false;
   private deferredLexerErrors: DeferredLexerError[] = [];
@@ -54,12 +54,17 @@ export class CommonTokenStream {
   private fetch(): void {
     const token = this.tokenSource.nextToken();
     token.tokenIndex = this.tokens.length;
-    this.tokens.push(token);
+    this.#tokens.push(token);
     if (token.type === Token.EOF) this.fetchedEOF = true;
   }
 
   private lazyInit(): void {
     if (this.p < 0) this.fill(true);
+  }
+
+  /** The tokens read so far; they change only as the stream reads more. */
+  get tokens(): readonly Token[] {
+    return this.#tokens;
   }
 
   get size(): number {

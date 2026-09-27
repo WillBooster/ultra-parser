@@ -2,7 +2,7 @@ import type { CharStream } from './CharStream.js';
 import { BailErrorStrategy, ParseCancellationException, RecognitionException } from './errors.js';
 import { IntervalSet } from './IntervalSet.js';
 import { Recognizer } from './Recognizer.js';
-import { CommonToken, Token } from './Token.js';
+import { CommonToken, Token, tokenVersion } from './Token.js';
 import type { CommonTokenStream } from './TokenStream.js';
 import { type ParseTreeListener, ParserRuleContext } from './tree.js';
 import { type ParserHost, setPredictionMode, WasmTokens } from './wasm.js';
@@ -305,12 +305,15 @@ export abstract class Parser extends Recognizer {
    */
   #loadTokens(): WasmTokens {
     const tokens = this._input.tokens;
+    const version = tokenVersion();
+    const holds = (memory: WasmTokens | undefined): boolean =>
+      memory?.loaded?.tokens === tokens && memory.loaded.length === tokens.length && memory.loaded.version === version;
     const last = this.#loadedTokens;
-    if (last?.loaded?.tokens === tokens && last.loaded.length === tokens.length) return last;
+    if (last && holds(last)) return last;
     const input = tokens[0]?.inputStream ?? null;
     let shared = input && tokens.every((t) => t.inputStream === input);
     let wasmTokens = shared ? (input as CharStream).wasm : (this.#ownTokens ??= new WasmTokens(new Uint32Array()));
-    if (wasmTokens.loaded?.tokens === tokens && wasmTokens.loaded.length === tokens.length) {
+    if (holds(wasmTokens)) {
       this.#loadedTokens = wasmTokens;
       return wasmTokens;
     }
@@ -335,7 +338,7 @@ export abstract class Parser extends Recognizer {
       const t = tokens[i] as Token;
       if (!shared || t.hasText) wasmTokens.setText(i, t.text);
     }
-    wasmTokens.loaded = { tokens, length: tokens.length };
+    wasmTokens.loaded = { tokens, length: tokens.length, version };
     return wasmTokens;
   }
 
