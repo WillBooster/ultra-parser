@@ -90,3 +90,15 @@ test('returns all tokens from a stream that has not been read', () => {
   const tokens = new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 + 2'))).getTokens();
   expect(tokens.map((token) => token.text)).toEqual(['1', '+', '2', '<EOF>']);
 });
+
+test('reports all lexer errors when the whole text of a stream is read', () => {
+  const log: string[] = [];
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 + 2 # 3'));
+  lexer.removeErrorListeners();
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
+  };
+  lexer.addErrorListener(listener);
+  expect(new CommonTokenStream(lexer).getText()).toBe('1+23');
+  expect(log).toEqual(["1:6 token recognition error at: '#'"]);
+});

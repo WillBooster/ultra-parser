@@ -3,7 +3,7 @@
 If you invoke the ANTLR tool without command line arguments, you’ll get a help message:
 
 ```bash
-$ antlr4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar
 ANTLR Parser Generator  Version 4.7.1
  -o ___              specify output directory where all output is generated
  -lib ___            specify location of grammars, tokens files
@@ -59,7 +59,7 @@ s : x ;
  	
 ID : [a-z]+ ;
  	
-$ antlr4 -lib /tmp A.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -lib /tmp A.g4
 
 ## `-atn`
 
@@ -75,7 +75,7 @@ b : ID ;
  	
 ID : [a-z]+ ;
  	
-$ antlr4 -atn A.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -atn A.g4
  	
 $ ls *.dot
  	
@@ -114,7 +114,7 @@ TypeScript has no packages, so the TypeScript target ignores this option.
 Instead of generating a parser and/or lexer, generate a list of file dependencies, one per line. The output shows what each grammar depends on and what it generates. This is useful for build tools that need to know ANTLR grammar dependencies. Here’s an example:
  	
 ```bash
-$ java -jar antlr5-0.0.1-SNAPSHOT-complete.jar -depend T.g4
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -depend T.g4
 T.g4: A.tokens
 TParser.ts : T.g4
 T.tokens : T.g4
@@ -150,7 +150,7 @@ ANTLR normally builds traditional “switch on token type” decisions where pos
 This option creates a log file containing lots of information messages from ANTLR as it processes your grammar. If you would like to see how ANTLR translates your left-recursive rules, turn on this option and look in the resulting log file.
  	
 ```bash
-$ antlr4 -Xlog T.g4 	
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Xlog T.g4 	
 wrote ./antlr-2012-09-06-17.56.19.log
 ```
 

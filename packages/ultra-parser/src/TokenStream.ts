@@ -152,6 +152,8 @@ export class CommonTokenStream {
     const from = start === undefined ? 0 : typeof start === 'number' ? start : start?.tokenIndex;
     const to = stop === undefined ? this.tokens.length - 1 : typeof stop === 'number' ? stop : stop?.tokenIndex;
     if (from === undefined || to === undefined || from < 0 || to < 0) return '';
+    // Like ANTLR's, the whole text needs every token and the text of a range the tokens up to its end.
+    this.releaseLexerErrors(start === undefined && stop === undefined ? this.tokens.length : to);
     let text = '';
     for (let i = from; i <= Math.min(to, this.tokens.length - 1); i++) {
       const token = this.tokens[i] as Token;
