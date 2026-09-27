@@ -138,6 +138,12 @@ const hooksCache = new WeakMap<object, ParserHooks>();
  * A parser, like ANTLR's `Parser`. The runtime parses the tokens; this class builds the parse tree
  * and runs the grammar code as the runtime reports its progress.
  */
+/**
+ * The parsers whose parses are running, innermost last; the runtime predicts with the innermost
+ * parser's mode, as grammar code of one parser may call rules of another.
+ */
+const activeParsers: Parser[] = [];
+
 export abstract class Parser extends Recognizer {
   _input: CommonTokenStream;
   /** The context of the rule being parsed. */
@@ -179,7 +185,7 @@ export abstract class Parser extends Recognizer {
   /** The prediction mode, which grammar code may also change while parsing. */
   set predictionMode(mode: PredictionMode) {
     this.#mode = mode;
-    if (this.#parsing) setPredictionMode(mode);
+    if (activeParsers.at(-1) === this) setPredictionMode(mode);
   }
 
   get tokenStream(): CommonTokenStream {
@@ -246,10 +252,15 @@ export abstract class Parser extends Recognizer {
     this.#previousContexts = [];
     this.#createRoot = createRoot;
     this.#parsing = true;
+    activeParsers.push(this);
     try {
       const root = this.grammar.parse(tokens, startToken, ruleIndex, this.#mode, this.#createHost());
       return this.#contexts[root] as T;
     } finally {
+      activeParsers.pop();
+      // The runtime restores the mode the outer parse started with; the mode may have changed since.
+      const current = activeParsers.at(-1);
+      if (current) setPredictionMode(current.#mode);
       this.#parsing = parsing;
       if (parsing) {
         [this.#contexts, this.#previousContexts, this.#createRoot, this._ctx, this.state] = outer;

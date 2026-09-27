@@ -78,6 +78,39 @@ public class TestParserExec {
 	}
 
 	/**
+	 * Grammar code of another parser may change the prediction mode of a running parse, which then
+	 * predicts the context-sensitive decision of {@code e} with SLL and reports no full-context
+	 * prediction.
+	 */
+	@Test public void testPredictionModeSetFromNestedParser() {
+		String grammar =
+			"grammar T;\n" +
+			"@parser::header {\n" +
+			"import { CharStream, CommonTokenStream, PredictionMode } from 'ultra-parser';\n" +
+			"import { TLexer } from './TLexer.js';\n" +
+			"}\n" +
+			"@parser::members {\n" +
+			"outer: TParser | null = null;\n" +
+			"}\n" +
+			"s : {\n" +
+			"  const inner = new TParser(new CommonTokenStream(new TLexer(CharStream.fromString('x'))));\n" +
+			"  inner.outer = this;\n" +
+			"  inner.q();\n" +
+			"} '$' a ;\n" +
+			"q : ID {this.outer!.predictionMode = PredictionMode.SLL;} ;\n" +
+			"a : e ID ;\n" +
+			"b : e INT ID ;\n" +
+			"e : INT | ;\n" +
+			"t : '@' b ;\n" +
+			"ID : [a-z]+ ;\n" +
+			"INT : [0-9]+ ;\n" +
+			"WS : [ \\t\\n]+ -> skip ;\n";
+		ExecutedState executedState = execParser(grammar, "s", "$ 34 abc", true);
+		assertEquals("", executedState.output);
+		assertEquals("", executedState.errors);
+	}
+
+	/**
 	 * This is a regression test for antlr/antlr4#563 "Inconsistent token
 	 * handling in ANTLR4".
 	 * https://github.com/antlr/antlr4/issues/563
