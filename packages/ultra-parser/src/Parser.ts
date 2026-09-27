@@ -719,8 +719,10 @@ export abstract class Parser extends Recognizer {
     return stack;
   }
 
-  /** Precedence predicates of left-recursive rules run in the runtime; generated code never needs this. */
-  /** Whether the left-recursive rule being parsed allows an operator of `precedence`, like ANTLR's. */
+  /**
+   * Whether the left-recursive rule being parsed allows an operator of `precedence`, like ANTLR's.
+   * The runtime checks precedence while parsing; grammar code and the generated `sempred` call this.
+   */
   precpred(_localctx: ParserRuleContext | null, precedence: number): boolean {
     return precedence >= (this.#precedenceStack.at(-1) ?? 0);
   }
