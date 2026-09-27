@@ -25,7 +25,7 @@ See [doc/typescript-target.md](doc/typescript-target.md) for the generated code 
 
 ## Usage
 
-Generate TypeScript from a grammar with the tool (Java 21 or later; see "Development" for building it):
+Generate TypeScript from a grammar, such as the `Expr.g4` of [doc/getting-started.md](doc/getting-started.md), with the tool (Java 21 or later; see "Development" for building it):
 
 ```sh
 java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -visitor -o src/generated Expr.g4
@@ -39,7 +39,7 @@ import { CharStream, CommonTokenStream } from 'ultra-parser';
 import { ExprLexer } from './generated/ExprLexer.js';
 import { ExprParser } from './generated/ExprParser.js';
 
-const lexer = new ExprLexer(CharStream.fromString('1 + 2 * 3'));
+const lexer = new ExprLexer(CharStream.fromString('10+20*30'));
 const parser = new ExprParser(new CommonTokenStream(lexer));
 const tree = parser.prog();
 console.log(tree.toStringTree(parser));
