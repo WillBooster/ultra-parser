@@ -11,9 +11,7 @@ import org.antlr.v5.runtime.core.atn.ATN;
 import org.antlr.v5.runtime.core.atn.ATNSerializer;
 import org.antlr.v5.runtime.core.misc.IntegerList;
 
-/** Represents a serialized ATN that is just a list of signed integers; works for all targets
- *  except for java, which requires a 16-bit char encoding. See {@link SerializedJavaATN}.
- */
+/** Represents a serialized ATN that is just a list of signed integers. */
 public class SerializedATN extends OutputModelObject {
 	public int[] serialized;
 
