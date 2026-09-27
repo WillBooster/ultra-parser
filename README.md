@@ -45,7 +45,7 @@ const tree = parser.prog();
 console.log(tree.toStringTree(parser));
 ```
 
-Node.js, Bun, and Deno load the WebAssembly module on first use. Elsewhere, such as in browsers and Cloudflare Workers, call `init()` or `initSync()` with the module (`ultra-parser/ultra_parser.wasm`) before parsing.
+Node.js (20.16 or later), Bun, and Deno load the WebAssembly module on first use. Elsewhere, such as in browsers and Cloudflare Workers, call `init()` or `initSync()` with the module (`ultra-parser/ultra_parser.wasm`) before parsing.
 
 `examples/arithmetic` evaluates arithmetic expressions with a generated parser.
 

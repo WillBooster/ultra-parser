@@ -53,4 +53,4 @@ The `ultra-parser` package exports classes like ANTLR's: `CharStream`, `CommonTo
 - `Parser.buildParseTrees = false` skips building the tree; `addParseListener()` receives events as the tree is built.
 - `ctx.toStringTree(parser)` formats a tree like ANTLR; trees of any depth can be formatted and walked, since the runtime and these functions do not recurse.
 
-Node.js, Bun, and Deno load the WebAssembly module on first use. Elsewhere, call `await init()`, which fetches `ultra_parser.wasm` next to the package, or `initSync(module)` with a compiled module, e.g., one that Cloudflare Workers import.
+Node.js (20.16 or later, which provides `process.getBuiltinModule`), Bun, and Deno load the WebAssembly module on first use. Elsewhere, call `await init()`, which fetches `ultra_parser.wasm` next to the package, or `initSync(module)` with a compiled module, e.g., one that Cloudflare Workers import.

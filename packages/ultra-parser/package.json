@@ -4,6 +4,9 @@
   "description": "Runtime for parsers that the ultra-parser tool generates from ANTLR grammars, running in WebAssembly.",
   "license": "BSD-3-Clause",
   "type": "module",
+  "engines": {
+    "node": ">=20.16.0"
+  },
   "exports": {
     ".": {
       "types": "./src/index.ts",
