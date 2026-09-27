@@ -24,7 +24,6 @@ import org.antlr.v5.codegen.model.RuleActionFunction;
 import org.antlr.v5.codegen.model.RuleFunction;
 import org.antlr.v5.codegen.model.RuleSempredFunction;
 import org.antlr.v5.codegen.model.SrcOp;
-import org.antlr.v5.codegen.model.StarBlock;
 import org.antlr.v5.codegen.model.VisitorFile;
 import org.antlr.v5.codegen.model.decl.CodeBlock;
 import org.antlr.v5.parse.ANTLRParser;

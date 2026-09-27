@@ -7,6 +7,7 @@ interface WasmExports {
   last_error_ptr(): number;
   last_error_len(): number;
   grammar_new(atn: number, atnLen: number, names: number, namesLen: number, nRules: number, nLiterals: number): number;
+  grammar_free(grammar: number): void;
   grammar_lexer_actions(grammar: number): number;
   grammar_expected_tokens(grammar: number, state: number, invokingStates: number, n: number): number;
   tokens_new(input: number, len: number): number;
@@ -243,11 +244,15 @@ export interface LexerActionData {
   data2: number;
 }
 
-/** A grammar loaded into the runtime. Grammars stay loaded as long as the runtime. */
+const grammarRegistry = new FinalizationRegistry<number>((ptr) => wasm?.grammar_free(ptr));
+
+/** A grammar loaded into the runtime, which frees it when the wrapper is collected. */
 export class WasmGrammar {
   private cachedLexerActions?: LexerActionData[];
 
-  private constructor(readonly ptr: number) {}
+  private constructor(readonly ptr: number) {
+    grammarRegistry.register(this, ptr, this);
+  }
 
   static load(
     serializedATN: readonly number[],
