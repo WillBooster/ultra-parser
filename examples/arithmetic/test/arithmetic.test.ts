@@ -341,3 +341,11 @@ test('reports each deferred lexer error once and then lets it go', () => {
   expect(log).toEqual(["1:2 token recognition error at: '#'", "1:6 token recognition error at: '#'"]);
   expect((stream as unknown as { deferredLexerErrors: unknown[] }).deferredLexerErrors).toEqual([]);
 });
+
+test('rejects a lexer mode that does not exist', () => {
+  const lexer = new ArithmeticLexer(CharStream.fromString('1'));
+  lexer.mode(5);
+  expect(() => lexer.nextToken()).toThrow(RangeError);
+  lexer.mode(0);
+  expect(lexer.nextToken().text).toBe('1');
+});

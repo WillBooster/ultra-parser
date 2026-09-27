@@ -116,6 +116,7 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   #matchToken(): number {
     const start = this._input.index;
     this.#matchStartIndex = start;
+    if (!(this._mode >= 0 && this._mode < this.modeNames.length)) throw new RangeError(`invalid mode ${this._mode}`);
     const result = this.grammar.matchToken(this._input.wasm, this._mode, start, this.line, this.column, this);
     this._input.seek(result.index);
     this.line = result.line;

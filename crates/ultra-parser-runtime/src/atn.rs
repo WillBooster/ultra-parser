@@ -733,6 +733,30 @@ impl Atn {
                 )?;
             }
         }
+        if self.grammar_type == GrammarType::Lexer {
+            for state in &self.states {
+                for transition in &state.transitions {
+                    if let Transition::Action {
+                        action_index: Some(action),
+                        ..
+                    } = *transition
+                    {
+                        check(
+                            action < self.lexer_actions.len(),
+                            "a lexer action is out of range",
+                        )?;
+                    }
+                }
+            }
+            for action in &self.lexer_actions {
+                if let LexerAction::Mode(mode) | LexerAction::PushMode(mode) = *action {
+                    check(
+                        mode < self.mode_to_start_state.len(),
+                        "a lexer action names a mode that does not exist",
+                    )?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -756,6 +780,47 @@ mod tests {
         data.extend(edges.iter().flatten());
         data.push(0); // decisions
         data
+    }
+
+    /// A lexer ATN of rule 0, `A : 'a' {action 0} ;`, with `action` as the action index and
+    /// `actions` as the lexer actions.
+    fn lexer_atn(action: i32, actions: &[[i32; 3]]) -> Vec<i32> {
+        #[rustfmt::skip]
+        let mut data = vec![
+            SERIALIZED_VERSION, 0, 1,
+            // states: token start, rule start, basic, rule stop
+            4, 6, -1, 2, 0, 1, 0, 7, 0,
+            // non-greedy states, left-recursive rule starts, rules with token types, modes, sets
+            0, 0, 1, 1, 1, 1, 0, 0,
+            // edges: epsilon, atom 'a', action
+            3, 0, 1, 1, 0, 0, 0, 1, 2, 5, 97, 0, 0, 2, 3, 6, 0, action, 0,
+            // decisions
+            0,
+        ];
+        data.push(actions.len() as i32);
+        data.extend(actions.iter().flatten());
+        data
+    }
+
+    #[test]
+    fn loads_a_well_formed_lexer_atn() {
+        if let Err(error) = Atn::deserialize(&lexer_atn(0, &[[2, 0, 0]])) {
+            panic!("{error}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_lexer_action_out_of_range() {
+        let error = Atn::deserialize(&lexer_atn(1, &[[6, 0, 0]])).unwrap_err();
+        assert!(error.to_string().contains("lexer action"), "{error}");
+    }
+
+    #[test]
+    fn rejects_a_lexer_action_to_a_mode_that_does_not_exist() {
+        for kind in [2, 5] {
+            let error = Atn::deserialize(&lexer_atn(0, &[[kind, 1, 0]])).unwrap_err();
+            assert!(error.to_string().contains("mode"), "{error}");
+        }
     }
 
     #[test]
