@@ -2,9 +2,9 @@
 
 ## Why do we need ANTLR v4?
 
-*Oliver Zeigermann asked me some questions about v4. Here is our conversation.*
+_Oliver Zeigermann asked me some questions about v4. Here is our conversation._
 
-*See the [preface from the book](http://media.pragprog.com/titles/tpantlr2/preface.pdf)*
+_See the [preface from the book](http://media.pragprog.com/titles/tpantlr2/preface.pdf)_
 
 **Q: Why is the new version of ANTLR also called “honey badger”?**
 
@@ -72,7 +72,7 @@ ANTLR 4 automatically constructs parse trees for you and abstract syntax tree (A
 
 Another big difference is that we discourage the use of actions directly within the grammar because ANTLR 4 automatically generates [listeners and visitors](https://github.com/antlr/antlr5/blob/main/doc/listeners.md) for you to use that trigger method calls when some phrases of interest are recognized during a tree walk after parsing. See also [Parse Tree Matching and XPath](https://github.com/antlr/antlr5/blob/main/doc/tree-matching.md).
 
-Semantic predicates are still allowed in both the parser and lexer rules as our actions.  For efficiency sake keep semantic predicates to the right edge of lexical rules.
+Semantic predicates are still allowed in both the parser and lexer rules as our actions. For efficiency sake keep semantic predicates to the right edge of lexical rules.
 
 There are no tree grammars because we use listeners and visitors instead.
 

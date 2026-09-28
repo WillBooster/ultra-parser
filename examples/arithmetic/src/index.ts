@@ -41,7 +41,6 @@ export function evaluate(source: string): number {
  * context per operator and recursion would overflow the stack for long expressions.
  */
 function evaluateExpr(root: ExprContext): number {
-  const text = (child: ParseTree | undefined): string => (child instanceof TerminalNode ? child.getText() : '');
   const values: number[] = [];
   // Each entry is a context and whether its operands are already on `values`.
   const stack: [ExprContext, boolean][] = [[root, false]];
@@ -50,7 +49,8 @@ function evaluateExpr(root: ExprContext): number {
     const children = ctx.children ?? [];
     if (!operandsEvaluated) {
       stack.push([ctx, true]);
-      for (const operand of ctx.expr_list().reverse()) stack.push([operand, false]);
+      const operands = ctx.expr_list();
+      for (let index = operands.length - 1; index >= 0; index--) stack.push([operands[index]!, false]);
       continue;
     }
     const pop = (): number => values.pop() as number;
@@ -65,25 +65,35 @@ function evaluateExpr(root: ExprContext): number {
       const right = pop();
       const left = pop();
       switch (text(op)) {
-        case '^':
+        case '^': {
           values.push(left ** right);
           break;
-        case '*':
+        }
+        case '*': {
           values.push(left * right);
           break;
-        case '/':
+        }
+        case '/': {
           values.push(left / right);
           break;
-        case '+':
+        }
+        case '+': {
           values.push(left + right);
           break;
-        case '-':
+        }
+        case '-': {
           values.push(left - right);
           break;
-        default:
+        }
+        default: {
           throw new Error(`unknown operator ${text(op)}`);
+        }
       }
     }
   }
   return values.pop() as number;
+}
+
+function text(child: ParseTree | undefined): string {
+  return child instanceof TerminalNode ? child.getText() : '';
 }

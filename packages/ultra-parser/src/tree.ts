@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null -- The ANTLR parse tree API uses null for missing contexts.
 import type { RecognitionException } from './errors.js';
 import { Token } from './Token.js';
 
@@ -116,6 +117,7 @@ export class ParserRuleContext {
 
   depth(): number {
     let n = 0;
+    // oxlint-disable-next-line unicorn/no-this-assignment -- The cursor must include the current context before climbing parents.
     for (let p: ParserRuleContext | null = this; p; p = p.parent) n++;
     return n;
   }
@@ -155,6 +157,7 @@ export class ParserRuleContext {
   toString(ruleNames?: readonly string[] | HasRuleNames | null, stop: ParserRuleContext | null = null): string {
     const names = Array.isArray(ruleNames) ? ruleNames : (ruleNames as HasRuleNames | null | undefined)?.ruleNames;
     const parts: string[] = [];
+    // oxlint-disable-next-line unicorn/no-this-assignment -- The cursor must include the current context before climbing parents.
     for (let p: ParserRuleContext | null = this; p && p !== stop; p = p.parent) {
       if (names) parts.push(names[p.ruleIndex] ?? String(p.ruleIndex));
       else if (!p.isEmpty()) parts.push(String(p.invokingState));
@@ -247,7 +250,7 @@ export class ParseTreeVisitor<T> {
 function walk(tree: ParseTree, listener: ParseTreeListener): void {
   const stack: [ParseTree, number][] = [[tree, 0]];
   while (stack.length > 0) {
-    const top = stack[stack.length - 1] as [ParseTree, number];
+    const top = stack.at(-1) as [ParseTree, number];
     const [node, next] = top;
     if (node instanceof TerminalNode) {
       stack.pop();
@@ -280,7 +283,10 @@ export class ParseTreeWalker {
 }
 
 function escapeWhitespace(s: string): string {
-  return s.replace(/\t/g, '\\t').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+  return s
+    .replaceAll('	', String.raw`\t`)
+    .replaceAll('\n', String.raw`\n`)
+    .replaceAll('\r', String.raw`\r`);
 }
 
 function nodeText(node: ParseTree, ruleNames: readonly string[] | undefined): string {
@@ -295,7 +301,7 @@ export function toStringTree(tree: ParseTree, ruleNames?: readonly string[]): st
   let text = '';
   const stack: [ParseTree, number][] = [[tree, 0]];
   while (stack.length > 0) {
-    const top = stack[stack.length - 1] as [ParseTree, number];
+    const top = stack.at(-1) as [ParseTree, number];
     const [node, next] = top;
     const count = node.getChildCount();
     if (next === 0) {

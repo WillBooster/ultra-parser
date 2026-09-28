@@ -1,6 +1,6 @@
 # Parse Tree Listeners
 
-*Partially taken from publically visible [excerpt from ANTLR 4 book](http://media.pragprog.com/titles/tpantlr2/picture.pdf)*
+_Partially taken from publically visible [excerpt from ANTLR 4 book](http://media.pragprog.com/titles/tpantlr2/picture.pdf)_
 
 By default, generated parsers build a data structure called a parse tree or syntax tree that records how the parser recognized the structure of the input sentence and component phrases.
 
@@ -38,7 +38,7 @@ ParseTreeWalker.DEFAULT.walk(extractor, tree); // walk the tree with the listene
 
 Listeners and visitors are great because they keep application-specific code out of grammars, making grammars easier to read and preventing them from getting entangled with a particular application.
 
-See the book for more information on listeners and to learn how to use visitors. (The biggest difference between the listener and visitor mechanisms is that listener methods are called independently by a walker object, whereas visitor methods must walk their children with explicit visit calls.  Forgetting to invoke visitor methods on a node’s children, means those subtrees don’t get visited.)
+See the book for more information on listeners and to learn how to use visitors. (The biggest difference between the listener and visitor mechanisms is that listener methods are called independently by a walker object, whereas visitor methods must walk their children with explicit visit calls. Forgetting to invoke visitor methods on a node’s children, means those subtrees don’t get visited.)
 
 ## Listening during the parse
 

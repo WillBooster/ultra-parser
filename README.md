@@ -1,5 +1,8 @@
 # ultra-parser
 
+[![Test](https://github.com/WillBooster/ultra-parser/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/ultra-parser/actions/workflows/test.yml)
+[![wbfy](https://img.shields.io/badge/wbfy-20.23.2-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+
 A parser generator for ANTLR grammars whose parsers run in WebAssembly, derived from [ANTLR 5](https://github.com/antlr/antlr5).
 
 > [!NOTE]
@@ -71,12 +74,12 @@ After changing the tool or a grammar under `examples/*/grammar/`, run `bun run g
 
 ## ANTLR 5 authors
 
-* [Terence Parr](http://www.cs.usfca.edu/~parrt/), ANTLR project lead
-* [Eric Vergnaud](https://github.com/ericvergnaud), ANTLR 5 project lead
-* [Ivan Kochurkin](https://github.com/KvanTTT), major contributor
-* [Ken Domino](https://github.com/kaby76), major contributor
-* [Jim Idle](https://github.com/jimidle), major contributor
-* [Federico Tomassetti](https://github.com/ftomassetti), major contributor
+- [Terence Parr](http://www.cs.usfca.edu/~parrt/), ANTLR project lead
+- [Eric Vergnaud](https://github.com/ericvergnaud), ANTLR 5 project lead
+- [Ivan Kochurkin](https://github.com/KvanTTT), major contributor
+- [Ken Domino](https://github.com/kaby76), major contributor
+- [Jim Idle](https://github.com/jimidle), major contributor
+- [Federico Tomassetti](https://github.com/ftomassetti), major contributor
 
 ## License
 

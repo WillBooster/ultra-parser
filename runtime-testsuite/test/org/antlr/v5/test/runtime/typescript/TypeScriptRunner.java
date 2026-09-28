@@ -80,8 +80,10 @@ public class TypeScriptRunner extends RuntimeRunner {
 				"--noEmit", "--skipLibCheck", "--target", "es2022", "--lib", "es2022,dom",
 				"--module", "nodenext", "--moduleResolution", "nodenext",
 				"--typeRoots", rootPath.resolve(Paths.get("node_modules", "@types")).toString(), "--types", "bun"));
-			if (!hasGrammarCode(Paths.get(getTempDirPath()))) {
-				command.add("--strict");
+			boolean grammarHasCode = hasGrammarCode(Paths.get(getTempDirPath()));
+			command.add("--strict");
+			command.add(grammarHasCode ? "false" : "true");
+			if (!grammarHasCode) {
 				command.add("--noUnusedLocals");
 				command.add("--noUnusedParameters");
 			}

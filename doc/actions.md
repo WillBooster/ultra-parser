@@ -59,16 +59,15 @@ Most of the time you access the attributes of the token, but sometimes it is use
 
 `$T` and `$L` evaluate to `Token` objects for token name `T` and token label `L`. `$ll` evaluates to `List<Token>` for list label `ll`. `$T.attr` evaluates to the type and value specified in the following table for attribute `attr`:
 
-
-|Attribute|Type|Description|
-|---------|----|-----------|
-|text|String|The text matched for the token; translates to a call to getText. Example: $ID.text.|
-|type|int|The token type (nonzero positive integer) of the token such as INT; translates to a call to getType. Example: $ID.type.|
-|line|int|The line number on which the token occurs, counting from 1; translates to a call to getLine. Example: $ID.line.|
-|pos|int|The character position within the line at which the token’s first character occurs counting from zero; translates to a call to getCharPositionInLine. Example: $ID.pos.|
-|index|int|The overall index of this token in the token stream, counting from zero; translates to a call to getTokenIndex. Example: $ID.index.|
-|channel|int|The token’s channel number. The parser tunes to only one channel, effectively ignoring off-channel tokens. The default channel is 0 (Token.DEFAULT_CHANNEL), and the default hidden channel is Token.HIDDEN_CHANNEL. Translates to a call to getChannel. Example: $ID.channel.|
-|int|int|The integer value of the text held by this token; it assumes that the text is a valid numeric string. Handy for building calculators and so on. Translates to Integer.valueOf(text-of-token). Example: $INT.int.|
+| Attribute | Type   | Description                                                                                                                                                                                                                                                                    |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| text      | String | The text matched for the token; translates to a call to getText. Example: $ID.text.                                                                                                                                                                                            |
+| type      | int    | The token type (nonzero positive integer) of the token such as INT; translates to a call to getType. Example: $ID.type.                                                                                                                                                        |
+| line      | int    | The line number on which the token occurs, counting from 1; translates to a call to getLine. Example: $ID.line.                                                                                                                                                                |
+| pos       | int    | The character position within the line at which the token’s first character occurs counting from zero; translates to a call to getCharPositionInLine. Example: $ID.pos.                                                                                                        |
+| index     | int    | The overall index of this token in the token stream, counting from zero; translates to a call to getTokenIndex. Example: $ID.index.                                                                                                                                            |
+| channel   | int    | The token’s channel number. The parser tunes to only one channel, effectively ignoring off-channel tokens. The default channel is 0 (Token.DEFAULT_CHANNEL), and the default hidden channel is Token.HIDDEN_CHANNEL. Translates to a call to getChannel. Example: $ID.channel. |
+| int       | int    | The integer value of the text held by this token; it assumes that the text is a valid numeric string. Handy for building calculators and so on. Translates to Integer.valueOf(text-of-token). Example: $INT.int.                                                               |
 
 ## Parser Rule Attributes
 
@@ -92,13 +91,13 @@ returnStat : 'return' expr {System.out.println("first token "+$start.getText());
 
 `$r` and `$rl` evaluate to `ParserRuleContext` objects of type `RContext` for rule name `r` and rule label `rl`. `$rll` evaluates to `List<RContext>` for rule list label `rll`. `$r.attr` evaluates to the type and value specified in the following table for attribute `attr`:
 
-|Attribute|Type|Description|
-|---------|----|-----------|
-|text|String|The text matched for a rule or the text matched from the start of the rule up until the point of the `$text` expression evaluation. Note that this includes the text for all tokens including those on hidden channels, which is what you want because usually that has all the whitespace and comments. When referring to the current rule, this attribute is available in any action including any exception actions.|
-|start|Token|The first token to be potentially matched by the rule that is on the main token channel; in other words, this attribute is never a hidden token. For rules that end up matching no tokens, this attribute points at the first token that could have been matched by this rule. When referring to the current rule, this attribute is available to any action within the rule.|
-|stop|Token|The last nonhidden channel token to be matched by the rule. When referring to the current rule, this attribute is available only to the after and finally actions.|
-|ctx|ParserRuleContext|The rule context object associated with a rule invocation. All of the other attributes are available through this attribute. For example, `$ctx.start` accesses the start field within the current rules context object. It’s the same as `$start`.|
-|parser|Parser|The parser itself.  This attribute can be used, for example, to invoke a method defined in the parser's `@members` section from a semantic predicate.|
+| Attribute | Type              | Description                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| text      | String            | The text matched for a rule or the text matched from the start of the rule up until the point of the `$text` expression evaluation. Note that this includes the text for all tokens including those on hidden channels, which is what you want because usually that has all the whitespace and comments. When referring to the current rule, this attribute is available in any action including any exception actions. |
+| start     | Token             | The first token to be potentially matched by the rule that is on the main token channel; in other words, this attribute is never a hidden token. For rules that end up matching no tokens, this attribute points at the first token that could have been matched by this rule. When referring to the current rule, this attribute is available to any action within the rule.                                           |
+| stop      | Token             | The last nonhidden channel token to be matched by the rule. When referring to the current rule, this attribute is available only to the after and finally actions.                                                                                                                                                                                                                                                      |
+| ctx       | ParserRuleContext | The rule context object associated with a rule invocation. All of the other attributes are available through this attribute. For example, `$ctx.start` accesses the start field within the current rules context object. It’s the same as `$start`.                                                                                                                                                                     |
+| parser    | Parser            | The parser itself. This attribute can be used, for example, to invoke a method defined in the parser's `@members` section from a semantic predicate.                                                                                                                                                                                                                                                                    |
 
 ## Dynamically-Scoped Attributes
 
@@ -125,9 +124,9 @@ To illustrate the use of dynamic scoping, consider the real problem of defining 
 
 ```
 grammar DynScope;
- 
+
 prog: block ;
- 
+
 block
 	/* List of symbols defined within this block */
 	locals [
@@ -138,10 +137,10 @@ block
 	// $block::symbols evaluates to a List as defined in scope
 	{System.out.println("symbols="+$symbols);}
 	;
- 
+
 /** Match a declaration and add identifier name to list of symbols */
 decl: 'int' ID {$block::symbols.add($ID.text);} ';' ;
- 
+
 /** Match an assignment then test list of symbols to verify
  * that it contains the variable on the left side of the assignment.
  * Method contains() is List.contains() because $block::symbols
@@ -155,7 +154,7 @@ stat: ID '=' INT ';'
 	}
 	| block
 	;
- 
+
 ID : [a-z]+ ;
 INT : [0-9]+ ;
 WS : [ \t\r\n]+ -> skip ;

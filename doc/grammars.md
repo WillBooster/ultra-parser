@@ -7,11 +7,11 @@ A grammar is essentially a grammar declaration followed by a list of rules, but 
 grammar Name; ①
 options {...}
 import ... ;
- 	
+
 tokens {...}
 channels {...} // lexer only
 @actionName {...}
- 	 
+
 rule1 // parser and lexer rules, possibly intermingled
 ...
 ruleN
@@ -94,9 +94,9 @@ Imported grammars can also import other grammars. ANTLR pursues all imported gra
 
 Not every kind of grammar can import every other kind of grammar:
 
-* Lexer grammars can import lexers, including lexers containing modes.
-* Parsers can import parsers.
-* Combined grammars can import parsers or lexers without modes.
+- Lexer grammars can import lexers, including lexers containing modes.
+- Parsers can import parsers.
+- Combined grammars can import parsers or lexers without modes.
 
 ANTLR adds imported rules to the end of the rule list in a main lexer grammar. That means lexer rules in the main grammar get precedence over imported rules. For example, if a main grammar defines rule `IF : 'if' ;` and an imported grammar defines rule `ID : [a-z]+ ;` (which also recognizes `if`), the imported `ID` won’t hide the main grammar’s `IF` token definition.
 
@@ -113,7 +113,7 @@ Most of the time, the tokens section is used to define token types needed by act
 ```
 // explicitly define keyword token types to avoid implicit definition warnings
 tokens { BEGIN, END, IF, THEN, WHILE }
- 
+
 @lexer::members { // keywords map used in lexer to assign token types
 Map<String,Integer> keywords = new HashMap<String,Integer>() {{
 	put("begin", KeywordsParser.BEGIN);
@@ -149,20 +149,20 @@ Here’s an example where the grammar specifies a package for the generated code
 
 ```
 grammar Count;
- 
+
 @header {
 package foo;
 }
- 
+
 @members {
 int count = 0;
 }
- 
+
 list
 @after {System.out.println(count+" ints");}
 : INT {count++;} (',' INT {count++;} )*
 ;
- 
+
 INT : [0-9]+ ;
 WS : [ \r\t\n]+ -> skip ;
 ```

@@ -27,7 +27,9 @@ export class IntervalSet {
   toString(vocabulary?: Vocabulary): string {
     if (this.isEmpty) return '{}';
     const names = vocabulary
-      ? this.toArray().map((t) => (t === Token.EOF ? '<EOF>' : t === Token.EPSILON ? '<EPSILON>' : vocabulary.getDisplayName(t)))
+      ? this.toArray().map((t) =>
+          t === Token.EOF ? '<EOF>' : t === Token.EPSILON ? '<EPSILON>' : vocabulary.getDisplayName(t)
+        )
       : this.intervals.map(([a, b]) => (a === b ? String(a) : `${a}..${b}`));
     return names.length === 1 && (vocabulary || this.intervals[0]?.[0] === this.intervals[0]?.[1])
       ? (names[0] ?? '')

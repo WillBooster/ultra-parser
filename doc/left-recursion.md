@@ -30,9 +30,9 @@ The predicates resolve ambiguities by comparing the precedence of the current op
 
 The formal 4.0, 4.1 ANTLR left-recursion elimination rules were changed (simplified) for 4.2 and are laid out in the [ALL(*) tech report](http://www.antlr.org/papers/allstar-techreport.pdf):
 
-* Binary expressions are expressions which contain a recursive invocation of the rule as the first and last element of the alternative.
-* Suffix expressions contain a recursive invocation of the rule as the first element of the alternative, but not as the last element.
-* Prefix expressions contain a recursive invocation of the rule as the last element of the alternative, but not as the first element.
+- Binary expressions are expressions which contain a recursive invocation of the rule as the first and last element of the alternative.
+- Suffix expressions contain a recursive invocation of the rule as the first element of the alternative, but not as the last element.
+- Prefix expressions contain a recursive invocation of the rule as the last element of the alternative, but not as the first element.
 
 There is no such thing as a "ternary" expression--they are just binary expressions in disguise.
 

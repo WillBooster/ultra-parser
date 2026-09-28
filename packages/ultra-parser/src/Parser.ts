@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null, typescript/no-explicit-any -- Generated grammar hooks and ANTLR contexts retain their public contracts.
 import type { CharStream } from './CharStream.js';
 import { BailErrorStrategy, ParseCancellationException, RecognitionException } from './errors.js';
 import { IntervalSet } from './IntervalSet.js';
@@ -107,6 +108,7 @@ export class ParserHooks {
   }
 
   /** Runs `hook` after the last token or invocation hook, e.g., to add a label to a list. */
+  // oxlint-disable-next-line unicorn/no-thenable -- Grammar hook chaining exposes this existing public method.
   then(hook: Hook): this {
     this.#last?.push(hook);
     return this;
@@ -653,14 +655,17 @@ export abstract class Parser extends Recognizer {
   ): void {
     for (const listener of this.errorListeners) {
       switch (kind) {
-        case 0:
+        case 0: {
           listener.reportAttemptingFullContext?.(this, decision, ruleIndex, startIndex, stopIndex, alts);
           break;
-        case 1:
+        }
+        case 1: {
           listener.reportContextSensitivity?.(this, decision, ruleIndex, startIndex, stopIndex);
           break;
-        default:
+        }
+        default: {
           listener.reportAmbiguity?.(this, decision, ruleIndex, startIndex, stopIndex, kind === 3, alts);
+        }
       }
     }
   }
@@ -681,7 +686,11 @@ export abstract class Parser extends Recognizer {
   }
 
   /** Reports a syntax error at the current token. */
-  notifyErrorListeners(message: string, offendingToken: Token | null = null, e: RecognitionException | null = null): void {
+  notifyErrorListeners(
+    message: string,
+    offendingToken: Token | null = null,
+    e: RecognitionException | null = null
+  ): void {
     const token = offendingToken ?? this.getCurrentToken();
     this.#syntaxErrors++;
     for (const listener of this.errorListeners) {

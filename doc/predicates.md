@@ -1,6 +1,6 @@
 # Semantic Predicates
 
-Semantic predicates, `{...}?`, are boolean expressions written in the target language that indicate the validity of continuing the parse along the path "guarded" by the predicate. Predicates can appear anywhere within a parser rule just like actions can, but only those appearing on the left edge of alternatives can affect prediction (choosing between alternatives).  This section provides all of the fine print regarding the use of semantic predicates in parser and lexer rules. Let's start out by digging deeper into how the parser incorporates predicates into parsing decisions.
+Semantic predicates, `{...}?`, are boolean expressions written in the target language that indicate the validity of continuing the parse along the path "guarded" by the predicate. Predicates can appear anywhere within a parser rule just like actions can, but only those appearing on the left edge of alternatives can affect prediction (choosing between alternatives). This section provides all of the fine print regarding the use of semantic predicates in parser and lexer rules. Let's start out by digging deeper into how the parser incorporates predicates into parsing decisions.
 
 ## Making Predicated Parsing Decisions
 
@@ -163,7 +163,7 @@ That works great, but it's really just for instructional purposes. It's easier t
 ENUM : 'enum' ;
 ```
 
-Here's another example of a predicate.  It's important to note that the predicate is evaluated before the action because actions are only executed if the lexer rule matches. The actions are not executed in line; they are collected and executed en mass later.
+Here's another example of a predicate. It's important to note that the predicate is evaluated before the action because actions are only executed if the lexer rule matches. The actions are not executed in line; they are collected and executed en mass later.
 
 ```
 INDENT : [ \t]+ {System.out.println("INDENT")>} {this.getCharPositionInLine()==0}? ;
