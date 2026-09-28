@@ -31,5 +31,13 @@ for (const example of fs.readdirSync(path.join(rootDir, 'examples'))) {
         : '';
     fs.writeFileSync(path.join(generatedDir, file), `${directive}${source}`);
   }
+  execFileSync(path.join(rootDir, 'node_modules', '.bin', 'oxfmt'), ['--write', generatedDir], { stdio: 'inherit' });
+  execFileSync(
+    path.join(rootDir, 'node_modules', '.bin', 'oxlint'),
+    ['--fix', '--type-aware', '--type-check', generatedDir],
+    {
+      stdio: 'inherit',
+    }
+  );
   fs.rmSync(outDir, { force: true, recursive: true });
 }
