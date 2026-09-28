@@ -38,7 +38,7 @@ fn atn(recognizer: &str) -> Vec<i32> {
 fn names(recognizer: &str, name: &str) -> Vec<Option<String>> {
     generated_array(recognizer, name)
         .into_iter()
-        .map(|item| (item != "null").then(|| item.trim_matches('"').to_string()))
+        .map(|item| (item != "null").then(|| item[1..item.len() - 1].to_string()))
         .collect()
 }
 
