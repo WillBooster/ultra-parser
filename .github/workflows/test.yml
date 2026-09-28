@@ -1,20 +1,20 @@
 name: Test
-'on':
-  pull_request: null
+
+on:
+  pull_request:
   push:
     branches:
       - main
-  workflow_dispatch: null
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 permissions:
-  actions: write
-  contents: write
-  pull-requests: read
+  contents: read
+
 jobs:
   test:
-    uses: WillBooster/reusable-workflows/.github/workflows/test.yml@main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -44,8 +44,3 @@ jobs:
         run: |
           bun run typecheck
           bun test
-    with:
-      github_hosted_runner: true
-    secrets:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TAKUMI_GUARD_TOKEN: ${{ secrets.TAKUMI_GUARD_TOKEN }}
