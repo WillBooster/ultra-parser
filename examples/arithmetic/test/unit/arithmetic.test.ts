@@ -1,9 +1,10 @@
+// oxlint-disable unicorn/no-null -- The ANTLR-compatible API exposes null as an observable value.
 import { expect, test } from 'bun:test';
 import { CharStream, CommonToken, CommonTokenStream, type ErrorListener, type ParserHooks, Token } from 'ultra-parser';
 
-import { evaluate, parse } from '../src/index.js';
-import { ArithmeticLexer } from '../src/generated/ArithmeticLexer.js';
-import { ArithmeticParser } from '../src/generated/ArithmeticParser.js';
+import { evaluate, parse } from '../../src/index.js';
+import { ArithmeticLexer } from '../../src/generated/ArithmeticLexer.js';
+import { ArithmeticParser } from '../../src/generated/ArithmeticParser.js';
 
 test('follows precedence and associativity', () => {
   expect(parse('1 + 2 * 3').treeText).toBe('(program (expr (expr 1) + (expr (expr 2) * (expr 3))) <EOF>)');
@@ -67,20 +68,6 @@ test('continues a parse after grammar code parses again', () => {
 });
 
 test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
-  const run = (parseAll: (parser: ArithmeticParser, log: string[]) => void): string[] => {
-    const log: string[] = [];
-    const listener: ErrorListener = {
-      syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
-    };
-    const lexer = new ArithmeticLexer(CharStream.fromString('1 2 3 4 # 5'));
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(listener);
-    const parser = new ArithmeticParser(new CommonTokenStream(lexer));
-    parser.removeErrorListeners();
-    parser.addErrorListener(listener);
-    parseAll(parser, log);
-    return log;
-  };
   const expected = ['(expr 1)', '(expr 2)', '(expr 3)', "1:8 token recognition error at: '#'", '(expr 4)', '(expr 5)'];
   expect(
     run((parser, log) => {
@@ -93,6 +80,21 @@ test('reports lexer errors when the parser reaches them, as ANTLR does', () => {
     })
   ).toEqual(expected);
 });
+
+function run(parseAll: (parser: ArithmeticParser, log: string[]) => void): string[] {
+  const log: string[] = [];
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, line, column, message) => log.push(`${line}:${column} ${message}`),
+  };
+  const lexer = new ArithmeticLexer(CharStream.fromString('1 2 3 4 # 5'));
+  lexer.removeErrorListeners();
+  lexer.addErrorListener(listener);
+  const parser = new ArithmeticParser(new CommonTokenStream(lexer));
+  parser.removeErrorListeners();
+  parser.addErrorListener(listener);
+  parseAll(parser, log);
+  return log;
+}
 
 test('returns all tokens from a stream that has not been read', () => {
   const tokens = new CommonTokenStream(new ArithmeticLexer(CharStream.fromString('1 + 2'))).getTokens();
@@ -149,7 +151,13 @@ test('keeps the tokens of a parse when grammar code parses other tokens of the s
         new CommonToken(ArithmeticLexer.NUMBER, 0, 0, 0, 1, 0, null, input, '9'),
         new CommonToken(Token.EOF, 0, 1, 0, 1, 1, null, input),
       ];
-      const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+      const source = {
+        nextToken: () => tokens.shift() as Token,
+        line: 1,
+        column: 0,
+        inputStream: input,
+        sourceName: '',
+      };
       const inner = new ArithmeticParser(new CommonTokenStream(source));
       nested = inner.expr().toStringTree(inner);
     },
@@ -193,7 +201,9 @@ test('parses the tokens on the channel of the token stream', () => {
   const parser = new ArithmeticParser(new CommonTokenStream(source, Token.HIDDEN_CHANNEL));
   const errors: string[] = [];
   parser.removeErrorListeners();
-  const listener: ErrorListener = { syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message) };
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message),
+  };
   parser.addErrorListener(listener);
   expect(parser.getCurrentToken().text).toBe('2');
   expect(parser.expr().toStringTree(parser)).toBe('(expr 2)');
@@ -290,7 +300,9 @@ test('reports the text of tokens of other classes', () => {
   const parser = new ArithmeticParser(new CommonTokenStream(source));
   const errors: string[] = [];
   parser.removeErrorListeners();
-  const listener: ErrorListener = { syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message) };
+  const listener: ErrorListener = {
+    syntaxError: (_recognizer, _symbol, _line, _column, message) => errors.push(message),
+  };
   parser.addErrorListener(listener);
   parser.expr();
   expect(errors[0]).toBe("mismatched input 'custom' expecting {'-', '(', NUMBER}");
@@ -306,7 +318,13 @@ test('keeps lone surrogates of token text in error messages', () => {
   const messages = [new CommonToken(999, 0, 0, 0, 1, 0, null, input), new Custom(999, 0, 0, 0, 1, 0, null, input)].map(
     (token) => {
       const tokens = [token, new CommonToken(Token.EOF, 0, 1, 0, 1, 1, null, input)];
-      const source = { nextToken: () => tokens.shift() as Token, line: 1, column: 0, inputStream: input, sourceName: '' };
+      const source = {
+        nextToken: () => tokens.shift() as Token,
+        line: 1,
+        column: 0,
+        inputStream: input,
+        sourceName: '',
+      };
       const parser = new ArithmeticParser(new CommonTokenStream(source));
       const errors: string[] = [];
       parser.removeErrorListeners();

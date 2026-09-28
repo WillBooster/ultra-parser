@@ -1,17 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "allowSyntheticDefaultImports": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "importHelpers": false,
     "lib": ["ES2022", "DOM"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
     "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-    "skipLibCheck": true
+    "paths": {
+      "undici-types": ["../../node_modules/undici-types/index.d.ts"]
+    },
+    "resolveJsonModule": true,
+    "rootDir": "../..",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": ["bun"],
+    "verbatimModuleSyntax": true
   },
-  "include": ["src"]
+  "exclude": ["test/fixtures"],
+  "extends": "@tsconfig/bun/tsconfig.json",
+  "include": ["*.config.ts", "scripts/**/*", "src", "src/**/*", "test/**/*"]
 }

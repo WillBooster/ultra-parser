@@ -2,7 +2,7 @@
 
 ## ASTs vs parse trees
 
-I used to do specialized AST (**abstract** syntax tree) nodes rather than (concrete) parse trees because I used to think more about compilation and generating bytecode/assembly code. When I started thinking more about translation, I started using parse trees. For v4, I realized that I did mostly translation.  I guess what I'm saying is that maybe parse trees are not as good as ASTs for generating bytecodes. Personally, I would rather see `(+ 3 4)` rather than `(expr 3 + 4)` for generating byte codes, but it's not the end of the world. (*Can someone fill this in?*)
+I used to do specialized AST (**abstract** syntax tree) nodes rather than (concrete) parse trees because I used to think more about compilation and generating bytecode/assembly code. When I started thinking more about translation, I started using parse trees. For v4, I realized that I did mostly translation. I guess what I'm saying is that maybe parse trees are not as good as ASTs for generating bytecodes. Personally, I would rather see `(+ 3 4)` rather than `(expr 3 + 4)` for generating byte codes, but it's not the end of the world. (_Can someone fill this in?_)
 
 ## Decoupling input walking from output generation
 

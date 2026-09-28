@@ -159,7 +159,10 @@ export class CommonToken implements Token {
   /** Formats the token like ANTLR, e.g., `[@0,0:1='ab',<1>,1:0]`. */
   toString(): string {
     const channel = this.channel > 0 ? `,channel=${this.channel}` : '';
-    const text = this.text.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+    const text = this.text
+      .replaceAll('\n', String.raw`\n`)
+      .replaceAll('\r', String.raw`\r`)
+      .replaceAll('	', String.raw`\t`);
     return `[@${this.tokenIndex},${this.start}:${this.stop}='${text}',<${this.type}>${channel},${this.line}:${this.column}]`;
   }
 }

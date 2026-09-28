@@ -50,7 +50,7 @@ options {tokenVocab=SomeLexer;}
 tokens {A,B,C} // normally, these would be token types 1, 2, 3
 a : ID ;
 $ antlr4 SomeLexer.g4
-$ cat SomeLexer.tokens 
+$ cat SomeLexer.tokens
 ID=1
 $ antlr4 R.g4
 $ cat R.tokens
@@ -119,13 +119,13 @@ Token options have the form `T<name=value>` as we saw in Section 5.4, [Dealing w
 
 ```
 grammar ExprLR;
- 	 
+
 expr : expr '^'<assoc=right> expr
  	| expr '*' expr // match subexpressions joined with '*' operator
  	| expr '+' expr // match subexpressions joined with '+' operator
  	| INT // matches simple integer atom
  	;
- 	 
+
 INT : '0'..'9'+ ;
 WS : [ \n]+ -> skip ;
 ```

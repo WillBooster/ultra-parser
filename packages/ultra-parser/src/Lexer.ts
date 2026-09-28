@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null -- The ANTLR-compatible lexer API uses null for absent values.
 import type { CharStream } from './CharStream.js';
 import { RecognitionException } from './errors.js';
 import { Recognizer } from './Recognizer.js';
@@ -25,8 +26,8 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   static readonly SKIP = -3;
   static readonly DEFAULT_TOKEN_CHANNEL = Token.DEFAULT_CHANNEL;
   static readonly HIDDEN = Token.HIDDEN_CHANNEL;
-  static readonly MIN_CHAR_VALUE = 0x0000;
-  static readonly MAX_CHAR_VALUE = 0x10ffff;
+  static readonly MIN_CHAR_VALUE = 0x00_00;
+  static readonly MAX_CHAR_VALUE = 0x10_FF_FF;
 
   _input: CharStream;
   /** The token to return from `nextToken`, if an action emitted one. */
@@ -148,30 +149,38 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
           requiresSeek = false;
         }
         switch (action.kind) {
-          case LexerActionKind.Channel:
+          case LexerActionKind.Channel: {
             this._channel = action.data1;
             break;
-          case LexerActionKind.Custom:
+          }
+          case LexerActionKind.Custom: {
             this.action(null, action.data1, action.data2);
             break;
-          case LexerActionKind.Mode:
+          }
+          case LexerActionKind.Mode: {
             this.mode(action.data1);
             break;
-          case LexerActionKind.More:
+          }
+          case LexerActionKind.More: {
             this.more();
             break;
-          case LexerActionKind.PopMode:
+          }
+          case LexerActionKind.PopMode: {
             this.popMode();
             break;
-          case LexerActionKind.PushMode:
+          }
+          case LexerActionKind.PushMode: {
             this.pushMode(action.data1);
             break;
-          case LexerActionKind.Skip:
+          }
+          case LexerActionKind.Skip: {
             this.skip();
             break;
-          case LexerActionKind.Type:
+          }
+          case LexerActionKind.Type: {
             this._type = action.data1;
             break;
+          }
         }
       }
     } finally {
@@ -307,7 +316,7 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   /** Reports an error at the start of the current token, through `errorSink` if there is one. */
   #report(message: string, e: RecognitionException | null): void {
     const [line, column] = [this._tokenStartLine, this._tokenStartColumn];
-    const report = () => {
+    const report = (): void => {
       for (const listener of this.errorListeners) listener.syntaxError(this, null, line, column, message, e);
     };
     if (this.errorSink) this.errorSink(report);
@@ -315,14 +324,17 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   }
 
   getErrorDisplay(text: string): string {
-    return text.replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r');
+    return text
+      .replaceAll('\n', String.raw`\n`)
+      .replaceAll('	', String.raw`\t`)
+      .replaceAll('\r', String.raw`\r`);
   }
 
   /** Skips the code point where no rule matched. */
   #recover(): void {
     const c = this._input.LA(1);
     if (c === Token.EOF) return;
-    if (c === 0x0a) {
+    if (c === 0x0A) {
       this.line++;
       this.column = 0;
     } else {

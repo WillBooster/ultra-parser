@@ -102,11 +102,13 @@ const imports = {
       state: number,
       startToken: number,
       precedence: number
-    ): number => guard(parserCall, (h) => h.enterRule(ctx, parent, invokingState, ruleIndex, state, startToken, precedence)),
+    ): number =>
+      guard(parserCall, (h) => h.enterRule(ctx, parent, invokingState, ruleIndex, state, startToken, precedence)),
     fetched: (tokenIndex: number): number => guard(parserCall, (h) => h.fetched(tokenIndex)),
     push_recursion: (ctx: number, previous: number, state: number, previousStop: number): number =>
       guard(parserCall, (h) => h.pushRecursion(ctx, previous, state, previousStop)),
-    outer_alt: (ctx: number, state: number, alt: number): number => guard(parserCall, (h) => h.outerAlt(ctx, state, alt)),
+    outer_alt: (ctx: number, state: number, alt: number): number =>
+      guard(parserCall, (h) => h.outerAlt(ctx, state, alt)),
     exit_rule: (ctx: number, stopToken: number, error: number): number =>
       guard(parserCall, (h) => h.exitRule(ctx, stopToken, error !== 0)),
     unroll: (ctx: number, parent: number, stopToken: number, error: number): number =>
@@ -181,7 +183,8 @@ export async function init(source: WasmSource = defaultWasmUrl): Promise<void> {
     return;
   }
   // Node.js cannot fetch local files, so they are read instead.
-  const url = source instanceof URL ? source : typeof source === 'string' && URL.canParse(source) ? new URL(source) : null;
+  const url =
+    source instanceof URL ? source : typeof source === 'string' && URL.canParse(source) ? new URL(source) : undefined;
   const bytes = url ? readLocalFile(url) : undefined;
   if (bytes) {
     initSync(bytes);
@@ -233,7 +236,7 @@ export function toCodePoints(text: string): Uint32Array {
   for (let i = 0; i < text.length; i++) {
     const c = text.codePointAt(i) ?? 0;
     codePoints[n++] = c;
-    if (c > 0xffff) i++;
+    if (c > 0xFF_FF) i++;
   }
   return n === text.length ? codePoints : codePoints.slice(0, n);
 }
@@ -322,7 +325,11 @@ export class WasmGrammar {
       const data = readResult(ptr, 1, n * 3);
       this.cachedLexerActions = [];
       for (let i = 0; i < n; i++) {
-        this.cachedLexerActions.push({ kind: data[i * 3] ?? 0, data1: data[i * 3 + 1] ?? 0, data2: data[i * 3 + 2] ?? 0 });
+        this.cachedLexerActions.push({
+          kind: data[i * 3] ?? 0,
+          data1: data[i * 3 + 1] ?? 0,
+          data2: data[i * 3 + 2] ?? 0,
+        });
       }
     }
     return this.cachedLexerActions;
@@ -372,12 +379,19 @@ export class WasmGrammar {
       index: stopIndex,
       line: stopLine,
       column: stopColumn,
-      actions: readResult(ptr, 6, n * 2).slice(),
+      actions: Int32Array.from(readResult(ptr, 6, n * 2)),
     };
   }
 
   /** Parses `tokens` from token `startToken` with `startRule`, reporting to `host`; returns the id of the root context. */
-  parse(tokens: WasmTokens, startToken: number, channel: number, startRule: number, mode: number, host: ParserHost): number {
+  parse(
+    tokens: WasmTokens,
+    startToken: number,
+    channel: number,
+    startRule: number,
+    mode: number,
+    host: ParserHost
+  ): number {
     const previous = parserCall;
     const call: Call<ParserHost> = { host };
     parserCall = call;

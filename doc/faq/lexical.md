@@ -6,15 +6,15 @@ See [Using non-ASCII characters in token rules](http://stackoverflow.com/questio
 
 ## How do I replace escape characters in string tokens?
 
-Unfortunately, manipulating the text of the token matched by a lexical rule is cumbersome (as of 4.2).  You have to build up a buffer and then set the text at the end. Actions in the lexer execute at the associated position in the input just like they do in the parser. Here's an example that does escape character replacement in strings. It's not pretty but it works.
+Unfortunately, manipulating the text of the token matched by a lexical rule is cumbersome (as of 4.2). You have to build up a buffer and then set the text at the end. Actions in the lexer execute at the associated position in the input just like they do in the parser. Here's an example that does escape character replacement in strings. It's not pretty but it works.
 
 ```
 grammar Foo;
- 
+
 @members {
 StringBuilder buf = new StringBuilder(); // can't make locals in lexer rules
 }
- 
+
 STR :   '"'
         (   '\\'
             (   'r'     {buf.append('\r');}
@@ -42,9 +42,9 @@ Keywords such as `begin` are also valid identifiers lexically and so that input 
 
 ```
 grammar T;
- 
+
 decl : DEF 'int' ID ';'
- 
+
 DEF : 'def' ;   // ambiguous with ID as is 'int'
 ID  : [a-z]+ ;
 ```

@@ -104,7 +104,7 @@ Match any single character between range x and y, inclusively. E.g., 'a'..'z'. '
 <tr>
 <td>T</td><td>
 Invoke lexer rule T; recursion is allowed in general, but not left recursion. T can be a regular token or fragment rule.
- 	
+
 <pre>
 ID : LETTER (LETTER|'0'..'9')* ;
  	
@@ -126,7 +126,7 @@ ESC : '\\' . ; // match any escaped \x character
 <tr>
 <td>{«action»}</td><td>
 Lexer actions can appear anywhere as of 4.2, not just at the end of the outermost alternative. The lexer executes the actions at the appropriate input position, according to the placement of the action within the rule. To execute a single action for a rule that has multiple alternatives, you can enclose the alts in parentheses and put the action afterwards:
- 	
+
 <pre>
 END : ('endif'|'end') {System.out.println("found an end");} ;
 </pre>
@@ -159,9 +159,9 @@ ANTLR lexer rules can be recursive, unlike most lexical grammar tools. This come
 
 ```
 lexer grammar Recur;
- 
+
 ACTION : '{' ( ACTION | ~[{}] )* '}' ;
- 
+
 WS : [ \r\t\n]+ -> skip ;
 ```
 
@@ -218,13 +218,13 @@ TokenName : «alternative» -> command-name («identifier or integer»)
 
 An alternative can have more than one command separated by commas. Here are the valid command names:
 
-* skip
-* more
-* popMode
-* mode( x )
-* pushMode( x )
-* type( x )
-* channel( x )
+- skip
+- more
+- popMode
+- mode( x )
+- pushMode( x )
+- type( x )
+- channel( x )
 
 See the book source code for usage, some examples of which are shown here:
 
@@ -269,7 +269,7 @@ STRING : '"' -> mode(DEFAULT_MODE) ; // token we want parser to see
 TEXT : . -> more ; // collect more text for string
 ```
 
-Popping the bottom layer of a mode stack will result in an exception. Switching modes with `mode` changes the current stack top.  More than one `more` is the same as just one and the position does not matter.
+Popping the bottom layer of a mode stack will result in an exception. Switching modes with `mode` changes the current stack top. More than one `more` is the same as just one and the position does not matter.
 
 ### type()
 
@@ -292,7 +292,7 @@ BLOCK_COMMENT
 LINE_COMMENT
 	: '//' ~[\r\n]* -> channel(HIDDEN)
 	;
-... 
+...
 // ----------
 // Whitespace
 //

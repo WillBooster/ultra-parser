@@ -19,7 +19,7 @@ grammar T;
 decl : ID ; // match a variable name
 ```
 
-The Javadoc comments are hidden from the parser and are ignored at the moment.  They are intended to be used only at the start of the grammar and any rule.
+The Javadoc comments are hidden from the parser and are ignored at the moment. They are intended to be used only at the start of the grammar and any rule.
 
 ## Identifiers
 
@@ -38,10 +38,10 @@ To support Unicode parser and lexer rule names, ANTLR uses the following rule:
 
 ```
 ID : a=NameStartChar NameChar*
-     {  
+     {
      if ( Character.isUpperCase(getText().charAt(0)) ) setType(TOKEN_REF);
      else setType(RULE_REF);
-     }  
+     }
    ;
 ```
 
@@ -92,7 +92,7 @@ grammar Foreign;
 a : '外' ;
 ```
 
-The recognizers that ANTLR generates assume a character vocabulary containing all Unicode characters. The input file encoding assumed by the runtime library depends on the target language. For the Java target, the runtime library assumes files are in UTF-8. Using the  factory methods in `CharStreams`, you can specify a different encoding.
+The recognizers that ANTLR generates assume a character vocabulary containing all Unicode characters. The input file encoding assumed by the runtime library depends on the target language. For the Java target, the runtime library assumes files are in UTF-8. Using the factory methods in `CharStreams`, you can specify a different encoding.
 
 ## Actions
 
@@ -110,5 +110,5 @@ Here’s a list of the reserved words in ANTLR grammars:
 import, fragment, lexer, parser, grammar, returns,
 locals, throws, catch, finally, mode, options, tokens
 ```
-  
-Also, although it is not a keyword, do not use the word `rule` as a rule name. Further, do not use any keyword of the target language as a token, label, or rule name. For example, rule `if` would result in a generated function called `if`.  That would not compile obviously.
+
+Also, although it is not a keyword, do not use the word `rule` as a rule name. Further, do not use any keyword of the target language as a token, label, or rule name. For example, rule `if` would result in a generated function called `if`. That would not compile obviously.

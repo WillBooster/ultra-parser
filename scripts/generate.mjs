@@ -24,7 +24,12 @@ for (const example of fs.readdirSync(path.join(rootDir, 'examples'))) {
   fs.rmSync(generatedDir, { force: true, recursive: true });
   fs.mkdirSync(generatedDir, { recursive: true });
   for (const file of fs.readdirSync(outDir).filter((file) => file.endsWith('.ts'))) {
-    fs.copyFileSync(path.join(outDir, file), path.join(generatedDir, file));
+    const source = fs.readFileSync(path.join(outDir, file), 'utf8');
+    const directive =
+      file.endsWith('Lexer.ts') || file.endsWith('Parser.ts')
+        ? '// oxlint-disable unicorn/no-null -- Generated ANTLR vocabulary and contexts use null.\n'
+        : '';
+    fs.writeFileSync(path.join(generatedDir, file), `${directive}${source}`);
   }
   fs.rmSync(outDir, { force: true, recursive: true });
 }

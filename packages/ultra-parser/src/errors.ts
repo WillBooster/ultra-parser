@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null -- ANTLR error objects use null for absent tokens.
 import type { Recognizer } from './Recognizer.js';
 import type { Token } from './Token.js';
 

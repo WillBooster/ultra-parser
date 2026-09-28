@@ -30,7 +30,7 @@ Here are more details on the options:
 ## `-o outdir`
 
 ANTLR generates output files in the current directory by default. This option specifies the output directory where ANTLR should generate parsers, listeners, visitors, and tokens files.
- 	
+
 ```bash
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -o /tmp T.g4
 $ ls /tmp/T*
@@ -41,43 +41,43 @@ $ ls /tmp/T*
 ## `-lib libdir`
 
 When looking for tokens files and imported grammars, ANTLR normally looks in the current directory. This option specifies which directory to look in instead. It is only used for resolving grammar references for the import statement and the tokenVocab option. The path to the primary grammar must always be fully specified.
- 	
+
 $ cat /tmp/B.g4
- 	
+
 parser grammar B;
- 	
+
 x : ID ;
- 	
+
 $ cat A.g4
- 	
+
 grammar A;
- 	
+
 import B;
- 	
+
 s : x ;
- 	
+
 ID : [a-z]+ ;
- 	
+
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -lib /tmp A.g4
 
 ## `-atn`
 
 Generate DOT graph files that represent the internal ATN (augmented transition network) data structures that ANTLR uses to represent grammars. The files come out as Grammar.rule .dot. If the grammar is a combined grammar, the lexer rules are named Grammar Lexer.rule .dot.
- 	
+
 $ cat A.g4
- 	
+
 grammar A;
- 	
+
 s : b ;
- 	
+
 b : ID ;
- 	
+
 ID : [a-z]+ ;
- 	
+
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -atn A.g4
- 	
+
 $ ls *.dot
- 	
+
 A.b.dot A.s.dot ALexer.ID.dot
 
 ## `-encoding encodingname`
@@ -111,7 +111,7 @@ TypeScript has no packages, so the TypeScript target ignores this option.
 ## `-depend`
 
 Instead of generating a parser and/or lexer, generate a list of file dependencies, one per line. The output shows what each grammar depends on and what it generates. This is useful for build tools that need to know ANTLR grammar dependencies. Here’s an example:
- 	
+
 ```bash
 $ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -depend T.g4
 T.g4: A.tokens
@@ -144,24 +144,24 @@ For those building a code generation target, this option brings up a window show
 ## `-Xlog`
 
 This option creates a log file containing lots of information messages from ANTLR as it processes your grammar. If you would like to see how ANTLR translates your left-recursive rules, turn on this option and look in the resulting log file.
- 	
+
 ```bash
-$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Xlog T.g4 	
+$ java -jar tool/target/antlr5-0.0.1-SNAPSHOT-complete.jar -Xlog T.g4
 wrote ./antlr-<timestamp>.log
 ```
 
 ## `-Xexact-output-dir`
 
-(*See the [discussion](https://github.com/antlr/antlr4/pull/2065)*).
+(_See the [discussion](https://github.com/antlr/antlr4/pull/2065)_).
 
 All output goes into `-o` dir regardless of paths/package.
 
-* Output `-o` directory specifier is the exact directory containing the output. Previously it would include the relative path specified on the grammar itself for the purposes of packages.
+- Output `-o` directory specifier is the exact directory containing the output. Previously it would include the relative path specified on the grammar itself for the purposes of packages.
 
 **new**: `-o /tmp subdir/T.g4` => `/tmp/subdir/T.ts`
 **old**: `-o /tmp subdir/T.g4` => `/tmp/T.ts`
 
-*  Previously we looked for the tokens vocab file in the `-lib` dir or in the output dir. **New**: also look in the directory containing the grammar, particularly if it it is specified with a path.
+- Previously we looked for the tokens vocab file in the `-lib` dir or in the output dir. **New**: also look in the directory containing the grammar, particularly if it it is specified with a path.
 
 The following examples show ANTLR 4.7 and 4.7.1 with their Java target, where this option was introduced.
 

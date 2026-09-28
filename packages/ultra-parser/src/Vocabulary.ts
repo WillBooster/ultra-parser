@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null -- Vocabulary entries use null for unnamed tokens.
 import { Token } from './Token.js';
 
 /** The names of token types, like ANTLR's `Vocabulary`. */

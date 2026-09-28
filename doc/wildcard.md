@@ -39,6 +39,7 @@ INT : [0-9]+ ;
 DOT : '.' ; // match period
 FLOAT : [0-9]+ '.' ; // match FLOAT upon '34.' not INT then DOT
 ```
+
 </li>
 <li>
 If more than one lexer rule matches the same input sequence, the priority goes to the rule occurring first in the grammar file.
@@ -47,6 +48,7 @@ If more than one lexer rule matches the same input sequence, the priority goes t
 DOC : '/**' .*? '*/' ; // both rules match /** foo */, resolve to DOC
 CMT : '/*' .*? '*/' ;
 ```
+
 </li>
 <li>
 Nongreedy subrules match the fewest number of characters that still allows the surrounding lexical rule to match.
@@ -56,6 +58,7 @@ Nongreedy subrules match the fewest number of characters that still allows the s
 STRING : '<<' ~'\n'*? '>>' ; // Input '<<foo>>>>' matches STRING then END
 END    : '>>' ;
 ```
+
 </li>
 <li>
 <p>After crossing through a nongreedy subrule within a lexical rule, all decision-making from then on is "first match wins."
@@ -100,16 +103,16 @@ $ grun Actions tokens -tokens
 
 ## Nongreedy Parser Subrules
 
-Nongreedy subrules and wildcard are also useful within parsers to do *fuzzy parsing* where the goal is to extract information from an input file without having to specify the full grammar. In contrast to nongreedy lexer decision-making, parsers always make globally correct decisions. A parser never makes a decision that will ultimately cause valid input to fail later on during the parse. Here is the central idea: Nongreedy parser subrules match the shortest sequence of tokens that preserves a successful parse for a valid input sentence.
+Nongreedy subrules and wildcard are also useful within parsers to do _fuzzy parsing_ where the goal is to extract information from an input file without having to specify the full grammar. In contrast to nongreedy lexer decision-making, parsers always make globally correct decisions. A parser never makes a decision that will ultimately cause valid input to fail later on during the parse. Here is the central idea: Nongreedy parser subrules match the shortest sequence of tokens that preserves a successful parse for a valid input sentence.
 
 For example, here are the key rules that demonstrate how to pull integer constants out of an arbitrary Java file:
 
 ```
 grammar FuzzyJava;
- 
+
 /** Match anything in between constant rule matches */
 file : .*? (constant .*?)+ ;
- 
+
 /** Faster alternate version (Gets an ANTLR tool warning about
  * a subrule like .* in parser that you can ignore.)
  */
@@ -120,7 +123,7 @@ constant
     :   'public' 'static' 'final' 'int' Identifier
         {System.out.println("constant: "+$Identifier.text);}
     ;
- 
+
 Identifier : [a-zA-Z_$] [a-zA-Z_$0-9]* ; // simplified
 ```
 
@@ -157,7 +160,7 @@ constant: C
 
 Notice that it totally ignores everything except for the `public static final int` declarations. This all happens with only two parser rules.
 
-Now let's try matching some simple class defs w/o having to build parser rules for the junk inside.  Here want to catch just `A` and `B`:
+Now let's try matching some simple class defs w/o having to build parser rules for the junk inside. Here want to catch just `A` and `B`:
 
 ```
 class A {
@@ -165,7 +168,7 @@ class A {
 }
 
 class B {
-        int x;   
+        int x;
         int getDubX() {
                 return 2*x;
         }
@@ -202,7 +205,7 @@ class A {
 }
 
 class B {
-        int x;   
+        int x;
         int getDubX() {
                 return 2*x;
         }

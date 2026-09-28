@@ -25,36 +25,36 @@ For those using Java, here's a great [set of ANTLR in Intellij notes](https://do
 
 ## Sections
 
-* [Getting Started with ultra-parser](getting-started.md)
+- [Getting Started with ultra-parser](getting-started.md)
 
-* [Grammar Lexicon](lexicon.md)
+- [Grammar Lexicon](lexicon.md)
 
-* [Grammar Structure](grammars.md)
+- [Grammar Structure](grammars.md)
 
-* [Parser Rules](parser-rules.md)
+- [Parser Rules](parser-rules.md)
 
-* [Left-recursive rules](left-recursion.md)
+- [Left-recursive rules](left-recursion.md)
 
-* [Actions and Attributes](actions.md)
+- [Actions and Attributes](actions.md)
 
-* [Lexer Rules](lexer-rules.md)
+- [Lexer Rules](lexer-rules.md)
 
-* [Wildcard Operator and Nongreedy Subrules](wildcard.md)
+- [Wildcard Operator and Nongreedy Subrules](wildcard.md)
 
-* [Parse Tree Listeners](listeners.md)
+- [Parse Tree Listeners](listeners.md)
 
-* [Semantic Predicates](predicates.md)
+- [Semantic Predicates](predicates.md)
 
-* [Options](options.md)
+- [Options](options.md)
 
-* [ANTLR Tool Command Line Options](tool-options.md)
+- [ANTLR Tool Command Line Options](tool-options.md)
 
-* [TypeScript Target](typescript-target.md)
+- [TypeScript Target](typescript-target.md)
 
-* [Unicode U+FFFF, U+10FFFF character streams](unicode.md)
+- [Unicode U+FFFF, U+10FFFF character streams](unicode.md)
 
-* [Resources](resources.md)
+- [Resources](resources.md)
 
 # Contributing
 
-* [Contributing to ultra-parser](/CONTRIBUTING.md)
+- [Contributing to ultra-parser](/CONTRIBUTING.md)

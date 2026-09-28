@@ -50,15 +50,15 @@ For writing a compiler, either generate [LLVM-type static-single-assignment](htt
 
 ### XPath
 
-XPath works great when you need to find specific nodes, possibly in certain contexts. The context is limited to the parents on the way to the root of the tree. For example, if you want to find all ID nodes, use path `//ID`. If you want all variable declarations, you might use path `//vardecl`.  If you only want fields declarations, then you can use some context information via path `/classdef/vardecl`, which would only find vardecls that are children of class definitions. You can merge the results of multiple XPath `findAll()`s simulating a set union for XPath. The only caveat is that the order from the original tree is not preserved when you union multiple `findAll()` sets.
+XPath works great when you need to find specific nodes, possibly in certain contexts. The context is limited to the parents on the way to the root of the tree. For example, if you want to find all ID nodes, use path `//ID`. If you want all variable declarations, you might use path `//vardecl`. If you only want fields declarations, then you can use some context information via path `/classdef/vardecl`, which would only find vardecls that are children of class definitions. You can merge the results of multiple XPath `findAll()`s simulating a set union for XPath. The only caveat is that the order from the original tree is not preserved when you union multiple `findAll()` sets.
 
 ### Tree pattern matching
 
-Use tree pattern matching when you want to find specific subtree structures such as all assignments to 0 using pattern `x = 0;`.  (Recall that these are very convenient because you specify the tree structure in the concrete syntax of the language described by the grammar.) If you want to find all assignments of any kind, you can use pattern `x = <expr>;` where `<expr>` will find any expression. This works great for matching particular substructures and therefore gives you a bit more ability to specify context. I.e., instead of just finding all identifiers, you can find all identifiers on the left hand side of an expression.
+Use tree pattern matching when you want to find specific subtree structures such as all assignments to 0 using pattern `x = 0;`. (Recall that these are very convenient because you specify the tree structure in the concrete syntax of the language described by the grammar.) If you want to find all assignments of any kind, you can use pattern `x = <expr>;` where `<expr>` will find any expression. This works great for matching particular substructures and therefore gives you a bit more ability to specify context. I.e., instead of just finding all identifiers, you can find all identifiers on the left hand side of an expression.
 
 ### Listeners/Visitors
 
-Using the listener or visitor interfaces give you the most power but require implementing more methods. It might be more challenging to discover the emergent behavior of the listener than a simple tree pattern matcher that says *go find me X under node Y*.
+Using the listener or visitor interfaces give you the most power but require implementing more methods. It might be more challenging to discover the emergent behavior of the listener than a simple tree pattern matcher that says _go find me X under node Y_.
 
 Listeners are great when you want to visit many nodes in a tree.
 

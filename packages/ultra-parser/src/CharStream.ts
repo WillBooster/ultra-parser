@@ -23,7 +23,7 @@ export class CharStream {
       let offset = 0;
       for (let i = 0; i < n; i++) {
         offsets[i] = offset;
-        offset += (this.data[i] ?? 0) > 0xffff ? 2 : 1;
+        offset += (this.data[i] ?? 0) > 0xFF_FF ? 2 : 1;
       }
       offsets[n] = offset;
       this.utf16Offsets = offsets;

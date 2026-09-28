@@ -1,3 +1,4 @@
+// oxlint-disable unicorn/no-null -- ANTLR token stream APIs return null for missing tokens.
 import { CommonToken, Token, type TokenSource } from './Token.js';
 
 /** A lexer error that waits until the parser fetches the token it precedes. */
@@ -225,6 +226,7 @@ export class CommonTokenStream {
       if (token.channel === Token.DEFAULT_CHANNEL) break;
       if (channel === -1 || token.channel === channel) hidden.push(token);
     }
+    // oxlint-disable-next-line unicorn/no-array-reverse -- The array is newly allocated and not shared.
     return hidden.length > 0 ? hidden.reverse() : null;
   }
 }
