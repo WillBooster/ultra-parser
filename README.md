@@ -1,7 +1,8 @@
 # ultra-parser
 
 [![Test](https://github.com/WillBooster/ultra-parser/actions/workflows/test.yml/badge.svg)](https://github.com/WillBooster/ultra-parser/actions/workflows/test.yml)
-[![wbfy](https://img.shields.io/badge/wbfy-20.23.2-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
+[![Test rust](https://github.com/WillBooster/ultra-parser/actions/workflows/test-rust.yml/badge.svg)](https://github.com/WillBooster/ultra-parser/actions/workflows/test-rust.yml)
+[![wbfy](https://img.shields.io/badge/wbfy-20.36.11-1e90ff.svg)](https://github.com/WillBooster/shared/tree/main/packages/wbfy)
 
 A parser generator for ANTLR grammars whose parsers run in WebAssembly, derived from [ANTLR 5](https://github.com/antlr/antlr5).
 

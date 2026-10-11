@@ -15,5 +15,5 @@
   },
   "exclude": ["test/fixtures"],
   "extends": ["@tsconfig/bun/tsconfig.json", "../../packages/ultra-parser/tsconfig.json"],
-  "include": ["*.config.ts", "scripts/**/*", "src", "src/**/*", "test", "test/**/*"]
+  "include": ["*.config.mts", "*.config.ts", "scripts/**/*", "src", "src/**/*", "test", "test/**/*"]
 }
