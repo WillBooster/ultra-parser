@@ -31,7 +31,7 @@
     "@tsconfig/bun": "1.0.11",
     "@types/bun": "1.4.3",
     "@willbooster/oxfmt-config": "1.2.2",
-    "@willbooster/oxlint-config": "1.4.8",
+    "@willbooster/oxlint-config": "1.4.9",
     "@willbooster/prettier-config": "10.4.0",
     "@willbooster/wb": "22.26.3",
     "lefthook": "2.2.2",
