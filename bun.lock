@@ -8,7 +8,7 @@
         "@tsconfig/bun": "1.0.11",
         "@types/bun": "1.4.3",
         "@willbooster/oxfmt-config": "1.2.2",
-        "@willbooster/oxlint-config": "1.4.8",
+        "@willbooster/oxlint-config": "1.4.9",
         "@willbooster/prettier-config": "10.4.0",
         "@willbooster/wb": "22.26.3",
         "lefthook": "2.2.2",
@@ -45,7 +45,7 @@
         "@tsconfig/bun": "1.0.11",
         "@types/bun": "1.4.3",
         "@willbooster/oxfmt-config": "1.2.2",
-        "@willbooster/oxlint-config": "1.4.8",
+        "@willbooster/oxlint-config": "1.4.9",
         "@willbooster/wb": "22.26.3",
         "oxfmt": "0.73.0",
         "oxlint": "1.88.0",
@@ -229,7 +229,7 @@
 
     "@willbooster/oxfmt-config": ["@willbooster/oxfmt-config@1.2.2", "", { "peerDependencies": { "oxfmt": ">=0.42.0" } }, "sha512-yLXfvQa23zc8l2d3RHlTnIeAXNpk+5PvrGc9xkMa/wj30jZbF5Kz5AUCZfXatdJb5GF8WmlFWOEZ9sK2jmtS/A=="],
 
-    "@willbooster/oxlint-config": ["@willbooster/oxlint-config@1.4.8", "", { "peerDependencies": { "oxlint": ">=1.60.0", "oxlint-tsgolint": ">=0.18.1" } }, "sha512-i3WWcAc1N6QzA91321dJFGUxXYuuXG4bj12pKlyjCmQRqrulvshFW35PUcaRdw1pVr7I7zHEGK1WUIjbkBd3Vg=="],
+    "@willbooster/oxlint-config": ["@willbooster/oxlint-config@1.4.9", "", { "peerDependencies": { "oxlint": ">=1.60.0", "oxlint-tsgolint": ">=0.18.1" } }, "sha512-xqWuKdEzT4LqYc+WiK7g6sLGjvRj1iAb6CtYW1AA2qa6U1Sfa0rRFoSCJ7bBbrMxG+wS8IgKTJkz/FY/RrW1Iw=="],
 
     "@willbooster/prettier-config": ["@willbooster/prettier-config@10.4.0", "", { "peerDependencies": { "prettier": ">=3", "prettier-plugin-java": ">=2.6" } }, "sha512-oFnP2z/Huifbg8SuDzaNfrJGSWkixbldsidquHiZPAsSi4rIV3GG7JXBkqaoAixz3FvRPZ8JAdOJskeEBt+fqg=="],
 
@@ -538,6 +538,8 @@
     "micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
     "textlint-filter-rule-node-types/@textlint/ast-node-types": ["@textlint/ast-node-types@4.4.3", "", {}, "sha512-qi2jjgO6Tn3KNPGnm6B7p6QTEPvY95NFsIAaJuwbulur8iJUEenp1OnoUfiDaC/g2WPPEFkcfXpmnu8XEMFo2A=="],
+
+    "ultra-parser-example-arithmetic/@willbooster/oxlint-config": ["@willbooster/oxlint-config@1.4.8", "", { "peerDependencies": { "oxlint": ">=1.60.0", "oxlint-tsgolint": ">=0.18.1" } }, "sha512-i3WWcAc1N6QzA91321dJFGUxXYuuXG4bj12pKlyjCmQRqrulvshFW35PUcaRdw1pVr7I7zHEGK1WUIjbkBd3Vg=="],
 
     "unified/is-plain-obj": ["is-plain-obj@2.1.0", "", {}, "sha512-YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA=="],
 
