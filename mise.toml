@@ -1,5 +1,5 @@
 [tools]
-java = "temurin-21.0.12+101.0.LTS"
+java = "temurin-21.0.13+9.0.LTS"
 maven = "3.9"
 node = "24.22.1"
 bun = "1.4.4"
