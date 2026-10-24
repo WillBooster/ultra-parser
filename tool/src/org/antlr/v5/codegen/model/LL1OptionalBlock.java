@@ -6,10 +6,9 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.GrammarAST;
-
-import java.util.List;
 
 /** An optional block is just an alternative block where the last alternative
  *  is epsilon. The analysis takes care of adding to the empty alternative.
@@ -17,7 +16,8 @@ import java.util.List;
  *  (A | B | C)?
  */
 public class LL1OptionalBlock extends LL1AltBlock {
-	public LL1OptionalBlock(OutputModelFactory factory, GrammarAST blkAST, List<CodeBlockForAlt> alts) {
-		super(factory, blkAST, alts);
-	}
+
+    public LL1OptionalBlock(OutputModelFactory factory, GrammarAST blkAST, List<CodeBlockForAlt> alts) {
+        super(factory, blkAST, alts);
+    }
 }

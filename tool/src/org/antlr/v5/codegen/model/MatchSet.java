@@ -13,16 +13,20 @@ import org.antlr.v5.runtime.core.transition.SetTransition;
 import org.antlr.v5.tool.ast.GrammarAST;
 
 public class MatchSet extends MatchToken {
-	@ModelElement public TestSetInline expr;
-	@ModelElement public CaptureNextTokenType capture;
 
-	public MatchSet(OutputModelFactory factory, GrammarAST ast) {
-		super(factory, ast);
-		SetTransition st = (SetTransition)ast.atnState.transition(0);
-		int wordSize = factory.getGenerator().getTarget().getInlineTestSetWordSize();
-		expr = new TestSetInline(factory, null, st.getSet(), wordSize);
-		Decl d = new TokenTypeDecl(factory, expr.varName);
-		factory.getCurrentRuleFunction().addLocalDecl(d);
-		capture = new CaptureNextTokenType(factory,expr.varName);
-	}
+    @ModelElement
+    public TestSetInline expr;
+
+    @ModelElement
+    public CaptureNextTokenType capture;
+
+    public MatchSet(OutputModelFactory factory, GrammarAST ast) {
+        super(factory, ast);
+        SetTransition st = (SetTransition) ast.atnState.transition(0);
+        int wordSize = factory.getGenerator().getTarget().getInlineTestSetWordSize();
+        expr = new TestSetInline(factory, null, st.getSet(), wordSize);
+        Decl d = new TokenTypeDecl(factory, expr.varName);
+        factory.getCurrentRuleFunction().addLocalDecl(d);
+        capture = new CaptureNextTokenType(factory, expr.varName);
+    }
 }

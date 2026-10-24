@@ -1,10 +1,11 @@
 // oxlint-disable unicorn/no-null -- The ANTLR-compatible API exposes null as an observable value.
 import { expect, test } from 'bun:test';
+
 import { CharStream, CommonToken, CommonTokenStream, type ErrorListener, type ParserHooks, Token } from 'ultra-parser';
 
-import { evaluate, parse } from '../../src/index.js';
 import { ArithmeticLexer } from '../../src/generated/ArithmeticLexer.js';
 import { ArithmeticParser } from '../../src/generated/ArithmeticParser.js';
+import { evaluate, parse } from '../../src/index.js';
 
 test('follows precedence and associativity', () => {
   expect(parse('1 + 2 * 3').treeText).toBe('(program (expr (expr 1) + (expr (expr 2) * (expr 3))) <EOF>)');

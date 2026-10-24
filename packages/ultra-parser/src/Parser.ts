@@ -5,7 +5,7 @@ import { IntervalSet } from './IntervalSet.js';
 import { Recognizer } from './Recognizer.js';
 import { CommonToken, Token, tokenVersion } from './Token.js';
 import type { CommonTokenStream } from './TokenStream.js';
-import { type ParseTreeListener, ParserRuleContext } from './tree.js';
+import { ParserRuleContext, type ParseTreeListener } from './tree.js';
 import { type ParserHost, setPredictionMode, WasmTokens } from './wasm.js';
 
 /** How the parser predicts alternatives, like ANTLR's `PredictionMode`. */

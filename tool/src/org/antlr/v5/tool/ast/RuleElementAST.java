@@ -7,5 +7,4 @@
 package org.antlr.v5.tool.ast;
 
 /** Tag indicated AST node is a rule element like token or rule ref. */
-public interface RuleElementAST {
-}
+public interface RuleElementAST {}

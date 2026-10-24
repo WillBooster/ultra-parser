@@ -10,26 +10,26 @@ import org.antlr.v5.runtime.core.atn.ATN;
 import org.antlr.v5.tool.Grammar;
 
 public class ATNOptimizer {
-	public static void optimize(Grammar g, ATN atn) {
-		ATNOptimizerHelper helper = ATNOptimizerHelper.initialize(g, atn);
 
-		RedundantEpsilonRemover.optimize(helper);
+    public static void optimize(Grammar g, ATN atn) {
+        ATNOptimizerHelper helper = ATNOptimizerHelper.initialize(g, atn);
 
-		int removedStatesAfterSetMerging = 0;
-		if (!g.isParser()) {
-			// The optimizer currently doesn't support parser's ATN
-			removedStatesAfterSetMerging = SetMerger.optimize(helper);
-		}
+        RedundantEpsilonRemover.optimize(helper);
 
-		if (removedStatesAfterSetMerging > 0) {
-			// Extra clearing if the previous optimizer has removed some states
-			RedundantEpsilonRemover.optimize(helper);
-		}
+        int removedStatesAfterSetMerging = 0;
+        if (!g.isParser()) {
+            // The optimizer currently doesn't support parser's ATN
+            removedStatesAfterSetMerging = SetMerger.optimize(helper);
+        }
 
-		helper.updateAstNodes(g.ast);
-		helper.compressStates();
-	}
+        if (removedStatesAfterSetMerging > 0) {
+            // Extra clearing if the previous optimizer has removed some states
+            RedundantEpsilonRemover.optimize(helper);
+        }
 
-	private ATNOptimizer() {
-	}
+        helper.updateAstNodes(g.ast);
+        helper.compressStates();
+    }
+
+    private ATNOptimizer() {}
 }

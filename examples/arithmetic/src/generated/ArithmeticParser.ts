@@ -2,6 +2,7 @@
 // Generated from Arithmetic.g4 by ultra-parser. Do not edit.
 
 import { Parser, type ParserHooks, ParserRuleContext, type TerminalNode, Token, type TokenStream } from 'ultra-parser';
+
 import type { ArithmeticListener } from './ArithmeticListener.js';
 import type { ArithmeticVisitor } from './ArithmeticVisitor.js';
 

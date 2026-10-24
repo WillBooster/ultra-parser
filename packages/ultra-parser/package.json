@@ -2,12 +2,17 @@
   "name": "ultra-parser",
   "version": "0.0.0",
   "description": "Runtime for parsers that the ultra-parser tool generates from ANTLR grammars, running in WebAssembly.",
+  "license": "BSD-3-Clause",
+  "author": "WillBooster Inc.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/WillBooster/ultra-parser.git"
   },
-  "license": "BSD-3-Clause",
-  "author": "WillBooster Inc.",
+  "files": [
+    "dist",
+    "src",
+    "ultra_parser.wasm"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -17,11 +22,10 @@
     },
     "./ultra_parser.wasm": "./ultra_parser.wasm"
   },
-  "files": [
-    "dist",
-    "src",
-    "ultra_parser.wasm"
-  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "cleanup": "bun wb lint --fix --format",
     "format": "bun wb lint --format",
@@ -35,19 +39,12 @@
   "devDependencies": {
     "@tsconfig/bun": "1.0.11",
     "@types/bun": "1.4.3",
-    "@willbooster/oxfmt-config": "1.2.2",
     "@willbooster/oxlint-config": "1.4.9",
-    "@willbooster/wb": "22.26.3",
-    "oxfmt": "0.73.0",
+    "@willbooster/wb": "22.29.3",
     "oxlint": "1.88.0",
-    "oxlint-tsgolint": "7.0.2004",
-    "sort-package-json": "4.1.0"
+    "oxlint-tsgolint": "7.0.2004"
   },
   "engines": {
     "node": ">=20.16.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   }
 }

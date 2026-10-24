@@ -9,30 +9,31 @@ package org.antlr.v5.test.runtime.states;
 import org.antlr.v5.test.runtime.Stage;
 
 public abstract class State {
-	public final State previousState;
 
-	public final Exception exception;
+    public final State previousState;
 
-	public abstract Stage getStage();
+    public final Exception exception;
 
-	public boolean containsErrors() {
-		return exception != null;
-	}
+    public abstract Stage getStage();
 
-	public String getErrorMessage() {
-		String result = "State: " + getStage() + "; ";
-		if (exception != null) {
-			result += exception.toString();
-			if ( exception.getCause()!=null ) {
-				result += "\nCause:\n";
-				result += exception.getCause().toString();
-			}
-		}
-		return result;
-	}
+    public boolean containsErrors() {
+        return exception != null;
+    }
 
-	public State(State previousState, Exception exception) {
-		this.previousState = previousState;
-		this.exception = exception;
-	}
+    public String getErrorMessage() {
+        String result = "State: " + getStage() + "; ";
+        if (exception != null) {
+            result += exception.toString();
+            if (exception.getCause() != null) {
+                result += "\nCause:\n";
+                result += exception.getCause().toString();
+            }
+        }
+        return result;
+    }
+
+    public State(State previousState, Exception exception) {
+        this.previousState = previousState;
+        this.exception = exception;
+    }
 }

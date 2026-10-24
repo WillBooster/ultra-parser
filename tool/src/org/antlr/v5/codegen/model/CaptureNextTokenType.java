@@ -10,9 +10,11 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** */
 public class CaptureNextTokenType extends SrcOp {
-	public String varName;
-	public CaptureNextTokenType(OutputModelFactory factory, String varName) {
-		super(factory);
-		this.varName = varName;
-	}
+
+    public String varName;
+
+    public CaptureNextTokenType(OutputModelFactory factory, String varName) {
+        super(factory);
+        this.varName = varName;
+    }
 }

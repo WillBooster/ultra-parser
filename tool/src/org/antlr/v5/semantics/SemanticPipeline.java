@@ -6,20 +6,19 @@
 
 package org.antlr.v5.semantics;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import kotlin.Pair;
 import org.antlr.v5.analysis.LeftRecursiveRuleTransformer;
 import org.antlr.v5.automata.LexerATNFactory;
 import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.runtime.core.Token;
-import kotlin.Pair;
 import org.antlr.v5.tool.ErrorType;
 import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.LexerGrammar;
 import org.antlr.v5.tool.Rule;
 import org.antlr.v5.tool.ast.GrammarAST;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /** Do as much semantic checking as we can and fill in grammar
  *  with rules, actions, and token definitions.
@@ -45,241 +44,269 @@ import java.util.Set;
  *  tokens and rules from the imported grammars into a single collection.
  */
 public class SemanticPipeline {
-	public Grammar g;
 
-	public SemanticPipeline(Grammar g) {
-		this.g = g;
-	}
+    public Grammar g;
 
-	public void process() {
-		if ( g.ast==null ) return;
+    public SemanticPipeline(Grammar g) {
+        this.g = g;
+    }
 
-		// COLLECT RULE OBJECTS
-		RuleCollector ruleCollector = new RuleCollector(g);
-		ruleCollector.process(g.ast);
+    public void process() {
+        if (g.ast == null) return;
 
-		// DO BASIC / EASY SEMANTIC CHECKS
-		int prevErrors = g.tool.errMgr.getNumErrors();
-		BasicSemanticChecks basics = new BasicSemanticChecks(g, ruleCollector);
-		basics.process();
-		if ( g.tool.errMgr.getNumErrors()>prevErrors ) return;
+        // COLLECT RULE OBJECTS
+        RuleCollector ruleCollector = new RuleCollector(g);
+        ruleCollector.process(g.ast);
 
-		// TRANSFORM LEFT-RECURSIVE RULES
-		prevErrors = g.tool.errMgr.getNumErrors();
-		LeftRecursiveRuleTransformer lrtrans =
-			new LeftRecursiveRuleTransformer(g.ast, ruleCollector.rules.values(), g);
-		lrtrans.translateLeftRecursiveRules();
+        // DO BASIC / EASY SEMANTIC CHECKS
+        int prevErrors = g.tool.errMgr.getNumErrors();
+        BasicSemanticChecks basics = new BasicSemanticChecks(g, ruleCollector);
+        basics.process();
+        if (g.tool.errMgr.getNumErrors() > prevErrors) return;
 
-		// don't continue if we got errors during left-recursion elimination
-		if ( g.tool.errMgr.getNumErrors()>prevErrors ) return;
+        // TRANSFORM LEFT-RECURSIVE RULES
+        prevErrors = g.tool.errMgr.getNumErrors();
+        LeftRecursiveRuleTransformer lrtrans = new LeftRecursiveRuleTransformer(g.ast, ruleCollector.rules.values(), g);
+        lrtrans.translateLeftRecursiveRules();
 
-		// STORE RULES IN GRAMMAR
-		for (Rule r : ruleCollector.rules.values()) {
-			g.defineRule(r);
-		}
+        // don't continue if we got errors during left-recursion elimination
+        if (g.tool.errMgr.getNumErrors() > prevErrors) return;
 
-		// COLLECT SYMBOLS: RULES, ACTIONS, TERMINALS, ...
-		SymbolCollector collector = new SymbolCollector(g);
-		collector.process(g.ast);
+        // STORE RULES IN GRAMMAR
+        for (Rule r : ruleCollector.rules.values()) {
+            g.defineRule(r);
+        }
 
-		// CHECK FOR SYMBOL COLLISIONS
-		SymbolChecks symcheck = new SymbolChecks(g, collector);
-		symcheck.process(); // side-effect: strip away redef'd rules.
+        // COLLECT SYMBOLS: RULES, ACTIONS, TERMINALS, ...
+        SymbolCollector collector = new SymbolCollector(g);
+        collector.process(g.ast);
 
-		for (GrammarAST a : collector.namedActions) {
-			g.defineAction(a);
-		}
+        // CHECK FOR SYMBOL COLLISIONS
+        SymbolChecks symcheck = new SymbolChecks(g, collector);
+        symcheck.process(); // side-effect: strip away redef'd rules.
 
-		// LINK (outermost) ALT NODES WITH Alternatives
-		for (Rule r : g.rules.values()) {
-			for (int i=1; i<=r.numberOfAlts; i++) {
-				r.alt[i].ast.alt = r.alt[i];
-			}
-		}
+        for (GrammarAST a : collector.namedActions) {
+            g.defineAction(a);
+        }
 
-		// ASSIGN TOKEN TYPES
-		g.importTokensFromTokensFile();
-		if ( g.isLexer() ) {
-			assignLexerTokenTypes(g, collector.tokensDefs);
-		}
-		else {
-			assignTokenTypes(g, collector.tokensDefs,
-							 collector.tokenIDRefs, collector.terminals);
-		}
+        // LINK (outermost) ALT NODES WITH Alternatives
+        for (Rule r : g.rules.values()) {
+            for (int i = 1; i <= r.numberOfAlts; i++) {
+                r.alt[i].ast.alt = r.alt[i];
+            }
+        }
 
-		symcheck.checkForModeConflicts(g);
-		symcheck.checkForUnreachableTokens(g);
+        // ASSIGN TOKEN TYPES
+        g.importTokensFromTokensFile();
+        if (g.isLexer()) {
+            assignLexerTokenTypes(g, collector.tokensDefs);
+        } else {
+            assignTokenTypes(g, collector.tokensDefs, collector.tokenIDRefs, collector.terminals);
+        }
 
-		assignChannelTypes(g, collector.channelDefs);
+        symcheck.checkForModeConflicts(g);
+        symcheck.checkForUnreachableTokens(g);
 
-		// CHECK RULE REFS NOW (that we've defined rules in grammar)
-		symcheck.checkRuleArgs(g, collector.rulerefs);
-		identifyStartRules(collector);
-		symcheck.checkForQualifiedRuleIssues(g, collector.qualifiedRulerefs);
+        assignChannelTypes(g, collector.channelDefs);
 
-		// don't continue if we got symbol errors
-		if ( g.tool.getNumErrors()>0 ) return;
+        // CHECK RULE REFS NOW (that we've defined rules in grammar)
+        symcheck.checkRuleArgs(g, collector.rulerefs);
+        identifyStartRules(collector);
+        symcheck.checkForQualifiedRuleIssues(g, collector.qualifiedRulerefs);
 
-		// CHECK ATTRIBUTE EXPRESSIONS FOR SEMANTIC VALIDITY
-		AttributeChecks.checkAllAttributeExpressions(g);
+        // don't continue if we got symbol errors
+        if (g.tool.getNumErrors() > 0) return;
 
-		UseDefAnalyzer.trackTokenRuleRefsInActions(g);
-	}
+        // CHECK ATTRIBUTE EXPRESSIONS FOR SEMANTIC VALIDITY
+        AttributeChecks.checkAllAttributeExpressions(g);
 
-	void identifyStartRules(SymbolCollector collector) {
-		for (GrammarAST ref : collector.rulerefs) {
-			String ruleName = ref.getText();
-			Rule r = g.getRule(ruleName);
-			if ( r!=null ) r.isStartRule = false;
-		}
-	}
+        UseDefAnalyzer.trackTokenRuleRefsInActions(g);
+    }
 
-	void assignLexerTokenTypes(Grammar g, List<GrammarAST> tokensDefs) {
-		Grammar G = g.getOutermostGrammar(); // put in root, even if imported
-		for (GrammarAST def : tokensDefs) {
-			// tokens { id (',' id)* } so must check IDs not TOKEN_REF
-			if ( Grammar.isTokenName(def.getText()) ) {
-				G.defineTokenName(def.getText());
-			}
-		}
+    void identifyStartRules(SymbolCollector collector) {
+        for (GrammarAST ref : collector.rulerefs) {
+            String ruleName = ref.getText();
+            Rule r = g.getRule(ruleName);
+            if (r != null) r.isStartRule = false;
+        }
+    }
 
-		/* Define token types for nonfragment rules which do not include a 'type(...)'
-		 * or 'more' lexer command.
-		 */
-		for (Rule r : g.rules.values()) {
-			if ( !r.isFragment() && !hasTypeOrMoreCommand(r) ) {
-				G.defineTokenName(r.name);
-			}
-		}
+    void assignLexerTokenTypes(Grammar g, List<GrammarAST> tokensDefs) {
+        Grammar G = g.getOutermostGrammar(); // put in root, even if imported
+        for (GrammarAST def : tokensDefs) {
+            // tokens { id (',' id)* } so must check IDs not TOKEN_REF
+            if (Grammar.isTokenName(def.getText())) {
+                G.defineTokenName(def.getText());
+            }
+        }
 
-		// FOR ALL X : 'xxx'; RULES, DEFINE 'xxx' AS TYPE X
-		List<Pair<GrammarAST,GrammarAST>> litAliases =
-			Grammar.getStringLiteralAliasesFromLexerRules(g.ast);
-		Set<String> conflictingLiterals = new HashSet<String>();
-		if ( litAliases!=null ) {
-			for (Pair<GrammarAST,GrammarAST> pair : litAliases) {
-				GrammarAST nameAST = pair.getFirst();
-				GrammarAST litAST = pair.getSecond();
-				if ( !G.stringLiteralToTypeMap.containsKey(litAST.getText()) ) {
-					G.defineTokenAlias(nameAST.getText(), litAST.getText());
-				}
-				else {
-					// oops two literal defs in two rules (within or across modes).
-					conflictingLiterals.add(litAST.getText());
-				}
-			}
-			for (String lit : conflictingLiterals) {
-				// Remove literal if repeated across rules so it's not
-				// found by parser grammar.
-				Integer value = G.stringLiteralToTypeMap.remove(lit);
-				if (value != null && value > 0 && value < G.typeToStringLiteralList.size() && lit.equals(G.typeToStringLiteralList.get(value))) {
-					G.typeToStringLiteralList.set(value, null);
-				}
-			}
-		}
-	}
+        /* Define token types for nonfragment rules which do not include a 'type(...)'
+         * or 'more' lexer command.
+         */
+        for (Rule r : g.rules.values()) {
+            if (!r.isFragment() && !hasTypeOrMoreCommand(r)) {
+                G.defineTokenName(r.name);
+            }
+        }
 
-	boolean hasTypeOrMoreCommand(Rule r) {
-		GrammarAST ast = r.ast;
-		if (ast == null) {
-			return false;
-		}
+        // FOR ALL X : 'xxx'; RULES, DEFINE 'xxx' AS TYPE X
+        List<Pair<GrammarAST, GrammarAST>> litAliases = Grammar.getStringLiteralAliasesFromLexerRules(g.ast);
+        Set<String> conflictingLiterals = new HashSet<String>();
+        if (litAliases != null) {
+            for (Pair<GrammarAST, GrammarAST> pair : litAliases) {
+                GrammarAST nameAST = pair.getFirst();
+                GrammarAST litAST = pair.getSecond();
+                if (!G.stringLiteralToTypeMap.containsKey(litAST.getText())) {
+                    G.defineTokenAlias(nameAST.getText(), litAST.getText());
+                } else {
+                    // oops two literal defs in two rules (within or across modes).
+                    conflictingLiterals.add(litAST.getText());
+                }
+            }
+            for (String lit : conflictingLiterals) {
+                // Remove literal if repeated across rules so it's not
+                // found by parser grammar.
+                Integer value = G.stringLiteralToTypeMap.remove(lit);
+                if (
+                    value != null &&
+                    value > 0 &&
+                    value < G.typeToStringLiteralList.size() &&
+                    lit.equals(G.typeToStringLiteralList.get(value))
+                ) {
+                    G.typeToStringLiteralList.set(value, null);
+                }
+            }
+        }
+    }
 
-		GrammarAST altActionAst = (GrammarAST)ast.getFirstDescendantWithType(ANTLRParser.LEXER_ALT_ACTION);
-		if (altActionAst == null) {
-			// the rule isn't followed by any commands
-			return false;
-		}
+    boolean hasTypeOrMoreCommand(Rule r) {
+        GrammarAST ast = r.ast;
+        if (ast == null) {
+            return false;
+        }
 
-		// first child is the alt itself, subsequent are the actions
-		for (int i = 1; i < altActionAst.getChildCount(); i++) {
-			GrammarAST node = (GrammarAST)altActionAst.getChild(i);
-			if (node.getType() == ANTLRParser.LEXER_ACTION_CALL) {
-				if ("type".equals(node.getChild(0).getText())) {
-					return true;
-				}
-			}
-			else if ("more".equals(node.getText())) {
-				return true;
-			}
-		}
+        GrammarAST altActionAst = (GrammarAST) ast.getFirstDescendantWithType(ANTLRParser.LEXER_ALT_ACTION);
+        if (altActionAst == null) {
+            // the rule isn't followed by any commands
+            return false;
+        }
 
-		return false;
-	}
+        // first child is the alt itself, subsequent are the actions
+        for (int i = 1; i < altActionAst.getChildCount(); i++) {
+            GrammarAST node = (GrammarAST) altActionAst.getChild(i);
+            if (node.getType() == ANTLRParser.LEXER_ACTION_CALL) {
+                if ("type".equals(node.getChild(0).getText())) {
+                    return true;
+                }
+            } else if ("more".equals(node.getText())) {
+                return true;
+            }
+        }
 
-	void assignTokenTypes(Grammar g, List<GrammarAST> tokensDefs,
-						  List<GrammarAST> tokenIDs, List<GrammarAST> terminals)
-	{
-		//Grammar G = g.getOutermostGrammar(); // put in root, even if imported
+        return false;
+    }
 
-		// create token types for tokens { A, B, C } ALIASES
-		for (GrammarAST alias : tokensDefs) {
-			if (g.getTokenType(alias.getText()) != Token.INVALID_TYPE) {
-				g.tool.errMgr.grammarError(ErrorType.TOKEN_NAME_REASSIGNMENT, g.fileName, alias.token, alias.getText());
-			}
+    void assignTokenTypes(
+        Grammar g,
+        List<GrammarAST> tokensDefs,
+        List<GrammarAST> tokenIDs,
+        List<GrammarAST> terminals
+    ) {
+        //Grammar G = g.getOutermostGrammar(); // put in root, even if imported
 
-			g.defineTokenName(alias.getText());
-		}
+        // create token types for tokens { A, B, C } ALIASES
+        for (GrammarAST alias : tokensDefs) {
+            if (g.getTokenType(alias.getText()) != Token.INVALID_TYPE) {
+                g.tool.errMgr.grammarError(ErrorType.TOKEN_NAME_REASSIGNMENT, g.fileName, alias.token, alias.getText());
+            }
 
-		// DEFINE TOKEN TYPES FOR TOKEN REFS LIKE ID, INT
-		for (GrammarAST idAST : tokenIDs) {
-			if (g.getTokenType(idAST.getText()) == Token.INVALID_TYPE) {
-				g.tool.errMgr.grammarError(ErrorType.IMPLICIT_TOKEN_DEFINITION, g.fileName, idAST.token, idAST.getText());
-			}
+            g.defineTokenName(alias.getText());
+        }
 
-			g.defineTokenName(idAST.getText());
-		}
+        // DEFINE TOKEN TYPES FOR TOKEN REFS LIKE ID, INT
+        for (GrammarAST idAST : tokenIDs) {
+            if (g.getTokenType(idAST.getText()) == Token.INVALID_TYPE) {
+                g.tool.errMgr.grammarError(
+                    ErrorType.IMPLICIT_TOKEN_DEFINITION,
+                    g.fileName,
+                    idAST.token,
+                    idAST.getText()
+                );
+            }
 
-		// VERIFY TOKEN TYPES FOR STRING LITERAL REFS LIKE 'while', ';'
-		for (GrammarAST termAST : terminals) {
-			if (termAST.getType() != ANTLRParser.STRING_LITERAL) {
-				continue;
-			}
+            g.defineTokenName(idAST.getText());
+        }
 
-			if (g.getTokenType(termAST.getText()) == Token.INVALID_TYPE) {
-				g.tool.errMgr.grammarError(ErrorType.IMPLICIT_STRING_DEFINITION, g.fileName, termAST.token, termAST.getText());
-			}
-		}
+        // VERIFY TOKEN TYPES FOR STRING LITERAL REFS LIKE 'while', ';'
+        for (GrammarAST termAST : terminals) {
+            if (termAST.getType() != ANTLRParser.STRING_LITERAL) {
+                continue;
+            }
 
-		g.tool.log("semantics", "tokens="+g.tokenNameToTypeMap);
-        g.tool.log("semantics", "strings="+g.stringLiteralToTypeMap);
-	}
+            if (g.getTokenType(termAST.getText()) == Token.INVALID_TYPE) {
+                g.tool.errMgr.grammarError(
+                    ErrorType.IMPLICIT_STRING_DEFINITION,
+                    g.fileName,
+                    termAST.token,
+                    termAST.getText()
+                );
+            }
+        }
 
-	/**
-	 * Assign constant values to custom channels defined in a grammar.
-	 *
-	 * @param g The grammar.
-	 * @param channelDefs A collection of AST nodes defining individual channels
-	 * within a {@code channels{}} block in the grammar.
-	 */
-	void assignChannelTypes(Grammar g, List<GrammarAST> channelDefs) {
-		Grammar outermost = g.getOutermostGrammar();
-		for (GrammarAST channel : channelDefs) {
-			String channelName = channel.getText();
+        g.tool.log("semantics", "tokens=" + g.tokenNameToTypeMap);
+        g.tool.log("semantics", "strings=" + g.stringLiteralToTypeMap);
+    }
 
-			// Channel names can't alias tokens or modes, because constant
-			// values are also assigned to them and the ->channel(NAME) lexer
-			// command does not distinguish between the various ways a constant
-			// can be declared. This method does not verify that channels do not
-			// alias rules, because rule names are not associated with constant
-			// values in ANTLR grammar semantics.
+    /**
+     * Assign constant values to custom channels defined in a grammar.
+     *
+     * @param g The grammar.
+     * @param channelDefs A collection of AST nodes defining individual channels
+     * within a {@code channels{}} block in the grammar.
+     */
+    void assignChannelTypes(Grammar g, List<GrammarAST> channelDefs) {
+        Grammar outermost = g.getOutermostGrammar();
+        for (GrammarAST channel : channelDefs) {
+            String channelName = channel.getText();
 
-			if (g.getTokenType(channelName) != Token.INVALID_TYPE) {
-				g.tool.errMgr.grammarError(ErrorType.CHANNEL_CONFLICTS_WITH_TOKEN, g.fileName, channel.token, channelName);
-			}
+            // Channel names can't alias tokens or modes, because constant
+            // values are also assigned to them and the ->channel(NAME) lexer
+            // command does not distinguish between the various ways a constant
+            // can be declared. This method does not verify that channels do not
+            // alias rules, because rule names are not associated with constant
+            // values in ANTLR grammar semantics.
 
-			if (LexerATNFactory.COMMON_CONSTANTS.containsKey(channelName)) {
-				g.tool.errMgr.grammarError(ErrorType.CHANNEL_CONFLICTS_WITH_COMMON_CONSTANTS, g.fileName, channel.token, channelName);
-			}
+            if (g.getTokenType(channelName) != Token.INVALID_TYPE) {
+                g.tool.errMgr.grammarError(
+                    ErrorType.CHANNEL_CONFLICTS_WITH_TOKEN,
+                    g.fileName,
+                    channel.token,
+                    channelName
+                );
+            }
 
-			if (outermost instanceof LexerGrammar) {
-				LexerGrammar lexerGrammar = (LexerGrammar)outermost;
-				if (lexerGrammar.modes.containsKey(channelName)) {
-					g.tool.errMgr.grammarError(ErrorType.CHANNEL_CONFLICTS_WITH_MODE, g.fileName, channel.token, channelName);
-				}
-			}
+            if (LexerATNFactory.COMMON_CONSTANTS.containsKey(channelName)) {
+                g.tool.errMgr.grammarError(
+                    ErrorType.CHANNEL_CONFLICTS_WITH_COMMON_CONSTANTS,
+                    g.fileName,
+                    channel.token,
+                    channelName
+                );
+            }
 
-			outermost.defineChannelName(channel.getText());
-		}
-	}
+            if (outermost instanceof LexerGrammar) {
+                LexerGrammar lexerGrammar = (LexerGrammar) outermost;
+                if (lexerGrammar.modes.containsKey(channelName)) {
+                    g.tool.errMgr.grammarError(
+                        ErrorType.CHANNEL_CONFLICTS_WITH_MODE,
+                        g.fileName,
+                        channel.token,
+                        channelName
+                    );
+                }
+            }
+
+            outermost.defineChannelName(channel.getText());
+        }
+    }
 }

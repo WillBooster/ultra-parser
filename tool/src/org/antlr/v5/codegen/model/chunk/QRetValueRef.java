@@ -10,10 +10,11 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class QRetValueRef extends RetValueRef {
-	public final String dict;
 
-	public QRetValueRef(StructDecl ctx, String dict, String name, String escapedName) {
-		super(ctx, name, escapedName);
-		this.dict = dict;
-	}
+    public final String dict;
+
+    public QRetValueRef(StructDecl ctx, String dict, String name, String escapedName) {
+        super(ctx, name, escapedName);
+        this.dict = dict;
+    }
 }

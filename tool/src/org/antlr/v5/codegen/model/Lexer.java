@@ -6,43 +6,43 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.*;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.Target;
 import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.LexerGrammar;
 import org.antlr.v5.tool.Rule;
 
-import java.util.*;
-
 public class Lexer extends Recognizer {
-	public final Collection<String> channelNames;
-	public final Map<String, Integer> escapedChannels;
-	public final LexerFile file;
-	public final Collection<String> modes;
-	public final Collection<String> escapedModeNames;
 
-	@ModelElement public LinkedHashMap<Rule, RuleActionFunction> actionFuncs =
-		new LinkedHashMap<Rule, RuleActionFunction>();
+    public final Collection<String> channelNames;
+    public final Map<String, Integer> escapedChannels;
+    public final LexerFile file;
+    public final Collection<String> modes;
+    public final Collection<String> escapedModeNames;
 
-	public Lexer(OutputModelFactory factory, LexerFile file) {
-		super(factory);
-		this.file = file; // who contains us?
+    @ModelElement
+    public LinkedHashMap<Rule, RuleActionFunction> actionFuncs = new LinkedHashMap<Rule, RuleActionFunction>();
 
-		Grammar g = factory.getGrammar();
-		Target target = factory.getGenerator().getTarget();
+    public Lexer(OutputModelFactory factory, LexerFile file) {
+        super(factory);
+        this.file = file; // who contains us?
 
-		escapedChannels = new LinkedHashMap<>();
-		channelNames = new ArrayList<>();
-		for (String key : g.channelNameToValueMap.keySet()) {
-			Integer value = g.channelNameToValueMap.get(key);
-			escapedChannels.put(target.escapeIfNeeded(key), value);
-			channelNames.add(key);
-		}
+        Grammar g = factory.getGrammar();
+        Target target = factory.getGenerator().getTarget();
 
-		modes = ((LexerGrammar)g).modes.keySet();
-		escapedModeNames = new ArrayList<>(modes.size());
-		for (String mode : modes) {
-			escapedModeNames.add(target.escapeIfNeeded(mode));
-		}
-	}
+        escapedChannels = new LinkedHashMap<>();
+        channelNames = new ArrayList<>();
+        for (String key : g.channelNameToValueMap.keySet()) {
+            Integer value = g.channelNameToValueMap.get(key);
+            escapedChannels.put(target.escapeIfNeeded(key), value);
+            channelNames.add(key);
+        }
+
+        modes = ((LexerGrammar) g).modes.keySet();
+        escapedModeNames = new ArrayList<>(modes.size());
+        for (String mode : modes) {
+            escapedModeNames.add(target.escapeIfNeeded(mode));
+        }
+    }
 }

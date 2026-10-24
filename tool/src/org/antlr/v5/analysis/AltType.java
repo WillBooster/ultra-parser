@@ -7,8 +7,8 @@
 package org.antlr.v5.analysis;
 
 public enum AltType {
-	other,
-	binaryLR,
-	suffixLR,
-	prefix,
+    other,
+    binaryLR,
+    suffixLR,
+    prefix,
 }

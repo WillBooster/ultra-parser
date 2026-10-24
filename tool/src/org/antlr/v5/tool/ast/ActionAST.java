@@ -6,40 +6,50 @@
 
 package org.antlr.v5.tool.ast;
 
+import java.util.List;
 import org.antlr.runtime.Token;
 import org.antlr.v5.tool.AttributeResolver;
 
-import java.util.List;
-
 public class ActionAST extends GrammarASTWithOptions implements RuleElementAST {
+
     // Alt, rule, grammar space
-	GrammarAST scope = null;
-	public AttributeResolver resolver;
-	public List<Token> chunks; // useful for ANTLR IDE developers
+    GrammarAST scope = null;
+    public AttributeResolver resolver;
+    public List<Token> chunks; // useful for ANTLR IDE developers
 
-	public ActionAST(ActionAST node) {
-		super(node);
-		this.resolver = node.resolver;
-		this.chunks = node.chunks;
-	}
+    public ActionAST(ActionAST node) {
+        super(node);
+        this.resolver = node.resolver;
+        this.chunks = node.chunks;
+    }
 
-	public ActionAST(Token t) { super(t); }
-    public ActionAST(int type) { super(type); }
-    public ActionAST(int type, Token t) { super(type, t); }
+    public ActionAST(Token t) {
+        super(t);
+    }
 
-	@Override
-	public ActionAST dupNode() { return new ActionAST(this); }
+    public ActionAST(int type) {
+        super(type);
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    public ActionAST(int type, Token t) {
+        super(type, t);
+    }
 
-	public void setScope(GrammarAST scope) {
-		this.scope = scope;
-	}
+    @Override
+    public ActionAST dupNode() {
+        return new ActionAST(this);
+    }
 
-	public GrammarAST getScope() {
-		return scope;
-	}
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 
+    public void setScope(GrammarAST scope) {
+        this.scope = scope;
+    }
 
+    public GrammarAST getScope() {
+        return scope;
+    }
 }

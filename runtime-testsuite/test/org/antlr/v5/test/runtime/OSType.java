@@ -7,8 +7,8 @@
 package org.antlr.v5.test.runtime;
 
 public enum OSType {
-	Windows,
-	Linux,
-	Mac,
-	Unknown
+    Windows,
+    Linux,
+    Mac,
+    Unknown,
 }

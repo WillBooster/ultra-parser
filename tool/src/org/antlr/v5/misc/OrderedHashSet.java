@@ -17,6 +17,7 @@ import java.util.List;
  *  LinkedHashSet.
  */
 public class OrderedHashSet<T> extends LinkedHashSet<T> {
+
     /** Track the elements as they are added to the set */
     protected ArrayList<T> elements = new ArrayList<T>();
 
@@ -29,16 +30,16 @@ public class OrderedHashSet<T> extends LinkedHashSet<T> {
      */
     public T set(int i, T value) {
         T oldElement = elements.get(i);
-        elements.set(i,value); // update list
+        elements.set(i, value); // update list
         super.remove(oldElement); // now update the set: remove/add
         super.add(value);
         return oldElement;
     }
 
-	public boolean remove(int i) {
-		T o = elements.remove(i);
+    public boolean remove(int i) {
+        T o = elements.remove(i);
         return super.remove(o);
-	}
+    }
 
     /** Add a value to list; keep in hashtable for consistency also;
      *  Key is object itself.  Good for say asking if a certain string is in
@@ -47,46 +48,47 @@ public class OrderedHashSet<T> extends LinkedHashSet<T> {
     @Override
     public boolean add(T value) {
         boolean result = super.add(value);
-		if ( result ) {  // only track if new element not in set
-			elements.add(value);
-		}
-		return result;
+        if (result) {
+            // only track if new element not in set
+            elements.add(value);
+        }
+        return result;
     }
 
-	@Override
-	public boolean remove(Object o) {
-		throw new UnsupportedOperationException();
+    @Override
+    public boolean remove(Object o) {
+        throw new UnsupportedOperationException();
     }
 
-	@Override
-	public void clear() {
+    @Override
+    public void clear() {
         elements.clear();
         super.clear();
     }
 
-	@Override
-	public int hashCode() {
-		return elements.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return elements.hashCode();
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof OrderedHashSet<?>)) {
-			return false;
-		}
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof OrderedHashSet<?>)) {
+            return false;
+        }
 
-//		System.out.print("equals " + this + ", " + o+" = ");
-		boolean same = elements!=null && elements.equals(((OrderedHashSet<?>)o).elements);
-//		System.out.println(same);
-		return same;
-	}
+        //		System.out.print("equals " + this + ", " + o+" = ");
+        boolean same = elements != null && elements.equals(((OrderedHashSet<?>) o).elements);
+        //		System.out.println(same);
+        return same;
+    }
 
-	@Override
-	public Iterator<T> iterator() {
-		return elements.iterator();
-	}
+    @Override
+    public Iterator<T> iterator() {
+        return elements.iterator();
+    }
 
-	/** Return the List holding list of table elements.  Note that you are
+    /** Return the List holding list of table elements.  Note that you are
      *  NOT getting a copy so don't write to the list.
      */
     public List<T> elements() {
@@ -96,18 +98,18 @@ public class OrderedHashSet<T> extends LinkedHashSet<T> {
     @Override
     public Object clone() {
         @SuppressWarnings("unchecked") // safe (result of clone)
-        OrderedHashSet<T> dup = (OrderedHashSet<T>)super.clone();
+        OrderedHashSet<T> dup = (OrderedHashSet<T>) super.clone();
         dup.elements = new ArrayList<T>(this.elements);
         return dup;
     }
 
     @Override
-	public Object[] toArray() {
-		return elements.toArray();
-	}
+    public Object[] toArray() {
+        return elements.toArray();
+    }
 
-	@Override
-	public String toString() {
+    @Override
+    public String toString() {
         return elements.toString();
     }
 }

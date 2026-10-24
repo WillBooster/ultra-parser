@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class RulePropertyRef_parser extends RulePropertyRef {
-	public RulePropertyRef_parser(StructDecl ctx, String label) {
-		super(ctx, label);
-	}
+
+    public RulePropertyRef_parser(StructDecl ctx, String label) {
+        super(ctx, label);
+    }
 }

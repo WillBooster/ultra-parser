@@ -1,7 +1,8 @@
 // Generated from Arithmetic.g4 by ultra-parser. Do not edit.
 
 import { ParseTreeVisitor } from 'ultra-parser';
-import type { ProgramContext, ExprContext } from './ArithmeticParser.js';
+
+import type { ExprContext, ProgramContext } from './ArithmeticParser.js';
 
 /**
  * A visitor for parse trees produced by `ArithmeticParser`.

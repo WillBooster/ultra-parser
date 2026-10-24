@@ -14,36 +14,41 @@ import java.util.Map;
 /** I need the get-element-i functionality so I'm subclassing
  *  LinkedHashMap.
  */
-public class OrderedHashMap<K,V> extends LinkedHashMap<K,V> {
-	/** Track the elements as they are added to the set */
-	protected List<K> elements = new ArrayList<K>();
+public class OrderedHashMap<K, V> extends LinkedHashMap<K, V> {
 
-	public K getKey(int i) { return elements.get(i); }
+    /** Track the elements as they are added to the set */
+    protected List<K> elements = new ArrayList<K>();
 
-	public V getElement(int i) { return get(elements.get(i)); }
+    public K getKey(int i) {
+        return elements.get(i);
+    }
 
-	@Override
-	public V put(K key, V value) {
-		elements.add(key);
-		return super.put(key, value);
-	}
+    public V getElement(int i) {
+        return get(elements.get(i));
+    }
 
-	@Override
-	public void putAll(Map<? extends K, ? extends V> m) {
-		for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
-			put(entry.getKey(), entry.getValue());
-		}
-	}
+    @Override
+    public V put(K key, V value) {
+        elements.add(key);
+        return super.put(key, value);
+    }
 
-	@Override
-	public V remove(Object key) {
-		elements.remove(key);
-		return super.remove(key);
-	}
+    @Override
+    public void putAll(Map<? extends K, ? extends V> m) {
+        for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
+            put(entry.getKey(), entry.getValue());
+        }
+    }
 
-	@Override
-	public void clear() {
-		elements.clear();
-		super.clear();
-	}
+    @Override
+    public V remove(Object key) {
+        elements.remove(key);
+        return super.remove(key);
+    }
+
+    @Override
+    public void clear() {
+        elements.clear();
+        super.clear();
+    }
 }

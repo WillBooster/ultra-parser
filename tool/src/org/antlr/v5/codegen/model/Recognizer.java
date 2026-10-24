@@ -5,13 +5,6 @@
  */
 package org.antlr.v5.codegen.model;
 
-import org.antlr.v5.codegen.CodeGenerator;
-import org.antlr.v5.codegen.OutputModelFactory;
-import org.antlr.v5.codegen.model.chunk.ActionChunk;
-import org.antlr.v5.codegen.model.chunk.ActionText;
-import org.antlr.v5.tool.Grammar;
-import org.antlr.v5.tool.Rule;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,95 +12,104 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.antlr.v5.codegen.CodeGenerator;
+import org.antlr.v5.codegen.OutputModelFactory;
+import org.antlr.v5.codegen.model.chunk.ActionChunk;
+import org.antlr.v5.codegen.model.chunk.ActionText;
+import org.antlr.v5.tool.Grammar;
+import org.antlr.v5.tool.Rule;
 
 public abstract class Recognizer extends OutputModelObject {
-	public String name;
-	public String grammarName;
-	public String grammarFileName;
-	public String accessLevel;
-	public Map<String,Integer> tokens;
 
-	/**
-	 * @deprecated This field is provided only for compatibility with code
-	 * generation targets which have not yet been updated to use
-	 * {@link #literalNames} and {@link #symbolicNames}.
-	 */
-	@Deprecated
-	public List<String> tokenNames;
+    public String name;
+    public String grammarName;
+    public String grammarFileName;
+    public String accessLevel;
+    public Map<String, Integer> tokens;
 
-	public List<String> literalNames;
-	public List<String> symbolicNames;
-	public Set<String> ruleNames;
-	public Collection<Rule> rules;
-	@ModelElement public ActionChunk superClass;
+    /**
+     * @deprecated This field is provided only for compatibility with code
+     * generation targets which have not yet been updated to use
+     * {@link #literalNames} and {@link #symbolicNames}.
+     */
+    @Deprecated
+    public List<String> tokenNames;
 
-	@ModelElement public SerializedATN atn;
-	@ModelElement public LinkedHashMap<Rule, RuleSempredFunction> sempredFuncs =
-		new LinkedHashMap<Rule, RuleSempredFunction>();
+    public List<String> literalNames;
+    public List<String> symbolicNames;
+    public Set<String> ruleNames;
+    public Collection<Rule> rules;
 
-	public Recognizer(OutputModelFactory factory) {
-		super(factory);
+    @ModelElement
+    public ActionChunk superClass;
 
-		Grammar g = factory.getGrammar();
-		CodeGenerator gen = factory.getGenerator();
-		grammarFileName = new File(g.fileName).getName();
-		grammarName = g.name;
-		name = g.getRecognizerName();
-		accessLevel = g.getOptionString("accessLevel");
-		tokens = new LinkedHashMap<String,Integer>();
-		for (Map.Entry<String, Integer> entry : g.tokenNameToTypeMap.entrySet()) {
-			Integer ttype = entry.getValue();
-			if ( ttype>0 ) {
-			    tokens.put(gen.getTarget().escapeIfNeeded(entry.getKey()), ttype);
-			}
-		}
+    @ModelElement
+    public SerializedATN atn;
 
-		ruleNames = g.rules.keySet();
-		rules = g.rules.values();
-		atn = new SerializedATN(factory, g.atn);
-		if (g.getOptionString("superClass") != null) {
-			superClass = new ActionText(null, g.getOptionString("superClass"));
-		}
-		else {
-			superClass = null;
-		}
+    @ModelElement
+    public LinkedHashMap<Rule, RuleSempredFunction> sempredFuncs = new LinkedHashMap<Rule, RuleSempredFunction>();
 
-		tokenNames = translateTokenStringsToTarget(g.getTokenDisplayNames(), gen);
-		literalNames = translateTokenStringsToTarget(g.getTokenLiteralNames(), gen);
-		symbolicNames = translateTokenStringsToTarget(g.getTokenSymbolicNames(), gen);
-	}
+    public Recognizer(OutputModelFactory factory) {
+        super(factory);
 
-	protected static List<String> translateTokenStringsToTarget(String[] tokenStrings, CodeGenerator gen) {
-		String[] result = tokenStrings.clone();
-		for (int i = 0; i < tokenStrings.length; i++) {
-			result[i] = translateTokenStringToTarget(tokenStrings[i], gen);
-		}
+        Grammar g = factory.getGrammar();
+        CodeGenerator gen = factory.getGenerator();
+        grammarFileName = new File(g.fileName).getName();
+        grammarName = g.name;
+        name = g.getRecognizerName();
+        accessLevel = g.getOptionString("accessLevel");
+        tokens = new LinkedHashMap<String, Integer>();
+        for (Map.Entry<String, Integer> entry : g.tokenNameToTypeMap.entrySet()) {
+            Integer ttype = entry.getValue();
+            if (ttype > 0) {
+                tokens.put(gen.getTarget().escapeIfNeeded(entry.getKey()), ttype);
+            }
+        }
 
-		int lastTrueEntry = result.length - 1;
-		while (lastTrueEntry >= 0 && result[lastTrueEntry] == null) {
-			lastTrueEntry --;
-		}
+        ruleNames = g.rules.keySet();
+        rules = g.rules.values();
+        atn = new SerializedATN(factory, g.atn);
+        if (g.getOptionString("superClass") != null) {
+            superClass = new ActionText(null, g.getOptionString("superClass"));
+        } else {
+            superClass = null;
+        }
 
-		if (lastTrueEntry < result.length - 1) {
-			result = Arrays.copyOf(result, lastTrueEntry + 1);
-		}
+        tokenNames = translateTokenStringsToTarget(g.getTokenDisplayNames(), gen);
+        literalNames = translateTokenStringsToTarget(g.getTokenLiteralNames(), gen);
+        symbolicNames = translateTokenStringsToTarget(g.getTokenSymbolicNames(), gen);
+    }
 
-		return Arrays.asList(result);
-	}
+    protected static List<String> translateTokenStringsToTarget(String[] tokenStrings, CodeGenerator gen) {
+        String[] result = tokenStrings.clone();
+        for (int i = 0; i < tokenStrings.length; i++) {
+            result[i] = translateTokenStringToTarget(tokenStrings[i], gen);
+        }
 
-	protected static String translateTokenStringToTarget(String tokenName, CodeGenerator gen) {
-		if (tokenName == null) {
-			return null;
-		}
+        int lastTrueEntry = result.length - 1;
+        while (lastTrueEntry >= 0 && result[lastTrueEntry] == null) {
+            lastTrueEntry--;
+        }
 
-		if (tokenName.charAt(0) == '\'') {
-			String targetString =
-				gen.getTarget().getTargetStringLiteralFromANTLRStringLiteral(gen, tokenName, false, true);
-			return "\"'" + targetString + "'\"";
-		}
-		else {
-			return gen.getTarget().getTargetStringLiteralFromString(tokenName, true);
-		}
-	}
+        if (lastTrueEntry < result.length - 1) {
+            result = Arrays.copyOf(result, lastTrueEntry + 1);
+        }
 
+        return Arrays.asList(result);
+    }
+
+    protected static String translateTokenStringToTarget(String tokenName, CodeGenerator gen) {
+        if (tokenName == null) {
+            return null;
+        }
+
+        if (tokenName.charAt(0) == '\'') {
+            String targetString = gen
+                .getTarget()
+                .getTargetStringLiteralFromANTLRStringLiteral(gen, tokenName, false, true);
+            return "\"'" + targetString + "'\"";
+        } else {
+            return gen.getTarget().getTargetStringLiteralFromString(tokenName, true);
+        }
+    }
 }

@@ -9,7 +9,8 @@ package org.antlr.v5.codegen.model.decl;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class ElementListDecl extends Decl {
-	public ElementListDecl(OutputModelFactory factory, String name) {
-		super(factory, name);
-	}
+
+    public ElementListDecl(OutputModelFactory factory, String name) {
+        super(factory, name);
+    }
 }

@@ -6,32 +6,45 @@
 
 package org.antlr.v5.tool.ast;
 
-import org.antlr.runtime.Token;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.antlr.runtime.Token;
 
 public class BlockAST extends GrammarASTWithOptions implements RuleElementAST {
+
     // TODO: maybe I need a Subrule object like Rule so these options mov to that?
     /** What are the default options for a subrule? */
-    public static final Map<String, String> defaultBlockOptions =
-            new HashMap<String, String>();
+    public static final Map<String, String> defaultBlockOptions = new HashMap<String, String>();
 
-    public static final Map<String, String> defaultLexerBlockOptions =
-            new HashMap<String, String>();
+    public static final Map<String, String> defaultLexerBlockOptions = new HashMap<String, String>();
 
-	public BlockAST(BlockAST node) {
-		super(node);
-	}
+    public BlockAST(BlockAST node) {
+        super(node);
+    }
 
-	public BlockAST(Token t) { super(t); }
-    public BlockAST(int type) { super(type); }
-    public BlockAST(int type, Token t) { super(type, t); }
-	public BlockAST(int type, Token t, String text) { super(type,t,text); }
+    public BlockAST(Token t) {
+        super(t);
+    }
 
-	@Override
-	public BlockAST dupNode() { return new BlockAST(this); }
+    public BlockAST(int type) {
+        super(type);
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    public BlockAST(int type, Token t) {
+        super(type, t);
+    }
+
+    public BlockAST(int type, Token t, String text) {
+        super(type, t, text);
+    }
+
+    @Override
+    public BlockAST dupNode() {
+        return new BlockAST(this);
+    }
+
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

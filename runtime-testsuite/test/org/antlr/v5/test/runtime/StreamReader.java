@@ -13,45 +13,45 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public final class StreamReader implements Runnable {
-	private final StringBuilder buffer = new StringBuilder();
-	private final BufferedReader in;
-	private final Thread worker;
 
-	public StreamReader(InputStream in) {
-		this.in = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8) );
-		worker = new Thread(this);
-	}
+    private final StringBuilder buffer = new StringBuilder();
+    private final BufferedReader in;
+    private final Thread worker;
 
-	public void start() {
-		worker.start();
-	}
+    public StreamReader(InputStream in) {
+        this.in = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+        worker = new Thread(this);
+    }
 
-	@Override
-	public void run() {
-		try {
-			while (true) {
-				int c = in.read();
-				if (c == -1) {
-					break;
-				}
-				if (c == '\r') {
-					continue;
-				}
-				buffer.append((char) c);
-			}
-		}
-		catch (IOException ioe) {
-			System.err.println("can't read output from process");
-		}
-	}
+    public void start() {
+        worker.start();
+    }
 
-	/** wait for the thread to finish */
-	public void join() throws InterruptedException {
-		worker.join();
-	}
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                int c = in.read();
+                if (c == -1) {
+                    break;
+                }
+                if (c == '\r') {
+                    continue;
+                }
+                buffer.append((char) c);
+            }
+        } catch (IOException ioe) {
+            System.err.println("can't read output from process");
+        }
+    }
 
-	@Override
-	public String toString() {
-		return buffer.toString();
-	}
+    /** wait for the thread to finish */
+    public void join() throws InterruptedException {
+        worker.join();
+    }
+
+    @Override
+    public String toString() {
+        return buffer.toString();
+    }
 }

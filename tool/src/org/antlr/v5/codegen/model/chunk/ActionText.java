@@ -10,10 +10,11 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class ActionText extends ActionChunk {
-	public String text;
 
-	public ActionText(StructDecl ctx, String text) {
-		super(ctx);
-		this.text = text;
-	}
+    public String text;
+
+    public ActionText(StructDecl ctx, String text) {
+        super(ctx);
+        this.text = text;
+    }
 }

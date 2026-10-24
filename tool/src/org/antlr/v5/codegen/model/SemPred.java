@@ -6,6 +6,7 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.ActionTranslator;
 import org.antlr.v5.codegen.CodeGenerator;
 import org.antlr.v5.codegen.OutputModelFactory;
@@ -14,66 +15,60 @@ import org.antlr.v5.runtime.core.transition.AbstractPredicateTransition;
 import org.antlr.v5.tool.ast.ActionAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 /** */
 public class SemPred extends Action {
-	/**
-	 * The user-specified terminal option {@code fail}, if it was used and the
-	 * value is a string literal. For example:
-	 *
-	 * <p>
-	 * {@code {pred}?<fail='message'>}</p>
-	 */
-	public String msg;
-	/**
-	 * The predicate string with <code>{</code> and <code>}?</code> stripped from the ends.
-	 */
-	public String predicate;
 
-	/**
-	 * The translated chunks of the user-specified terminal option {@code fail},
-	 * if it was used and the value is an action. For example:
-	 *
-	 * <p>
-	 * {@code {pred}?<fail={"Java literal"}>}</p>
-	 */
-	@ModelElement public List<ActionChunk> failChunks;
+    /**
+     * The user-specified terminal option {@code fail}, if it was used and the
+     * value is a string literal. For example:
+     *
+     * <p>
+     * {@code {pred}?<fail='message'>}</p>
+     */
+    public String msg;
+    /**
+     * The predicate string with <code>{</code> and <code>}?</code> stripped from the ends.
+     */
+    public String predicate;
 
-	/** The index of the predicate in the grammar, as the ATN refers to it. */
-	public int predIndex;
+    /**
+     * The translated chunks of the user-specified terminal option {@code fail},
+     * if it was used and the value is an action. For example:
+     *
+     * <p>
+     * {@code {pred}?<fail={"Java literal"}>}</p>
+     */
+    @ModelElement
+    public List<ActionChunk> failChunks;
 
-	public SemPred(OutputModelFactory factory, ActionAST ast) {
-		super(factory,ast);
-		Integer index = factory.getGrammar().sempreds.get(ast);
-		predIndex = index != null ? index : -1;
+    /** The index of the predicate in the grammar, as the ATN refers to it. */
+    public int predIndex;
 
-		assert ast.atnState != null
-			&& ast.atnState.getNumberOfTransitions() == 1
-			&& ast.atnState.transition(0) instanceof AbstractPredicateTransition;
+    public SemPred(OutputModelFactory factory, ActionAST ast) {
+        super(factory, ast);
+        Integer index = factory.getGrammar().sempreds.get(ast);
+        predIndex = index != null ? index : -1;
 
-		GrammarAST failNode = ast.getOptionAST("fail");
-		CodeGenerator gen = factory.getGenerator();
-		predicate = ast.getText();
-		if (predicate.startsWith("{") && predicate.endsWith("}?")) {
-			predicate = predicate.substring(1, predicate.length() - 2);
-		}
-		predicate = gen.getTarget().getTargetStringLiteralFromString(predicate);
+        assert ast.atnState != null &&
+            ast.atnState.getNumberOfTransitions() == 1 &&
+            ast.atnState.transition(0) instanceof AbstractPredicateTransition;
 
-		if ( failNode==null ) return;
+        GrammarAST failNode = ast.getOptionAST("fail");
+        CodeGenerator gen = factory.getGenerator();
+        predicate = ast.getText();
+        if (predicate.startsWith("{") && predicate.endsWith("}?")) {
+            predicate = predicate.substring(1, predicate.length() - 2);
+        }
+        predicate = gen.getTarget().getTargetStringLiteralFromString(predicate);
 
-		if ( failNode instanceof ActionAST ) {
-			ActionAST failActionNode = (ActionAST)failNode;
-			RuleFunction rf = factory.getCurrentRuleFunction();
-			failChunks = ActionTranslator.translateAction(factory, rf,
-														  failActionNode.token,
-														  failActionNode);
-		}
-		else {
-			msg = gen.getTarget().getTargetStringLiteralFromANTLRStringLiteral(gen,
-																		  failNode.getText(),
-																		  true,
-																		  true);
-		}
-	}
+        if (failNode == null) return;
+
+        if (failNode instanceof ActionAST) {
+            ActionAST failActionNode = (ActionAST) failNode;
+            RuleFunction rf = factory.getCurrentRuleFunction();
+            failChunks = ActionTranslator.translateAction(factory, rf, failActionNode.token, failActionNode);
+        } else {
+            msg = gen.getTarget().getTargetStringLiteralFromANTLRStringLiteral(gen, failNode.getText(), true, true);
+        }
+    }
 }

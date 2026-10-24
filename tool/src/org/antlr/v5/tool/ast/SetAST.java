@@ -10,17 +10,21 @@ import org.antlr.runtime.Token;
 
 public class SetAST extends GrammarAST implements RuleElementAST {
 
-	public SetAST(SetAST node) {
-		super(node);
-	}
+    public SetAST(SetAST node) {
+        super(node);
+    }
 
-	public SetAST(int type, Token t, String text) { super(type,t,text); }
+    public SetAST(int type, Token t, String text) {
+        super(type, t, text);
+    }
 
-	@Override
-	public SetAST dupNode() {
-		return new SetAST(this);
-	}
+    @Override
+    public SetAST dupNode() {
+        return new SetAST(this);
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

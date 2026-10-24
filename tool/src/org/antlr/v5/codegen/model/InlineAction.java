@@ -11,7 +11,8 @@ import org.antlr.v5.tool.ast.ActionAST;
 
 /** An action in an alternative, which runs when the parser passes its ATN state. */
 public class InlineAction extends Action {
-	public InlineAction(OutputModelFactory factory, ActionAST ast) {
-		super(factory, ast);
-	}
+
+    public InlineAction(OutputModelFactory factory, ActionAST ast) {
+        super(factory, ast);
+    }
 }

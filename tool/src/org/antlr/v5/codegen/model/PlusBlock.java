@@ -6,29 +6,27 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.runtime.core.state.PlusBlockStartState;
 import org.antlr.v5.runtime.core.state.PlusLoopbackState;
 import org.antlr.v5.tool.ast.BlockAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 public class PlusBlock extends Loop {
-	@ModelElement public ThrowNoViableAlt error;
 
-	public PlusBlock(OutputModelFactory factory,
-					 GrammarAST plusRoot,
-					 List<CodeBlockForAlt> alts)
-	{
-		super(factory, plusRoot, alts);
-		BlockAST blkAST = (BlockAST)plusRoot.getChild(0);
-		PlusBlockStartState blkStart = (PlusBlockStartState)blkAST.atnState;
-		PlusLoopbackState loop = blkStart.getLoopBackState();
-		stateNumber = blkStart.getLoopBackState().getStateNumber();
-		blockStartStateNumber = blkStart.getStateNumber();
-		loopBackStateNumber = loop.getStateNumber();
-		this.error = getThrowNoViableAlt(factory, plusRoot, null);
-		decision = loop.getDecision();
-	}
+    @ModelElement
+    public ThrowNoViableAlt error;
+
+    public PlusBlock(OutputModelFactory factory, GrammarAST plusRoot, List<CodeBlockForAlt> alts) {
+        super(factory, plusRoot, alts);
+        BlockAST blkAST = (BlockAST) plusRoot.getChild(0);
+        PlusBlockStartState blkStart = (PlusBlockStartState) blkAST.atnState;
+        PlusLoopbackState loop = blkStart.getLoopBackState();
+        stateNumber = blkStart.getLoopBackState().getStateNumber();
+        blockStartStateNumber = blkStart.getStateNumber();
+        loopBackStateNumber = loop.getStateNumber();
+        this.error = getThrowNoViableAlt(factory, plusRoot, null);
+        decision = loop.getDecision();
+    }
 }

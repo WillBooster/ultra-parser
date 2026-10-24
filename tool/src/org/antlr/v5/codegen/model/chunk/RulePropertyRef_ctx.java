@@ -9,6 +9,7 @@ package org.antlr.v5.codegen.model.chunk;
 import org.antlr.v5.codegen.model.decl.StructDecl;
 
 public class RulePropertyRef_ctx extends RulePropertyRef {
+
     public RulePropertyRef_ctx(StructDecl ctx, String label) {
         super(ctx, label);
     }

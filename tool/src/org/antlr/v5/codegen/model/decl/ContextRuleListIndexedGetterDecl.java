@@ -9,21 +9,27 @@ package org.antlr.v5.codegen.model.decl;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class ContextRuleListIndexedGetterDecl extends ContextRuleListGetterDecl {
-	public ContextRuleListIndexedGetterDecl(OutputModelFactory factory, String name, String ctxName) {
-		this(factory, name, ctxName, false);
-	}
 
-	public ContextRuleListIndexedGetterDecl(OutputModelFactory factory, String name, String ctxName, boolean signature) {
-		super(factory, name, ctxName, signature);
-	}
+    public ContextRuleListIndexedGetterDecl(OutputModelFactory factory, String name, String ctxName) {
+        this(factory, name, ctxName, false);
+    }
 
-	@Override
-	public String getArgType() {
-		return "int";
-	}
+    public ContextRuleListIndexedGetterDecl(
+        OutputModelFactory factory,
+        String name,
+        String ctxName,
+        boolean signature
+    ) {
+        super(factory, name, ctxName, signature);
+    }
 
-	@Override
-	public ContextGetterDecl getSignatureDecl() {
-		return new ContextRuleListIndexedGetterDecl(factory, name, ctxName, true);
-	}
+    @Override
+    public String getArgType() {
+        return "int";
+    }
+
+    @Override
+    public ContextGetterDecl getSignatureDecl() {
+        return new ContextRuleListIndexedGetterDecl(factory, name, ctxName, true);
+    }
 }

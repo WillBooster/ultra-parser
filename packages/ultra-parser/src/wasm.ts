@@ -236,7 +236,7 @@ export function toCodePoints(text: string): Uint32Array {
   for (let i = 0; i < text.length; i++) {
     const c = text.codePointAt(i) ?? 0;
     codePoints[n++] = c;
-    if (c > 0xFF_FF) i++;
+    if (c > 0xff_ff) i++;
   }
   return n === text.length ? codePoints : codePoints.slice(0, n);
 }

@@ -6,26 +6,27 @@
 
 package org.antlr.v5.codegen.model;
 
-import org.antlr.v5.codegen.OutputModelFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.antlr.v5.codegen.OutputModelFactory;
 
 public class Parser extends Recognizer {
-	public ParserFile file;
 
-	@ModelElement public List<RuleFunction> funcs = new ArrayList<RuleFunction>();
+    public ParserFile file;
 
-	public Parser(OutputModelFactory factory, ParserFile file) {
-		super(factory);
-		this.file = file; // who contains us?
-	}
+    @ModelElement
+    public List<RuleFunction> funcs = new ArrayList<RuleFunction>();
 
-	/** Whether a rule context has token getters, which return terminal nodes. */
-	public boolean hasTokenGetters() {
-		for (RuleFunction f : funcs) {
-			if (f.hasTokenGetters) return true;
-		}
-		return false;
-	}
+    public Parser(OutputModelFactory factory, ParserFile file) {
+        super(factory);
+        this.file = file; // who contains us?
+    }
+
+    /** Whether a rule context has token getters, which return terminal nodes. */
+    public boolean hasTokenGetters() {
+        for (RuleFunction f : funcs) {
+            if (f.hasTokenGetters) return true;
+        }
+        return false;
+    }
 }

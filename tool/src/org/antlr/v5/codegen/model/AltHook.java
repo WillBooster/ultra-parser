@@ -12,25 +12,33 @@ package org.antlr.v5.codegen.model;
  * rule's start state for a rule without such a block.
  */
 public class AltHook {
-	public final int state;
-	public final int alt;
-	/** The context class of a labeled alternative, which replaces the rule's context. */
-	public final String ctxName;
-	/** The alternative number to store in the context, if any. */
-	public final Integer altNumber;
-	/**
-	 * The label of the left-recursive rule reference that an operator alternative of a
-	 * left-recursive rule starts with; the context of the previous iteration goes there.
-	 */
-	public final String previousLabel;
-	public final boolean previousIsList;
 
-	public AltHook(int state, int alt, String ctxName, Integer altNumber, String previousLabel, boolean previousIsList) {
-		this.state = state;
-		this.alt = alt;
-		this.ctxName = ctxName;
-		this.altNumber = altNumber;
-		this.previousLabel = previousLabel;
-		this.previousIsList = previousIsList;
-	}
+    public final int state;
+    public final int alt;
+    /** The context class of a labeled alternative, which replaces the rule's context. */
+    public final String ctxName;
+    /** The alternative number to store in the context, if any. */
+    public final Integer altNumber;
+    /**
+     * The label of the left-recursive rule reference that an operator alternative of a
+     * left-recursive rule starts with; the context of the previous iteration goes there.
+     */
+    public final String previousLabel;
+    public final boolean previousIsList;
+
+    public AltHook(
+        int state,
+        int alt,
+        String ctxName,
+        Integer altNumber,
+        String previousLabel,
+        boolean previousIsList
+    ) {
+        this.state = state;
+        this.alt = alt;
+        this.ctxName = ctxName;
+        this.altNumber = altNumber;
+        this.previousLabel = previousLabel;
+        this.previousIsList = previousIsList;
+    }
 }

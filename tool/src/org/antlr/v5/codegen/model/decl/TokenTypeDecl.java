@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** */
 public class TokenTypeDecl extends Decl {
-	public TokenTypeDecl(OutputModelFactory factory, String name) {
-		super(factory, name);
-	}
+
+    public TokenTypeDecl(OutputModelFactory factory, String name) {
+        super(factory, name);
+    }
 }

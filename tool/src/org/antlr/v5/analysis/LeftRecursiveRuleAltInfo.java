@@ -9,26 +9,29 @@ package org.antlr.v5.analysis;
 import org.antlr.v5.tool.ast.AltAST;
 
 public class LeftRecursiveRuleAltInfo {
-	public int altNum; // original alt index (from 1)
-	public String leftRecursiveRuleRefLabel;
-	public String altLabel;
-	public final boolean isListLabel;
-	public String altText;
-	public AltAST altAST; // transformed ALT
-	public AltAST originalAltAST;
-	public int nextPrec;
 
-	public LeftRecursiveRuleAltInfo(int altNum, String altText,
-									String leftRecursiveRuleRefLabel,
-									String altLabel,
-									boolean isListLabel,
-									AltAST originalAltAST)
-	{
-		this.altNum = altNum;
-		this.altText = altText;
-		this.leftRecursiveRuleRefLabel = leftRecursiveRuleRefLabel;
-		this.altLabel = altLabel;
-		this.isListLabel = isListLabel;
-		this.originalAltAST = originalAltAST;
-	}
+    public int altNum; // original alt index (from 1)
+    public String leftRecursiveRuleRefLabel;
+    public String altLabel;
+    public final boolean isListLabel;
+    public String altText;
+    public AltAST altAST; // transformed ALT
+    public AltAST originalAltAST;
+    public int nextPrec;
+
+    public LeftRecursiveRuleAltInfo(
+        int altNum,
+        String altText,
+        String leftRecursiveRuleRefLabel,
+        String altLabel,
+        boolean isListLabel,
+        AltAST originalAltAST
+    ) {
+        this.altNum = altNum;
+        this.altText = altText;
+        this.leftRecursiveRuleRefLabel = leftRecursiveRuleRefLabel;
+        this.altLabel = altLabel;
+        this.isListLabel = isListLabel;
+        this.originalAltAST = originalAltAST;
+    }
 }

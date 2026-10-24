@@ -10,21 +10,28 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** {@code public XContext X() { }} */
 public class ContextRuleGetterDecl extends ContextGetterDecl {
-	public String ctxName;
-	public boolean optional;
 
-	public ContextRuleGetterDecl(OutputModelFactory factory, String name, String ctxName, boolean optional) {
-		this(factory, name, ctxName, optional, false);
-	}
+    public String ctxName;
+    public boolean optional;
 
-	public ContextRuleGetterDecl(OutputModelFactory factory, String name, String ctxName, boolean optional, boolean signature) {
-		super(factory, name, signature);
-		this.ctxName = ctxName;
-		this.optional = optional;
-	}
+    public ContextRuleGetterDecl(OutputModelFactory factory, String name, String ctxName, boolean optional) {
+        this(factory, name, ctxName, optional, false);
+    }
 
-	@Override
-	public ContextGetterDecl getSignatureDecl() {
-		return new ContextRuleGetterDecl(factory, name, ctxName, optional, true);
-	}
+    public ContextRuleGetterDecl(
+        OutputModelFactory factory,
+        String name,
+        String ctxName,
+        boolean optional,
+        boolean signature
+    ) {
+        super(factory, name, signature);
+        this.ctxName = ctxName;
+        this.optional = optional;
+    }
+
+    @Override
+    public ContextGetterDecl getSignatureDecl() {
+        return new ContextRuleGetterDecl(factory, name, ctxName, optional, true);
+    }
 }

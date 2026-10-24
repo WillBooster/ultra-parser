@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class RetValueRef extends SymbolRefChunk {
-	public RetValueRef(StructDecl ctx, String name, String escapedName) {
-		super(ctx, name, escapedName);
-	}
+
+    public RetValueRef(StructDecl ctx, String name, String escapedName) {
+        super(ctx, name, escapedName);
+    }
 }

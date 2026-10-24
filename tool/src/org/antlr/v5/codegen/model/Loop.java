@@ -6,31 +6,29 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.GrammarAST;
 import org.antlr.v5.tool.ast.QuantifierAST;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Loop extends Choice {
-	public int blockStartStateNumber;
-	public int loopBackStateNumber;
-	public final int exitAlt;
 
-	@ModelElement public List<SrcOp> iteration;
+    public int blockStartStateNumber;
+    public int loopBackStateNumber;
+    public final int exitAlt;
 
-	public Loop(OutputModelFactory factory,
-				GrammarAST blkOrEbnfRootAST,
-				List<CodeBlockForAlt> alts)
-	{
-		super(factory, blkOrEbnfRootAST, alts);
-		boolean nongreedy = (blkOrEbnfRootAST instanceof QuantifierAST) && !((QuantifierAST)blkOrEbnfRootAST).isGreedy();
-		exitAlt = nongreedy ? 1 : alts.size() + 1;
-	}
+    @ModelElement
+    public List<SrcOp> iteration;
 
-	public void addIterationOp(SrcOp op) {
-		if ( iteration==null ) iteration = new ArrayList<SrcOp>();
-		iteration.add(op);
-	}
+    public Loop(OutputModelFactory factory, GrammarAST blkOrEbnfRootAST, List<CodeBlockForAlt> alts) {
+        super(factory, blkOrEbnfRootAST, alts);
+        boolean nongreedy = blkOrEbnfRootAST instanceof QuantifierAST && !((QuantifierAST) blkOrEbnfRootAST).isGreedy();
+        exitAlt = nongreedy ? 1 : alts.size() + 1;
+    }
+
+    public void addIterationOp(SrcOp op) {
+        if (iteration == null) iteration = new ArrayList<SrcOp>();
+        iteration.add(op);
+    }
 }

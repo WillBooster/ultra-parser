@@ -8,7 +8,8 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class VisitorDispatchMethod extends DispatchMethod {
-	public VisitorDispatchMethod(OutputModelFactory factory) {
-		super(factory);
-	}
+
+    public VisitorDispatchMethod(OutputModelFactory factory) {
+        super(factory);
+    }
 }

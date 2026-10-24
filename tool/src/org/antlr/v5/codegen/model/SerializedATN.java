@@ -13,17 +13,20 @@ import org.antlr.v5.runtime.core.misc.IntegerList;
 
 /** Represents a serialized ATN that is just a list of signed integers. */
 public class SerializedATN extends OutputModelObject {
-	public int[] serialized;
 
-	public SerializedATN(OutputModelFactory factory) {
-		super(factory);
-	}
+    public int[] serialized;
 
-	public SerializedATN(OutputModelFactory factory, ATN atn) {
-		super(factory);
-		IntegerList data = ATNSerializer.Companion.getSerialized(atn);
-		serialized = data.toArray();
-	}
+    public SerializedATN(OutputModelFactory factory) {
+        super(factory);
+    }
 
-	public Object getSerialized() { return serialized; }
+    public SerializedATN(OutputModelFactory factory, ATN atn) {
+        super(factory);
+        IntegerList data = ATNSerializer.Companion.getSerialized(atn);
+        serialized = data.toArray();
+    }
+
+    public Object getSerialized() {
+        return serialized;
+    }
 }

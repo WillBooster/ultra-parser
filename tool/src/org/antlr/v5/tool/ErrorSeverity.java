@@ -13,13 +13,12 @@ package org.antlr.v5.tool;
  * @author Jim Idle - Temporal Wave LLC (jimi@temporal-wave.com)
  */
 public enum ErrorSeverity {
-    INFO    ("info"),
-	WARNING ("warning"),
-	WARNING_ONE_OFF ("warning"),
-	ERROR   ("error"),
-	ERROR_ONE_OFF   ("error"),
-    FATAL   ("fatal"),  // TODO: add fatal for which phase? sync with ErrorManager
-    ;
+    INFO("info"),
+    WARNING("warning"),
+    WARNING_ONE_OFF("warning"),
+    ERROR("error"),
+    ERROR_ONE_OFF("error"),
+    FATAL("fatal"); // TODO: add fatal for which phase? sync with ErrorManager
 
     /**
      * The text version of the ENUM value, used for display purposes
@@ -32,13 +31,16 @@ public enum ErrorSeverity {
      *
      * @return The human readable string representing the severity level
      */
-    public String getText() { return text; }
+    public String getText() {
+        return text;
+    }
 
     /**
      * Standard constructor to build an instance of the Enum entries
      *
      * @param text The human readable string representing the severity level
      */
-    private ErrorSeverity(String text) { this.text = text; }
+    private ErrorSeverity(String text) {
+        this.text = text;
+    }
 }
-

@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.Rule;
 
 public class RuleSempredFunction extends RuleActionFunction {
-	public RuleSempredFunction(OutputModelFactory factory, Rule r, String ctxType) {
-		super(factory, r, ctxType);
-	}
+
+    public RuleSempredFunction(OutputModelFactory factory, Rule r, String ctxType) {
+        super(factory, r, ctxType);
+    }
 }

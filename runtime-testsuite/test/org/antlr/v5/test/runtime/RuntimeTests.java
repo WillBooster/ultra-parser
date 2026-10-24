@@ -6,6 +6,20 @@
 
 package org.antlr.v5.test.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Stream;
 import kotlin.Pair;
 import org.antlr.v5.test.runtime.states.ExecutedState;
 import org.antlr.v5.test.runtime.states.State;
@@ -18,21 +32,6 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
 import org.stringtemplate.v4.StringRenderer;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
-
 /** This class represents runtime tests for specified runtime.
  *  It pulls data from {@link RuntimeTestDescriptor} and uses junit to trigger tests.
  *  The only functionality needed to execute a test is defined in {@link RuntimeRunner}.
@@ -40,170 +39,192 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
  *  E.g., see {@link org.antlr.v5.test.runtime.typescript.TypeScriptRuntimeTests}.
  */
 public abstract class RuntimeTests {
-	protected abstract RuntimeRunner createRuntimeRunner();
 
-	private final static HashMap<String, RuntimeTestDescriptor[]> testDescriptors = new HashMap<>();
-	private final static Map<String, STGroup> cachedTargetTemplates = new HashMap<>();
-	private final static StringRenderer rendered = new StringRenderer();
+    protected abstract RuntimeRunner createRuntimeRunner();
 
-	static {
-		File descriptorsDir = new File(Paths.get(RuntimeTestUtils.resourcePath.toString(), "org/antlr/v5/test/runtime/descriptors").toString());
-		File[] directoryListing = descriptorsDir.listFiles();
-		assert directoryListing != null;
-		for (File directory : directoryListing) {
-			String groupName = directory.getName();
-			if (groupName.startsWith(".")) {
-				continue; // Ignore service directories (like .DS_Store in Mac)
-			}
+    private static final HashMap<String, RuntimeTestDescriptor[]> testDescriptors = new HashMap<>();
+    private static final Map<String, STGroup> cachedTargetTemplates = new HashMap<>();
+    private static final StringRenderer rendered = new StringRenderer();
 
-			List<RuntimeTestDescriptor> descriptors = new ArrayList<>();
+    static {
+        File descriptorsDir = new File(
+            Paths.get(RuntimeTestUtils.resourcePath.toString(), "org/antlr/v5/test/runtime/descriptors").toString()
+        );
+        File[] directoryListing = descriptorsDir.listFiles();
+        assert directoryListing != null;
+        for (File directory : directoryListing) {
+            String groupName = directory.getName();
+            if (groupName.startsWith(".")) {
+                continue; // Ignore service directories (like .DS_Store in Mac)
+            }
 
-			File[] descriptorFiles = directory.listFiles();
-			assert descriptorFiles != null;
-			for (File descriptorFile : descriptorFiles) {
-				String name = descriptorFile.getName().replace(".txt", "");
-				if (name.startsWith(".")) {
-					continue;
-				}
+            List<RuntimeTestDescriptor> descriptors = new ArrayList<>();
 
-				String text;
-				try {
-					text = new String(Files.readAllBytes(descriptorFile.toPath()));
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-				descriptors.add(RuntimeTestDescriptorParser.parse(name, text, descriptorFile.toURI()));
-			}
+            File[] descriptorFiles = directory.listFiles();
+            assert descriptorFiles != null;
+            for (File descriptorFile : descriptorFiles) {
+                String name = descriptorFile.getName().replace(".txt", "");
+                if (name.startsWith(".")) {
+                    continue;
+                }
 
-			testDescriptors.put(groupName, descriptors.toArray(new RuntimeTestDescriptor[0]));
-		}
+                String text;
+                try {
+                    text = new String(Files.readAllBytes(descriptorFile.toPath()));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                descriptors.add(RuntimeTestDescriptorParser.parse(name, text, descriptorFile.toURI()));
+            }
 
-		for (String key : CustomDescriptors.descriptors.keySet()) {
-			RuntimeTestDescriptor[] descriptors = CustomDescriptors.descriptors.get(key);
-			RuntimeTestDescriptor[] existedDescriptors = testDescriptors.putIfAbsent(key, descriptors);
-			if (existedDescriptors != null) {
-				testDescriptors.put(key, Stream.concat(Arrays.stream(existedDescriptors), Arrays.stream(descriptors))
-						.toArray(RuntimeTestDescriptor[]::new));
-			}
-		}
-	}
+            testDescriptors.put(groupName, descriptors.toArray(new RuntimeTestDescriptor[0]));
+        }
 
-	@TestFactory
-	@Execution(ExecutionMode.CONCURRENT)
-	public List<DynamicNode> runtimeTests() {
-		List<DynamicNode> result = new ArrayList<>();
+        for (String key : CustomDescriptors.descriptors.keySet()) {
+            RuntimeTestDescriptor[] descriptors = CustomDescriptors.descriptors.get(key);
+            RuntimeTestDescriptor[] existedDescriptors = testDescriptors.putIfAbsent(key, descriptors);
+            if (existedDescriptors != null) {
+                testDescriptors.put(
+                    key,
+                    Stream.concat(Arrays.stream(existedDescriptors), Arrays.stream(descriptors)).toArray(
+                        RuntimeTestDescriptor[]::new
+                    )
+                );
+            }
+        }
+    }
 
-		for (String group : testDescriptors.keySet()) {
-			ArrayList<DynamicNode> descriptorTests = new ArrayList<>();
-			RuntimeTestDescriptor[] descriptors = testDescriptors.get(group);
-			for (RuntimeTestDescriptor descriptor : descriptors) {
-				descriptorTests.add(dynamicTest(descriptor.name, descriptor.uri, () -> {
-					try (RuntimeRunner runner = createRuntimeRunner()) {
-						test(descriptor, runner);
-					}
-				}));
-			}
+    @TestFactory
+    @Execution(ExecutionMode.CONCURRENT)
+    public List<DynamicNode> runtimeTests() {
+        List<DynamicNode> result = new ArrayList<>();
 
-			Path descriptorGroupPath = Paths.get(RuntimeTestUtils.resourcePath.toString(), "descriptors", group);
-			result.add(dynamicContainer(group, descriptorGroupPath.toUri(), Arrays.stream(descriptorTests.toArray(new DynamicNode[0]))));
-		}
+        for (String group : testDescriptors.keySet()) {
+            ArrayList<DynamicNode> descriptorTests = new ArrayList<>();
+            RuntimeTestDescriptor[] descriptors = testDescriptors.get(group);
+            for (RuntimeTestDescriptor descriptor : descriptors) {
+                descriptorTests.add(
+                    dynamicTest(descriptor.name, descriptor.uri, () -> {
+                        try (RuntimeRunner runner = createRuntimeRunner()) {
+                            test(descriptor, runner);
+                        }
+                    })
+                );
+            }
 
-		return result;
-	}
+            Path descriptorGroupPath = Paths.get(RuntimeTestUtils.resourcePath.toString(), "descriptors", group);
+            result.add(
+                dynamicContainer(
+                    group,
+                    descriptorGroupPath.toUri(),
+                    Arrays.stream(descriptorTests.toArray(new DynamicNode[0]))
+                )
+            );
+        }
 
-	private static void test(RuntimeTestDescriptor descriptor, RuntimeRunner runner) {
-		String targetName = runner.getLanguage();
-		assumeFalse(descriptor.ignore(targetName), "skipped for " + targetName);
-		// The runtime interprets the ATN without caching DFA states.
-		assumeFalse(descriptor.showDFA || String.join("", descriptor.grammars).contains("<DumpDFA()>"),
-			"the runtime has no DFA to dump");
+        return result;
+    }
 
-		Pair<String[], String[]> allGrammars = prepareGrammars(descriptor, runner);
+    private static void test(RuntimeTestDescriptor descriptor, RuntimeRunner runner) {
+        String targetName = runner.getLanguage();
+        assumeFalse(descriptor.ignore(targetName), "skipped for " + targetName);
+        // The runtime interprets the ATN without caching DFA states.
+        assumeFalse(
+            descriptor.showDFA || String.join("", descriptor.grammars).contains("<DumpDFA()>"),
+            "the runtime has no DFA to dump"
+        );
 
-		RunOptions runOptions = new RunOptions(
-				allGrammars.getFirst(),
-				allGrammars.getSecond(),
-				true,
-				true,
-				descriptor.startRule,
-				descriptor.input,
-				false,
-				descriptor.showDiagnosticErrors,
-				descriptor.traceATN,
-				descriptor.showDFA,
-				Stage.Execute,
-				null,
-				descriptor.predictionMode,
-				descriptor.buildParseTree,
-				null
-		);
+        Pair<String[], String[]> allGrammars = prepareGrammars(descriptor, runner);
 
-		State result = runner.run(runOptions);
+        RunOptions runOptions = new RunOptions(
+            allGrammars.getFirst(),
+            allGrammars.getSecond(),
+            true,
+            true,
+            descriptor.startRule,
+            descriptor.input,
+            false,
+            descriptor.showDiagnosticErrors,
+            descriptor.traceATN,
+            descriptor.showDFA,
+            Stage.Execute,
+            null,
+            descriptor.predictionMode,
+            descriptor.buildParseTree,
+            null
+        );
 
-		checkOutput(descriptor, result, runner);
-	}
+        State result = runner.run(runOptions);
 
-	private static Pair<String[], String[]> prepareGrammars(RuntimeTestDescriptor descriptor, RuntimeRunner runner) {
-		String targetName = runner.getLanguage();
+        checkOutput(descriptor, result, runner);
+    }
 
-		STGroup targetTemplates;
-		synchronized (cachedTargetTemplates) {
-			targetTemplates = cachedTargetTemplates.get(targetName);
-			if (targetTemplates == null) {
-				ClassLoader classLoader = RuntimeTests.class.getClassLoader();
-				URL templates = classLoader.getResource("org/antlr/v5/test/runtime/templates/" + targetName + ".test.stg");
-				assert templates != null;
-				targetTemplates = new STGroupFile(templates, "UTF-8", '<', '>');
-				targetTemplates.registerRenderer(String.class, rendered);
-				cachedTargetTemplates.put(targetName, targetTemplates);
-			}
-		}
+    private static Pair<String[], String[]> prepareGrammars(RuntimeTestDescriptor descriptor, RuntimeRunner runner) {
+        String targetName = runner.getLanguage();
 
-		List<String> grammars = new ArrayList<>(descriptor.grammars.length);
-		List<String> slaveGrammars = new ArrayList<>(descriptor.slaveGrammars.length);
-		for (String grammar : descriptor.grammars) {
-			grammars.add(prepareGrammar(targetTemplates, grammar));
-		}
-		for (String grammar : descriptor.slaveGrammars) {
-			slaveGrammars.add(prepareGrammar(targetTemplates, grammar));
-		}
+        STGroup targetTemplates;
+        synchronized (cachedTargetTemplates) {
+            targetTemplates = cachedTargetTemplates.get(targetName);
+            if (targetTemplates == null) {
+                ClassLoader classLoader = RuntimeTests.class.getClassLoader();
+                URL templates = classLoader.getResource(
+                    "org/antlr/v5/test/runtime/templates/" + targetName + ".test.stg"
+                );
+                assert templates != null;
+                targetTemplates = new STGroupFile(templates, "UTF-8", '<', '>');
+                targetTemplates.registerRenderer(String.class, rendered);
+                cachedTargetTemplates.put(targetName, targetTemplates);
+            }
+        }
 
-		return new Pair<>(grammars.toArray(new String[0]), slaveGrammars.toArray(new String[0]));
-	}
+        List<String> grammars = new ArrayList<>(descriptor.grammars.length);
+        List<String> slaveGrammars = new ArrayList<>(descriptor.slaveGrammars.length);
+        for (String grammar : descriptor.grammars) {
+            grammars.add(prepareGrammar(targetTemplates, grammar));
+        }
+        for (String grammar : descriptor.slaveGrammars) {
+            slaveGrammars.add(prepareGrammar(targetTemplates, grammar));
+        }
 
-	private static String prepareGrammar(STGroup targetTemplates, String grammar) {
-		STGroup g = new STGroup('<', '>');
-		g.registerRenderer(String.class, rendered);
-		g.importTemplates(targetTemplates);
-		ST grammarST = new ST(g, grammar);
-		return grammarST.render();
-	}
+        return new Pair<>(grammars.toArray(new String[0]), slaveGrammars.toArray(new String[0]));
+    }
 
-	public static void checkOutput(RuntimeTestDescriptor descriptor, State state, RuntimeRunner runner) {
-		String tempDirPath = runner.getTempDirPath();
-		String testDescriptor = "\nTest: " + descriptor.name + "\nTest directory: " + tempDirPath;
+    private static String prepareGrammar(STGroup targetTemplates, String grammar) {
+        STGroup g = new STGroup('<', '>');
+        g.registerRenderer(String.class, rendered);
+        g.importTemplates(targetTemplates);
+        ST grammarST = new ST(g, grammar);
+        return grammarST.render();
+    }
 
-		ExecutedState executedState = null;
-		boolean shouldFail = false;
-		if (state instanceof ExecutedState) {
-			executedState = (ExecutedState)state;
-			if (executedState.exception != null) {
-				shouldFail = true;
-			}
-		}
-		else {
-			shouldFail = true;
-		}
+    public static void checkOutput(RuntimeTestDescriptor descriptor, State state, RuntimeRunner runner) {
+        String tempDirPath = runner.getTempDirPath();
+        String testDescriptor = "\nTest: " + descriptor.name + "\nTest directory: " + tempDirPath;
 
-		if (shouldFail || !descriptor.errors.equals(executedState.errors) || !descriptor.output.equals(executedState.output)) {
-			runner.setSaveTestDir(true);
-		}
+        ExecutedState executedState = null;
+        boolean shouldFail = false;
+        if (state instanceof ExecutedState) {
+            executedState = (ExecutedState) state;
+            if (executedState.exception != null) {
+                shouldFail = true;
+            }
+        } else {
+            shouldFail = true;
+        }
 
-		if (shouldFail) {
-			fail(testDescriptor + "\n" + state.getErrorMessage());
-		}
+        if (
+            shouldFail ||
+            !descriptor.errors.equals(executedState.errors) ||
+            !descriptor.output.equals(executedState.output)
+        ) {
+            runner.setSaveTestDir(true);
+        }
 
-		assertEquals(descriptor.errors, executedState.errors, testDescriptor + "\nUnexpected or missing parse errors");
-		assertEquals(descriptor.output, executedState.output, testDescriptor);
-	}
+        if (shouldFail) {
+            fail(testDescriptor + "\n" + state.getErrorMessage());
+        }
+
+        assertEquals(descriptor.errors, executedState.errors, testDescriptor + "\nUnexpected or missing parse errors");
+        assertEquals(descriptor.output, executedState.output, testDescriptor);
+    }
 }

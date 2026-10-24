@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class TokenRef extends SymbolRefChunk {
-	public TokenRef(StructDecl ctx, String name, String escapedName) {
-		super(ctx, name, escapedName);
-	}
+
+    public TokenRef(StructDecl ctx, String name, String escapedName) {
+        super(ctx, name, escapedName);
+    }
 }

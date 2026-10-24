@@ -1,51 +1,54 @@
 package org.antlr.v5.test.runtime;
 
+import static org.antlr.v5.test.runtime.FileUtils.deleteDirectory;
+import static org.antlr.v5.test.runtime.RuntimeTestUtils.TempDirectory;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.antlr.v5.test.runtime.FileUtils.deleteDirectory;
-import static org.antlr.v5.test.runtime.RuntimeTestUtils.TempDirectory;
-
 public class Runner implements AutoCloseable {
-	private boolean saveTestDir;
 
-	protected final Path tempTestDir;
+    private boolean saveTestDir;
 
-	public Runner() {
-		this(null, false);
-	}
+    protected final Path tempTestDir;
 
-	public Runner(Path tempDir, boolean saveTestDir) {
-		if (tempDir == null) {
-			String dirName = getClass().getSimpleName() + "-" + Thread.currentThread().getName() + "-" + System.currentTimeMillis();
-			tempTestDir = Paths.get(TempDirectory, dirName);
-		}
-		else {
-			tempTestDir = tempDir;
-		}
-		FileUtils.mkdir(getTempDirPath());
-		this.saveTestDir = saveTestDir;
-	}
+    public Runner() {
+        this(null, false);
+    }
 
-	public final String getTempDirPath() { return tempTestDir.toString();}
+    public Runner(Path tempDir, boolean saveTestDir) {
+        if (tempDir == null) {
+            String dirName =
+                getClass().getSimpleName() + "-" + Thread.currentThread().getName() + "-" + System.currentTimeMillis();
+            tempTestDir = Paths.get(TempDirectory, dirName);
+        } else {
+            tempTestDir = tempDir;
+        }
+        FileUtils.mkdir(getTempDirPath());
+        this.saveTestDir = saveTestDir;
+    }
 
-	public void setSaveTestDir(boolean saveTestDir) {
-		this.saveTestDir = saveTestDir;
-	}
+    public final String getTempDirPath() {
+        return tempTestDir.toString();
+    }
 
-	@Override
-	public void close() {
-		if (!saveTestDir) {
-			File dirFile = tempTestDir.toFile();
-			if (dirFile.exists()) {
-				try {
-					deleteDirectory(dirFile);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
+    public void setSaveTestDir(boolean saveTestDir) {
+        this.saveTestDir = saveTestDir;
+    }
+
+    @Override
+    public void close() {
+        if (!saveTestDir) {
+            File dirFile = tempTestDir.toFile();
+            if (dirFile.exists()) {
+                try {
+                    deleteDirectory(dirFile);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

@@ -14,7 +14,7 @@ package org.antlr.v5.tool;
  *  the info I need for error messages.
  */
 public interface ANTLRToolListener {
-	public void info(String msg);
-	public void error(ANTLRMessage msg);
-	public void warning(ANTLRMessage msg);
+    public void info(String msg);
+    public void error(ANTLRMessage msg);
+    public void warning(ANTLRMessage msg);
 }

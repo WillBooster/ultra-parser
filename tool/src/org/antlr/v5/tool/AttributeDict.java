@@ -6,13 +6,12 @@
 
 package org.antlr.v5.tool;
 
-import org.antlr.v5.runtime.core.Token;
-import org.antlr.v5.tool.ast.GrammarAST;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
+import org.antlr.v5.runtime.core.Token;
+import org.antlr.v5.tool.ast.GrammarAST;
 
 /** Track the attributes within retval, arg lists etc...
  *  <p>
@@ -22,15 +21,17 @@ import java.util.Set;
  *  must live in the same name space--no collisions allowed.
  */
 public class AttributeDict {
+
     public String name;
     public GrammarAST ast;
-	public DictType type;
+    public DictType type;
 
     /** All {@link Token} scopes (token labels) share the same fixed scope of
      *  of predefined attributes.  I keep this out of the {@link Token}
      *  interface to avoid a runtime type leakage.
      */
     public static final AttributeDict predefinedTokenDict = new AttributeDict(DictType.TOKEN);
+
     static {
         predefinedTokenDict.add(new Attribute("text"));
         predefinedTokenDict.add(new Attribute("type"));
@@ -42,43 +43,57 @@ public class AttributeDict {
     }
 
     public enum DictType {
-        ARG, RET, LOCAL, TOKEN,
-		PREDEFINED_RULE, PREDEFINED_LEXER_RULE,
+        ARG,
+        RET,
+        LOCAL,
+        TOKEN,
+        PREDEFINED_RULE,
+        PREDEFINED_LEXER_RULE,
     }
 
     /** The list of {@link Attribute} objects. */
 
-    public final LinkedHashMap<String, Attribute> attributes =
-        new LinkedHashMap<String, Attribute>();
+    public final LinkedHashMap<String, Attribute> attributes = new LinkedHashMap<String, Attribute>();
 
-	public AttributeDict() {}
-	public AttributeDict(DictType type) { this.type = type; }
+    public AttributeDict() {}
 
-	public Attribute add(Attribute a) { a.dict = this; return attributes.put(a.name, a); }
-    public Attribute get(String name) { return attributes.get(name); }
+    public AttributeDict(DictType type) {
+        this.type = type;
+    }
+
+    public Attribute add(Attribute a) {
+        a.dict = this;
+        return attributes.put(a.name, a);
+    }
+
+    public Attribute get(String name) {
+        return attributes.get(name);
+    }
 
     public String getName() {
         return name;
     }
 
-    public int size() { return attributes.size(); }
+    public int size() {
+        return attributes.size();
+    }
 
     /** Return the set of keys that collide from
      *  {@code this} and {@code other}.
      */
 
     public Set<String> intersection(AttributeDict other) {
-        if ( other==null || other.size()==0 || size()==0 ) {
+        if (other == null || other.size() == 0 || size() == 0) {
             return Collections.emptySet();
         }
 
-		Set<String> result = new HashSet<String>(attributes.keySet());
-		result.retainAll(other.attributes.keySet());
-		return result;
+        Set<String> result = new HashSet<String>(attributes.keySet());
+        result.retainAll(other.attributes.keySet());
+        return result;
     }
 
     @Override
     public String toString() {
-        return getName()+":"+attributes;
+        return getName() + ":" + attributes;
     }
 }

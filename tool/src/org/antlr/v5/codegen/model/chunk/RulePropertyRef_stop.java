@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class RulePropertyRef_stop extends RulePropertyRef {
-	public RulePropertyRef_stop(StructDecl ctx, String label) {
-		super(ctx, label);
-	}
+
+    public RulePropertyRef_stop(StructDecl ctx, String label) {
+        super(ctx, label);
+    }
 }

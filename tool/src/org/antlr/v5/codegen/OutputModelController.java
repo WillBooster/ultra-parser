@@ -6,6 +6,9 @@
 
 package org.antlr.v5.codegen;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 import org.antlr.runtime.tree.CommonTreeNodeStream;
 import org.antlr.v5.codegen.model.Action;
 import org.antlr.v5.codegen.model.BaseListenerFile;
@@ -36,340 +39,350 @@ import org.antlr.v5.tool.ast.BlockAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 import org.antlr.v5.tool.ast.PredAST;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-
 /** This receives events from SourceGenTriggers.g and asks factory to do work.
  *  Then runs extensions in order on resulting SrcOps to get final list.
  **/
 public class OutputModelController {
-	/** Who does the work? Doesn't have to be CoreOutputModelFactory. */
-	public OutputModelFactory delegate;
 
-	/** Post-processing CodeGeneratorExtension objects; done in order given. */
-	public List<CodeGeneratorExtension> extensions = new ArrayList<CodeGeneratorExtension>();
+    /** Who does the work? Doesn't have to be CoreOutputModelFactory. */
+    public OutputModelFactory delegate;
 
-	/** While walking code in rules, this is set to the tree walker that
-	 *  triggers actions.
-	 */
-	public SourceGenTriggers walker;
+    /** Post-processing CodeGeneratorExtension objects; done in order given. */
+    public List<CodeGeneratorExtension> extensions = new ArrayList<CodeGeneratorExtension>();
 
-	/** Context set by the SourceGenTriggers.g */
-	public int codeBlockLevel = -1;
-	public int treeLevel = -1;
-	public OutputModelObject root; // normally ParserFile, LexerFile, ...
-	public Stack<RuleFunction> currentRule = new Stack<RuleFunction>();
-	public Alternative currentOuterMostAlt;
-	public CodeBlock currentBlock;
-	public CodeBlockForOuterMostAlt currentOuterMostAlternativeBlock;
+    /** While walking code in rules, this is set to the tree walker that
+     *  triggers actions.
+     */
+    public SourceGenTriggers walker;
 
-	public OutputModelController(OutputModelFactory factory) {
-		this.delegate = factory;
-	}
+    /** Context set by the SourceGenTriggers.g */
+    public int codeBlockLevel = -1;
+    public int treeLevel = -1;
+    public OutputModelObject root; // normally ParserFile, LexerFile, ...
+    public Stack<RuleFunction> currentRule = new Stack<RuleFunction>();
+    public Alternative currentOuterMostAlt;
+    public CodeBlock currentBlock;
+    public CodeBlockForOuterMostAlt currentOuterMostAlternativeBlock;
 
-	public void addExtension(CodeGeneratorExtension ext) { extensions.add(ext); }
+    public OutputModelController(OutputModelFactory factory) {
+        this.delegate = factory;
+    }
 
-	/** Build a file with a parser containing rule functions. Use the
-	 *  controller as factory in SourceGenTriggers so it triggers codegen
-	 *  extensions too, not just the factory functions in this factory.
-	 */
-	public OutputModelObject buildParserOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		ParserFile file = parserFile(gen.getRecognizerFileName(header));
-		setRoot(file);
-		file.parser = parser(file);
+    public void addExtension(CodeGeneratorExtension ext) {
+        extensions.add(ext);
+    }
 
-		Grammar g = delegate.getGrammar();
-		for (Rule r : g.rules.values()) {
-			buildRuleFunction(file.parser, r);
-		}
+    /** Build a file with a parser containing rule functions. Use the
+     *  controller as factory in SourceGenTriggers so it triggers codegen
+     *  extensions too, not just the factory functions in this factory.
+     */
+    public OutputModelObject buildParserOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        ParserFile file = parserFile(gen.getRecognizerFileName(header));
+        setRoot(file);
+        file.parser = parser(file);
 
-		return file;
-	}
+        Grammar g = delegate.getGrammar();
+        for (Rule r : g.rules.values()) {
+            buildRuleFunction(file.parser, r);
+        }
 
-	public OutputModelObject buildLexerOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		LexerFile file = lexerFile(gen.getRecognizerFileName(header));
-		setRoot(file);
-		file.lexer = lexer(file);
+        return file;
+    }
 
-		Grammar g = delegate.getGrammar();
-		for (Rule r : g.rules.values()) {
-			buildLexerRuleActions(file.lexer, r);
-		}
+    public OutputModelObject buildLexerOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        LexerFile file = lexerFile(gen.getRecognizerFileName(header));
+        setRoot(file);
+        file.lexer = lexer(file);
 
-		return file;
-	}
+        Grammar g = delegate.getGrammar();
+        for (Rule r : g.rules.values()) {
+            buildLexerRuleActions(file.lexer, r);
+        }
 
-	public OutputModelObject buildListenerOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		return new ListenerFile(delegate, gen.getListenerFileName(header));
-	}
+        return file;
+    }
 
-	public OutputModelObject buildBaseListenerOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		return new BaseListenerFile(delegate, gen.getBaseListenerFileName(header));
-	}
+    public OutputModelObject buildListenerOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        return new ListenerFile(delegate, gen.getListenerFileName(header));
+    }
 
-	public OutputModelObject buildVisitorOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		return new VisitorFile(delegate, gen.getVisitorFileName(header));
-	}
+    public OutputModelObject buildBaseListenerOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        return new BaseListenerFile(delegate, gen.getBaseListenerFileName(header));
+    }
 
-	public OutputModelObject buildBaseVisitorOutputModel(boolean header) {
-		CodeGenerator gen = delegate.getGenerator();
-		return new BaseVisitorFile(delegate, gen.getBaseVisitorFileName(header));
-	}
+    public OutputModelObject buildVisitorOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        return new VisitorFile(delegate, gen.getVisitorFileName(header));
+    }
 
-	public ParserFile parserFile(String fileName) {
-		ParserFile f = delegate.parserFile(fileName);
-		for (CodeGeneratorExtension ext : extensions) f = ext.parserFile(f);
-		return f;
-	}
+    public OutputModelObject buildBaseVisitorOutputModel(boolean header) {
+        CodeGenerator gen = delegate.getGenerator();
+        return new BaseVisitorFile(delegate, gen.getBaseVisitorFileName(header));
+    }
 
-	public Parser parser(ParserFile file) {
-		Parser p = delegate.parser(file);
-		for (CodeGeneratorExtension ext : extensions) p = ext.parser(p);
-		return p;
-	}
+    public ParserFile parserFile(String fileName) {
+        ParserFile f = delegate.parserFile(fileName);
+        for (CodeGeneratorExtension ext : extensions) f = ext.parserFile(f);
+        return f;
+    }
 
-	public LexerFile lexerFile(String fileName) {
-		return new LexerFile(delegate, fileName);
-	}
+    public Parser parser(ParserFile file) {
+        Parser p = delegate.parser(file);
+        for (CodeGeneratorExtension ext : extensions) p = ext.parser(p);
+        return p;
+    }
 
-	public Lexer lexer(LexerFile file) {
-		return new Lexer(delegate, file);
-	}
+    public LexerFile lexerFile(String fileName) {
+        return new LexerFile(delegate, fileName);
+    }
 
-	/** Create RuleFunction per rule and update sempreds,actions of parser
-	 *  output object with stuff found in r.
-	 */
-	public void buildRuleFunction(Parser parser, Rule r) {
-		RuleFunction function = rule(r);
-		parser.funcs.add(function);
-		pushCurrentRule(function);
-		function.fillNamedActions(delegate, r);
+    public Lexer lexer(LexerFile file) {
+        return new Lexer(delegate, file);
+    }
 
-		buildNormalRuleFunction(r, function);
+    /** Create RuleFunction per rule and update sempreds,actions of parser
+     *  output object with stuff found in r.
+     */
+    public void buildRuleFunction(Parser parser, Rule r) {
+        RuleFunction function = rule(r);
+        parser.funcs.add(function);
+        pushCurrentRule(function);
+        function.fillNamedActions(delegate, r);
 
-		Grammar g = getGrammar();
-		for (ActionAST a : r.actions) {
-			if ( a instanceof PredAST ) {
-				PredAST p = (PredAST)a;
-				RuleSempredFunction rsf = parser.sempredFuncs.get(r);
-				if ( rsf==null ) {
-					rsf = new RuleSempredFunction(delegate, r, function.ctxType);
-					parser.sempredFuncs.put(r, rsf);
-				}
-				rsf.actions.put(g.sempreds.get(p), new Action(delegate, p));
-			}
-		}
+        buildNormalRuleFunction(r, function);
 
-		popCurrentRule();
-	}
+        Grammar g = getGrammar();
+        for (ActionAST a : r.actions) {
+            if (a instanceof PredAST) {
+                PredAST p = (PredAST) a;
+                RuleSempredFunction rsf = parser.sempredFuncs.get(r);
+                if (rsf == null) {
+                    rsf = new RuleSempredFunction(delegate, r, function.ctxType);
+                    parser.sempredFuncs.put(r, rsf);
+                }
+                rsf.actions.put(g.sempreds.get(p), new Action(delegate, p));
+            }
+        }
 
-	public void buildNormalRuleFunction(Rule r, RuleFunction function) {
-		CodeGenerator gen = delegate.getGenerator();
-		// TRIGGER factory functions for rule alts, elements
-		GrammarASTAdaptor adaptor = new GrammarASTAdaptor(r.ast.token.getInputStream());
-		GrammarAST blk = (GrammarAST)r.ast.getFirstChildWithType(ANTLRParser.BLOCK);
-		CommonTreeNodeStream nodes = new CommonTreeNodeStream(adaptor,blk);
-		walker = new SourceGenTriggers(nodes, this);
-		try {
-			// walk AST of rule alts/elements
-			function.code = DefaultOutputModelFactory.list(walker.block(null, null));
-			function.hasLookaheadBlock = walker.hasLookaheadBlock;
-		}
-		catch (org.antlr.runtime.RecognitionException e){
-			e.printStackTrace(System.err);
-		}
+        popCurrentRule();
+    }
 
-		function.ctxType = gen.getTarget().getRuleFunctionContextStructName(function);
+    public void buildNormalRuleFunction(Rule r, RuleFunction function) {
+        CodeGenerator gen = delegate.getGenerator();
+        // TRIGGER factory functions for rule alts, elements
+        GrammarASTAdaptor adaptor = new GrammarASTAdaptor(r.ast.token.getInputStream());
+        GrammarAST blk = (GrammarAST) r.ast.getFirstChildWithType(ANTLRParser.BLOCK);
+        CommonTreeNodeStream nodes = new CommonTreeNodeStream(adaptor, blk);
+        walker = new SourceGenTriggers(nodes, this);
+        try {
+            // walk AST of rule alts/elements
+            function.code = DefaultOutputModelFactory.list(walker.block(null, null));
+            function.hasLookaheadBlock = walker.hasLookaheadBlock;
+        } catch (org.antlr.runtime.RecognitionException e) {
+            e.printStackTrace(System.err);
+        }
 
-		function.postamble = rulePostamble(function, r);
-	}
+        function.ctxType = gen.getTarget().getRuleFunctionContextStructName(function);
 
-	public void buildLexerRuleActions(Lexer lexer, final Rule r) {
-		if (r.actions.isEmpty()) {
-			return;
-		}
+        function.postamble = rulePostamble(function, r);
+    }
 
-		CodeGenerator gen = delegate.getGenerator();
-		Grammar g = delegate.getGrammar();
-		String ctxType = gen.getTarget().getRuleFunctionContextStructName(r);
-		RuleActionFunction raf = lexer.actionFuncs.get(r);
-		if ( raf==null ) {
-			raf = new RuleActionFunction(delegate, r, ctxType);
-		}
+    public void buildLexerRuleActions(Lexer lexer, final Rule r) {
+        if (r.actions.isEmpty()) {
+            return;
+        }
 
-		for (ActionAST a : r.actions) {
-			if ( a instanceof PredAST ) {
-				PredAST p = (PredAST)a;
-				RuleSempredFunction rsf = lexer.sempredFuncs.get(r);
-				if ( rsf==null ) {
-					rsf = new RuleSempredFunction(delegate, r, ctxType);
-					lexer.sempredFuncs.put(r, rsf);
-				}
-				rsf.actions.put(g.sempreds.get(p), new Action(delegate, p));
-			}
-			else if ( a.getType()== ANTLRParser.ACTION ) {
-				raf.actions.put(g.lexerActions.get(a), new Action(delegate, a));
-			}
-		}
+        CodeGenerator gen = delegate.getGenerator();
+        Grammar g = delegate.getGrammar();
+        String ctxType = gen.getTarget().getRuleFunctionContextStructName(r);
+        RuleActionFunction raf = lexer.actionFuncs.get(r);
+        if (raf == null) {
+            raf = new RuleActionFunction(delegate, r, ctxType);
+        }
 
-		if (!raf.actions.isEmpty() && !lexer.actionFuncs.containsKey(r)) {
-			// only add to lexer if the function actually contains actions
-			lexer.actionFuncs.put(r, raf);
-		}
-	}
+        for (ActionAST a : r.actions) {
+            if (a instanceof PredAST) {
+                PredAST p = (PredAST) a;
+                RuleSempredFunction rsf = lexer.sempredFuncs.get(r);
+                if (rsf == null) {
+                    rsf = new RuleSempredFunction(delegate, r, ctxType);
+                    lexer.sempredFuncs.put(r, rsf);
+                }
+                rsf.actions.put(g.sempreds.get(p), new Action(delegate, p));
+            } else if (a.getType() == ANTLRParser.ACTION) {
+                raf.actions.put(g.lexerActions.get(a), new Action(delegate, a));
+            }
+        }
 
-	public RuleFunction rule(Rule r) {
-		RuleFunction rf = delegate.rule(r);
-		for (CodeGeneratorExtension ext : extensions) rf = ext.rule(rf);
-		return rf;
-	}
+        if (!raf.actions.isEmpty() && !lexer.actionFuncs.containsKey(r)) {
+            // only add to lexer if the function actually contains actions
+            lexer.actionFuncs.put(r, raf);
+        }
+    }
 
-	public List<SrcOp> rulePostamble(RuleFunction function, Rule r) {
-		List<SrcOp> ops = delegate.rulePostamble(function, r);
-		for (CodeGeneratorExtension ext : extensions) ops = ext.rulePostamble(ops);
-		return ops;
-	}
+    public RuleFunction rule(Rule r) {
+        RuleFunction rf = delegate.rule(r);
+        for (CodeGeneratorExtension ext : extensions) rf = ext.rule(rf);
+        return rf;
+    }
 
-	public Grammar getGrammar() { return delegate.getGrammar(); }
+    public List<SrcOp> rulePostamble(RuleFunction function, Rule r) {
+        List<SrcOp> ops = delegate.rulePostamble(function, r);
+        for (CodeGeneratorExtension ext : extensions) ops = ext.rulePostamble(ops);
+        return ops;
+    }
 
-	public CodeGenerator getGenerator() { return delegate.getGenerator(); }
+    public Grammar getGrammar() {
+        return delegate.getGrammar();
+    }
 
-	public CodeBlockForAlt alternative(Alternative alt, boolean outerMost) {
-		CodeBlockForAlt blk = delegate.alternative(alt, outerMost);
-		if ( outerMost ) {
-			currentOuterMostAlternativeBlock = (CodeBlockForOuterMostAlt)blk;
-		}
-		for (CodeGeneratorExtension ext : extensions) blk = ext.alternative(blk, outerMost);
-		return blk;
-	}
+    public CodeGenerator getGenerator() {
+        return delegate.getGenerator();
+    }
 
-	public CodeBlockForAlt finishAlternative(CodeBlockForAlt blk, List<SrcOp> ops,
-											 boolean outerMost)
-	{
-		blk = delegate.finishAlternative(blk, ops);
-		for (CodeGeneratorExtension ext : extensions) blk = ext.finishAlternative(blk, outerMost);
-		return blk;
-	}
+    public CodeBlockForAlt alternative(Alternative alt, boolean outerMost) {
+        CodeBlockForAlt blk = delegate.alternative(alt, outerMost);
+        if (outerMost) {
+            currentOuterMostAlternativeBlock = (CodeBlockForOuterMostAlt) blk;
+        }
+        for (CodeGeneratorExtension ext : extensions) blk = ext.alternative(blk, outerMost);
+        return blk;
+    }
 
-	public List<SrcOp> ruleRef(GrammarAST ID, GrammarAST label, GrammarAST args) {
-		List<SrcOp> ops = delegate.ruleRef(ID, label, args);
-		for (CodeGeneratorExtension ext : extensions) {
-			ops = ext.ruleRef(ops);
-		}
-		return ops;
-	}
+    public CodeBlockForAlt finishAlternative(CodeBlockForAlt blk, List<SrcOp> ops, boolean outerMost) {
+        blk = delegate.finishAlternative(blk, ops);
+        for (CodeGeneratorExtension ext : extensions) blk = ext.finishAlternative(blk, outerMost);
+        return blk;
+    }
 
-	public List<SrcOp> tokenRef(GrammarAST ID, GrammarAST label, GrammarAST args)
-	{
-		List<SrcOp> ops = delegate.tokenRef(ID, label, args);
-		for (CodeGeneratorExtension ext : extensions) {
-			ops = ext.tokenRef(ops);
-		}
-		return ops;
-	}
+    public List<SrcOp> ruleRef(GrammarAST ID, GrammarAST label, GrammarAST args) {
+        List<SrcOp> ops = delegate.ruleRef(ID, label, args);
+        for (CodeGeneratorExtension ext : extensions) {
+            ops = ext.ruleRef(ops);
+        }
+        return ops;
+    }
 
-	public List<SrcOp> stringRef(GrammarAST ID, GrammarAST label) {
-		List<SrcOp> ops = delegate.stringRef(ID, label);
-		for (CodeGeneratorExtension ext : extensions) {
-			ops = ext.stringRef(ops);
-		}
-		return ops;
-	}
+    public List<SrcOp> tokenRef(GrammarAST ID, GrammarAST label, GrammarAST args) {
+        List<SrcOp> ops = delegate.tokenRef(ID, label, args);
+        for (CodeGeneratorExtension ext : extensions) {
+            ops = ext.tokenRef(ops);
+        }
+        return ops;
+    }
 
-	/** (A|B|C) possibly with ebnfRoot and label */
-	public List<SrcOp> set(GrammarAST setAST, GrammarAST labelAST, boolean invert) {
-		List<SrcOp> ops = delegate.set(setAST, labelAST, invert);
-		for (CodeGeneratorExtension ext : extensions) {
-			ops = ext.set(ops);
-		}
-		return ops;
-	}
+    public List<SrcOp> stringRef(GrammarAST ID, GrammarAST label) {
+        List<SrcOp> ops = delegate.stringRef(ID, label);
+        for (CodeGeneratorExtension ext : extensions) {
+            ops = ext.stringRef(ops);
+        }
+        return ops;
+    }
 
-	public CodeBlockForAlt epsilon(Alternative alt, boolean outerMost) {
-		CodeBlockForAlt blk = delegate.epsilon(alt, outerMost);
-		for (CodeGeneratorExtension ext : extensions) blk = ext.epsilon(blk);
-		return blk;
-	}
+    /** (A|B|C) possibly with ebnfRoot and label */
+    public List<SrcOp> set(GrammarAST setAST, GrammarAST labelAST, boolean invert) {
+        List<SrcOp> ops = delegate.set(setAST, labelAST, invert);
+        for (CodeGeneratorExtension ext : extensions) {
+            ops = ext.set(ops);
+        }
+        return ops;
+    }
 
-	public List<SrcOp> wildcard(GrammarAST ast, GrammarAST labelAST) {
-		List<SrcOp> ops = delegate.wildcard(ast, labelAST);
-		for (CodeGeneratorExtension ext : extensions) {
-			ops = ext.wildcard(ops);
-		}
-		return ops;
-	}
+    public CodeBlockForAlt epsilon(Alternative alt, boolean outerMost) {
+        CodeBlockForAlt blk = delegate.epsilon(alt, outerMost);
+        for (CodeGeneratorExtension ext : extensions) blk = ext.epsilon(blk);
+        return blk;
+    }
 
-	public List<SrcOp> action(ActionAST ast) {
-		List<SrcOp> ops = delegate.action(ast);
-		for (CodeGeneratorExtension ext : extensions) ops = ext.action(ops);
-		return ops;
-	}
+    public List<SrcOp> wildcard(GrammarAST ast, GrammarAST labelAST) {
+        List<SrcOp> ops = delegate.wildcard(ast, labelAST);
+        for (CodeGeneratorExtension ext : extensions) {
+            ops = ext.wildcard(ops);
+        }
+        return ops;
+    }
 
-	public List<SrcOp> sempred(ActionAST ast) {
-		List<SrcOp> ops = delegate.sempred(ast);
-		for (CodeGeneratorExtension ext : extensions) ops = ext.sempred(ops);
-		return ops;
-	}
+    public List<SrcOp> action(ActionAST ast) {
+        List<SrcOp> ops = delegate.action(ast);
+        for (CodeGeneratorExtension ext : extensions) ops = ext.action(ops);
+        return ops;
+    }
 
-	public Choice getChoiceBlock(BlockAST blkAST, List<CodeBlockForAlt> alts, GrammarAST label) {
-		Choice c = delegate.getChoiceBlock(blkAST, alts, label);
-		for (CodeGeneratorExtension ext : extensions) c = ext.getChoiceBlock(c);
-		return c;
-	}
+    public List<SrcOp> sempred(ActionAST ast) {
+        List<SrcOp> ops = delegate.sempred(ast);
+        for (CodeGeneratorExtension ext : extensions) ops = ext.sempred(ops);
+        return ops;
+    }
 
-	public Choice getEBNFBlock(GrammarAST ebnfRoot, List<CodeBlockForAlt> alts) {
-		Choice c = delegate.getEBNFBlock(ebnfRoot, alts);
-		for (CodeGeneratorExtension ext : extensions) c = ext.getEBNFBlock(c);
-		return c;
-	}
+    public Choice getChoiceBlock(BlockAST blkAST, List<CodeBlockForAlt> alts, GrammarAST label) {
+        Choice c = delegate.getChoiceBlock(blkAST, alts, label);
+        for (CodeGeneratorExtension ext : extensions) c = ext.getChoiceBlock(c);
+        return c;
+    }
 
-	public boolean needsImplicitLabel(GrammarAST ID, LabeledOp op) {
-		boolean needs = delegate.needsImplicitLabel(ID, op);
-		for (CodeGeneratorExtension ext : extensions) needs |= ext.needsImplicitLabel(ID, op);
-		return needs;
-	}
+    public Choice getEBNFBlock(GrammarAST ebnfRoot, List<CodeBlockForAlt> alts) {
+        Choice c = delegate.getEBNFBlock(ebnfRoot, alts);
+        for (CodeGeneratorExtension ext : extensions) c = ext.getEBNFBlock(c);
+        return c;
+    }
 
-	public OutputModelObject getRoot() { return root; }
+    public boolean needsImplicitLabel(GrammarAST ID, LabeledOp op) {
+        boolean needs = delegate.needsImplicitLabel(ID, op);
+        for (CodeGeneratorExtension ext : extensions) needs |= ext.needsImplicitLabel(ID, op);
+        return needs;
+    }
 
-	public void setRoot(OutputModelObject root) { this.root = root; }
+    public OutputModelObject getRoot() {
+        return root;
+    }
 
-	public RuleFunction getCurrentRuleFunction() {
-		if ( !currentRule.isEmpty() )	return currentRule.peek();
-		return null;
-	}
+    public void setRoot(OutputModelObject root) {
+        this.root = root;
+    }
 
-	public void pushCurrentRule(RuleFunction r) { currentRule.push(r); }
+    public RuleFunction getCurrentRuleFunction() {
+        if (!currentRule.isEmpty()) return currentRule.peek();
+        return null;
+    }
 
-	public RuleFunction popCurrentRule() {
-		if ( !currentRule.isEmpty() ) return currentRule.pop();
-		return null;
-	}
+    public void pushCurrentRule(RuleFunction r) {
+        currentRule.push(r);
+    }
 
-	public Alternative getCurrentOuterMostAlt() { return currentOuterMostAlt; }
+    public RuleFunction popCurrentRule() {
+        if (!currentRule.isEmpty()) return currentRule.pop();
+        return null;
+    }
 
-	public void setCurrentOuterMostAlt(Alternative currentOuterMostAlt) { this.currentOuterMostAlt = currentOuterMostAlt; }
+    public Alternative getCurrentOuterMostAlt() {
+        return currentOuterMostAlt;
+    }
 
-	public void setCurrentBlock(CodeBlock blk) {
-		currentBlock = blk;
-	}
+    public void setCurrentOuterMostAlt(Alternative currentOuterMostAlt) {
+        this.currentOuterMostAlt = currentOuterMostAlt;
+    }
 
-	public CodeBlock getCurrentBlock() {
-		return currentBlock;
-	}
+    public void setCurrentBlock(CodeBlock blk) {
+        currentBlock = blk;
+    }
 
-	public void setCurrentOuterMostAlternativeBlock(CodeBlockForOuterMostAlt currentOuterMostAlternativeBlock) {
-		this.currentOuterMostAlternativeBlock = currentOuterMostAlternativeBlock;
-	}
+    public CodeBlock getCurrentBlock() {
+        return currentBlock;
+    }
 
-	public CodeBlockForOuterMostAlt getCurrentOuterMostAlternativeBlock() {
-		return currentOuterMostAlternativeBlock;
-	}
+    public void setCurrentOuterMostAlternativeBlock(CodeBlockForOuterMostAlt currentOuterMostAlternativeBlock) {
+        this.currentOuterMostAlternativeBlock = currentOuterMostAlternativeBlock;
+    }
 
-	public int getCodeBlockLevel() { return codeBlockLevel; }
+    public CodeBlockForOuterMostAlt getCurrentOuterMostAlternativeBlock() {
+        return currentOuterMostAlternativeBlock;
+    }
+
+    public int getCodeBlockLevel() {
+        return codeBlockLevel;
+    }
 }

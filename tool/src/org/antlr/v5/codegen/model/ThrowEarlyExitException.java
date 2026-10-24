@@ -12,7 +12,8 @@ import org.antlr.v5.tool.ast.GrammarAST;
 
 /** */
 public class ThrowEarlyExitException extends ThrowRecognitionException {
-	public ThrowEarlyExitException(OutputModelFactory factory, GrammarAST ast, IntervalSet expecting) {
-		super(factory, ast, expecting);
-	}
+
+    public ThrowEarlyExitException(OutputModelFactory factory, GrammarAST ast, IntervalSet expecting) {
+        super(factory, ast, expecting);
+    }
 }

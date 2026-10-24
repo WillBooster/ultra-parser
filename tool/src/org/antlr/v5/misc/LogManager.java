@@ -15,18 +15,21 @@ import java.util.Date;
 import java.util.List;
 
 public class LogManager {
-    protected static class Record {
-		long timestamp;
-		StackTraceElement location;
-		String component;
-		String msg;
-		public Record() {
-			timestamp = System.currentTimeMillis();
-			location = new Throwable().getStackTrace()[0];
-		}
 
-		@Override
-		public String toString() {
+    protected static class Record {
+
+        long timestamp;
+        StackTraceElement location;
+        String component;
+        String msg;
+
+        public Record() {
+            timestamp = System.currentTimeMillis();
+            location = new Throwable().getStackTrace()[0];
+        }
+
+        @Override
+        public String toString() {
             StringBuilder buf = new StringBuilder();
             buf.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS").format(new Date(timestamp)));
             buf.append(" ");
@@ -38,30 +41,31 @@ public class LogManager {
             buf.append(" ");
             buf.append(msg);
             return buf.toString();
-		}
-	}
+        }
+    }
 
-	protected List<Record> records;
+    protected List<Record> records;
 
-	public void log(String component, String msg) {
-		Record r = new Record();
-		r.component = component;
-		r.msg = msg;
-		if ( records==null ) {
-			records = new ArrayList<Record>();
-		}
-		records.add(r);
-	}
+    public void log(String component, String msg) {
+        Record r = new Record();
+        r.component = component;
+        r.msg = msg;
+        if (records == null) {
+            records = new ArrayList<Record>();
+        }
+        records.add(r);
+    }
 
-    public void log(String msg) { log(null, msg); }
+    public void log(String msg) {
+        log(null, msg);
+    }
 
     public void save(String filename) throws IOException {
         FileWriter fw = new FileWriter(filename);
         BufferedWriter bw = new BufferedWriter(fw);
         try {
             bw.write(toString());
-        }
-        finally {
+        } finally {
             bw.close();
         }
     }
@@ -70,15 +74,14 @@ public class LogManager {
         //String dir = System.getProperty("java.io.tmpdir");
         String dir = ".";
         String defaultFilename =
-            dir + "/antlr-" +
-            new SimpleDateFormat("yyyy-MM-dd-HH.mm.ss").format(new Date()) + ".log";
+            dir + "/antlr-" + new SimpleDateFormat("yyyy-MM-dd-HH.mm.ss").format(new Date()) + ".log";
         save(defaultFilename);
         return defaultFilename;
     }
 
     @Override
     public String toString() {
-        if ( records==null ) return "";
+        if (records == null) return "";
         String nl = System.getProperty("line.separator");
         StringBuilder buf = new StringBuilder();
         for (Record r : records) {

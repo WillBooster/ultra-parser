@@ -20,25 +20,25 @@ package org.antlr.v5.tool.ast;
  *  t.visit(v);
  */
 public interface GrammarASTVisitor {
-	/** This is the generic visitor method that will be invoked
-	 *  for any other kind of AST node not covered by the other visit methods.
-	 */
-	Object visit(GrammarAST node);
+    /** This is the generic visitor method that will be invoked
+     *  for any other kind of AST node not covered by the other visit methods.
+     */
+    Object visit(GrammarAST node);
 
-	Object visit(GrammarRootAST node);
-	Object visit(RuleAST node);
+    Object visit(GrammarRootAST node);
+    Object visit(RuleAST node);
 
-	Object visit(BlockAST node);
-	Object visit(OptionalBlockAST node);
-	Object visit(PlusBlockAST node);
-	Object visit(StarBlockAST node);
+    Object visit(BlockAST node);
+    Object visit(OptionalBlockAST node);
+    Object visit(PlusBlockAST node);
+    Object visit(StarBlockAST node);
 
-	Object visit(AltAST node);
+    Object visit(AltAST node);
 
-	Object visit(NotAST node);
-	Object visit(PredAST node);
-	Object visit(RangeAST node);
-	Object visit(SetAST node);
-	Object visit(RuleRefAST node);
-	Object visit(TerminalAST node);
+    Object visit(NotAST node);
+    Object visit(PredAST node);
+    Object visit(RangeAST node);
+    Object visit(SetAST node);
+    Object visit(RuleRefAST node);
+    Object visit(TerminalAST node);
 }

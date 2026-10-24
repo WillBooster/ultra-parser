@@ -10,9 +10,10 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** x=ID or implicit _tID label */
 public class TokenDecl extends Decl {
-	public boolean isImplicit;
 
-	public TokenDecl(OutputModelFactory factory, String varName) {
-		super(factory, varName);
-	}
+    public boolean isImplicit;
+
+    public TokenDecl(OutputModelFactory factory, String varName) {
+        super(factory, varName);
+    }
 }

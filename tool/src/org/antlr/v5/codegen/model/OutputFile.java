@@ -6,19 +6,19 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Predicate;
 import org.antlr.v5.Tool;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.ast.ActionAST;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Predicate;
-
 public abstract class OutputFile extends OutputModelObject {
-	public final String fileName;
-	public final String grammarFileName;
-	public final String ANTLRVersion;
+
+    public final String fileName;
+    public final String grammarFileName;
+    public final String ANTLRVersion;
     public final String TokenLabelType;
     public final String InputSymbolType;
 
@@ -26,23 +26,22 @@ public abstract class OutputFile extends OutputModelObject {
         super(factory);
         this.fileName = fileName;
         Grammar g = factory.getGrammar();
-		grammarFileName = g.fileName.replace("\\", "/"); // Prevent a path with windows delim and u breaking Java pre-parser on comments
-		ANTLRVersion = Tool.VERSION;
+        grammarFileName = g.fileName.replace("\\", "/"); // Prevent a path with windows delim and u breaking Java pre-parser on comments
+        ANTLRVersion = Tool.VERSION;
         TokenLabelType = g.getOptionString("TokenLabelType");
         InputSymbolType = TokenLabelType;
     }
 
-	public Map<String, Action> buildNamedActions(Grammar g) {
-		return buildNamedActions(g, null);
-	}
+    public Map<String, Action> buildNamedActions(Grammar g) {
+        return buildNamedActions(g, null);
+    }
 
-	public Map<String, Action> buildNamedActions(Grammar g, Predicate<ActionAST> filter) {
-		Map<String, Action> namedActions = new HashMap<String, Action>();
-		for (String name : g.namedActions.keySet()) {
-			ActionAST ast = g.namedActions.get(name);
-			if(filter==null || filter.test(ast))
-				namedActions.put(name, new Action(factory, ast));
-		}
-		return namedActions;
-	}
+    public Map<String, Action> buildNamedActions(Grammar g, Predicate<ActionAST> filter) {
+        Map<String, Action> namedActions = new HashMap<String, Action>();
+        for (String name : g.namedActions.keySet()) {
+            ActionAST ast = g.namedActions.get(name);
+            if (filter == null || filter.test(ast)) namedActions.put(name, new Action(factory, ast));
+        }
+        return namedActions;
+    }
 }

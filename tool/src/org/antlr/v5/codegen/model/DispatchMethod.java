@@ -8,7 +8,8 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class DispatchMethod extends OutputModelObject {
-	public DispatchMethod(OutputModelFactory factory) {
-		super(factory);
-	}
+
+    public DispatchMethod(OutputModelFactory factory) {
+        super(factory);
+    }
 }

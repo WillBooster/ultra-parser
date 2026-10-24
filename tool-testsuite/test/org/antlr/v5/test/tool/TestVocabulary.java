@@ -5,50 +5,46 @@
  */
 package org.antlr.v5.test.tool;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.antlr.v5.runtime.core.Token;
 import org.antlr.v5.runtime.core.Vocabulary;
 import org.antlr.v5.runtime.core.VocabularyImpl;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Sam Harwell
  */
 public class TestVocabulary {
-	@Test
-	public void testEmptyVocabulary() {
-		assertNotNull(VocabularyImpl.Companion.getEMPTY_VOCABULARY());
-		assertEquals("EOF", VocabularyImpl.Companion.getEMPTY_VOCABULARY().getSymbolicName(Token.EOF));
-		assertEquals("0", VocabularyImpl.Companion.getEMPTY_VOCABULARY().getDisplayName(Token.INVALID_TYPE));
-	}
 
-	@Test
-	public void testVocabularyFromTokenNames() {
-		String[] tokenNames = {
-			"<INVALID>",
-			"TOKEN_REF", "RULE_REF", "'//'", "'/'", "'*'", "'!'", "ID", "STRING"
-		};
+    @Test
+    public void testEmptyVocabulary() {
+        assertNotNull(VocabularyImpl.Companion.getEMPTY_VOCABULARY());
+        assertEquals("EOF", VocabularyImpl.Companion.getEMPTY_VOCABULARY().getSymbolicName(Token.EOF));
+        assertEquals("0", VocabularyImpl.Companion.getEMPTY_VOCABULARY().getDisplayName(Token.INVALID_TYPE));
+    }
 
-		Vocabulary vocabulary = VocabularyImpl.Companion.fromTokenNames(tokenNames);
-		assertNotNull(vocabulary);
-		assertEquals("EOF", vocabulary.getSymbolicName(Token.EOF));
-		for (int i = 0; i < tokenNames.length; i++) {
-			assertEquals(tokenNames[i], vocabulary.getDisplayName(i));
+    @Test
+    public void testVocabularyFromTokenNames() {
+        String[] tokenNames = { "<INVALID>", "TOKEN_REF", "RULE_REF", "'//'", "'/'", "'*'", "'!'", "ID", "STRING" };
 
-			if (tokenNames[i].startsWith("'")) {
-				assertEquals(tokenNames[i], vocabulary.getLiteralName(i));
-				assertNull(vocabulary.getSymbolicName(i));
-			}
-			else if (Character.isUpperCase(tokenNames[i].charAt(0))) {
-				assertNull(vocabulary.getLiteralName(i));
-				assertEquals(tokenNames[i], vocabulary.getSymbolicName(i));
-			}
-			else {
-				assertNull(vocabulary.getLiteralName(i));
-				assertNull(vocabulary.getSymbolicName(i));
-			}
-		}
-	}
+        Vocabulary vocabulary = VocabularyImpl.Companion.fromTokenNames(tokenNames);
+        assertNotNull(vocabulary);
+        assertEquals("EOF", vocabulary.getSymbolicName(Token.EOF));
+        for (int i = 0; i < tokenNames.length; i++) {
+            assertEquals(tokenNames[i], vocabulary.getDisplayName(i));
+
+            if (tokenNames[i].startsWith("'")) {
+                assertEquals(tokenNames[i], vocabulary.getLiteralName(i));
+                assertNull(vocabulary.getSymbolicName(i));
+            } else if (Character.isUpperCase(tokenNames[i].charAt(0))) {
+                assertNull(vocabulary.getLiteralName(i));
+                assertEquals(tokenNames[i], vocabulary.getSymbolicName(i));
+            } else {
+                assertNull(vocabulary.getLiteralName(i));
+                assertNull(vocabulary.getSymbolicName(i));
+            }
+        }
+    }
 }

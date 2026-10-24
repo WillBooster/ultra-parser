@@ -6,82 +6,87 @@
 
 package org.antlr.v5.tool.ast;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.antlr.runtime.tree.Tree;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class GrammarRootAST extends GrammarASTWithOptions {
-	public static final Map<String, String> defaultOptions = new HashMap<String, String>();
-	static {
-		defaultOptions.put("language","TypeScript");
-	}
 
-    public int grammarType; // LEXER, PARSER, GRAMMAR (combined)
-	public boolean hasErrors;
-	/** Track stream used to create this tree */
+    public static final Map<String, String> defaultOptions = new HashMap<String, String>();
 
-	public final TokenStream tokenStream;
-	public Map<String, String> cmdLineOptions; // -DsuperClass=T on command line
-	public String fileName;
-
-	public GrammarRootAST(GrammarRootAST node) {
-		super(node);
-		this.grammarType = node.grammarType;
-		this.hasErrors = node.hasErrors;
-		this.tokenStream = node.tokenStream;
-	}
-
-	public GrammarRootAST(Token t, TokenStream tokenStream) {
-		super(t);
-		if (tokenStream == null) {
-			throw new NullPointerException("tokenStream");
-		}
-
-		this.tokenStream = tokenStream;
-	}
-
-	public GrammarRootAST(int type, Token t, TokenStream tokenStream) {
-		super(type, t);
-		if (tokenStream == null) {
-			throw new NullPointerException("tokenStream");
-		}
-
-		this.tokenStream = tokenStream;
-	}
-
-	public GrammarRootAST(int type, Token t, String text, TokenStream tokenStream) {
-		super(type,t,text);
-		if (tokenStream == null) {
-			throw new NullPointerException("tokenStream");
-		}
-
-		this.tokenStream = tokenStream;
+    static {
+        defaultOptions.put("language", "TypeScript");
     }
 
-	public String getGrammarName() {
-		Tree t = getChild(0);
-		if ( t!=null ) return t.getText();
-		return null;
-	}
+    public int grammarType; // LEXER, PARSER, GRAMMAR (combined)
+    public boolean hasErrors;
+    /** Track stream used to create this tree */
 
-	@Override
-	public String getOptionString(String key) {
-		if ( cmdLineOptions!=null && cmdLineOptions.containsKey(key) ) {
-			return cmdLineOptions.get(key);
-		}
-		String value = super.getOptionString(key);
-		if ( value==null ) {
-			value = defaultOptions.get(key);
-		}
-		return value;
-	}
+    public final TokenStream tokenStream;
+    public Map<String, String> cmdLineOptions; // -DsuperClass=T on command line
+    public String fileName;
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    public GrammarRootAST(GrammarRootAST node) {
+        super(node);
+        this.grammarType = node.grammarType;
+        this.hasErrors = node.hasErrors;
+        this.tokenStream = node.tokenStream;
+    }
 
-	@Override
-	public GrammarRootAST dupNode() { return new GrammarRootAST(this); }
+    public GrammarRootAST(Token t, TokenStream tokenStream) {
+        super(t);
+        if (tokenStream == null) {
+            throw new NullPointerException("tokenStream");
+        }
+
+        this.tokenStream = tokenStream;
+    }
+
+    public GrammarRootAST(int type, Token t, TokenStream tokenStream) {
+        super(type, t);
+        if (tokenStream == null) {
+            throw new NullPointerException("tokenStream");
+        }
+
+        this.tokenStream = tokenStream;
+    }
+
+    public GrammarRootAST(int type, Token t, String text, TokenStream tokenStream) {
+        super(type, t, text);
+        if (tokenStream == null) {
+            throw new NullPointerException("tokenStream");
+        }
+
+        this.tokenStream = tokenStream;
+    }
+
+    public String getGrammarName() {
+        Tree t = getChild(0);
+        if (t != null) return t.getText();
+        return null;
+    }
+
+    @Override
+    public String getOptionString(String key) {
+        if (cmdLineOptions != null && cmdLineOptions.containsKey(key)) {
+            return cmdLineOptions.get(key);
+        }
+        String value = super.getOptionString(key);
+        if (value == null) {
+            value = defaultOptions.get(key);
+        }
+        return value;
+    }
+
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
+
+    @Override
+    public GrammarRootAST dupNode() {
+        return new GrammarRootAST(this);
+    }
 }

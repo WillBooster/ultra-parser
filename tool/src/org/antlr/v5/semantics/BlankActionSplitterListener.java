@@ -10,42 +10,32 @@ import org.antlr.runtime.Token;
 import org.antlr.v5.parse.ActionSplitterListener;
 
 public class BlankActionSplitterListener implements ActionSplitterListener {
-	@Override
-	public void qualifiedAttr(String expr, Token x, Token y) {
-	}
 
-	@Override
-	public void setAttr(String expr, Token x, Token rhs) {
-	}
+    @Override
+    public void qualifiedAttr(String expr, Token x, Token y) {}
 
-	@Override
-	public void attr(String expr, Token x) {
-	}
+    @Override
+    public void setAttr(String expr, Token x, Token rhs) {}
 
-	public void templateInstance(String expr) {
-	}
+    @Override
+    public void attr(String expr, Token x) {}
 
-	@Override
-	public void nonLocalAttr(String expr, Token x, Token y) {
-	}
+    public void templateInstance(String expr) {}
 
-	@Override
-	public void setNonLocalAttr(String expr, Token x, Token y, Token rhs) {
-	}
+    @Override
+    public void nonLocalAttr(String expr, Token x, Token y) {}
 
-	public void indirectTemplateInstance(String expr) {
-	}
+    @Override
+    public void setNonLocalAttr(String expr, Token x, Token y, Token rhs) {}
 
-	public void setExprAttribute(String expr) {
-	}
+    public void indirectTemplateInstance(String expr) {}
 
-	public void setSTAttribute(String expr) {
-	}
+    public void setExprAttribute(String expr) {}
 
-	public void templateExpr(String expr) {
-	}
+    public void setSTAttribute(String expr) {}
 
-	@Override
-	public void text(String text) {
-	}
+    public void templateExpr(String expr) {}
+
+    @Override
+    public void text(String text) {}
 }

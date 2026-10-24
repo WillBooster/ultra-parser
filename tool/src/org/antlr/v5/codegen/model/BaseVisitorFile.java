@@ -8,7 +8,8 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class BaseVisitorFile extends VisitorFile {
-	public BaseVisitorFile(OutputModelFactory factory, String fileName) {
-		super(factory, fileName);
-	}
+
+    public BaseVisitorFile(OutputModelFactory factory, String fileName) {
+        super(factory, fileName);
+    }
 }

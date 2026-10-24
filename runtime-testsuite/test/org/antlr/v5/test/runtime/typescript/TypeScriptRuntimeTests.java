@@ -10,8 +10,9 @@ import org.antlr.v5.test.runtime.RuntimeRunner;
 import org.antlr.v5.test.runtime.RuntimeTests;
 
 public class TypeScriptRuntimeTests extends RuntimeTests {
-	@Override
-	protected RuntimeRunner createRuntimeRunner() {
-		return new TypeScriptRunner();
-	}
+
+    @Override
+    protected RuntimeRunner createRuntimeRunner() {
+        return new TypeScriptRunner();
+    }
 }

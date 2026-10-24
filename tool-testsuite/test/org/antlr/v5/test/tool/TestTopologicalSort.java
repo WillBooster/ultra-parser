@@ -5,15 +5,15 @@
  */
 package org.antlr.v5.test.tool;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
 import org.antlr.v5.misc.Graph;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /** Test topo sort in GraphNode. */
 public class TestTopologicalSort {
+
     @Test
     public void testFairlyLargeGraph() throws Exception {
         Graph<String> g = new Graph<String>();
@@ -68,7 +68,7 @@ public class TestTopologicalSort {
         Graph<String> g = new Graph<String>();
         g.addEdge("Java.g4", "MyJava.tokens"); // Java feeds off manual token file
         g.addEdge("Java.tokens", "Java.g4");
-        g.addEdge("Def.g4", "Java.tokens");    // walkers feed off generated tokens
+        g.addEdge("Def.g4", "Java.tokens"); // walkers feed off generated tokens
         g.addEdge("Ref.g4", "Java.tokens");
 
         String expecting = "[MyJava.tokens, Java.g4, Java.tokens, Def.g4, Ref.g4]";
