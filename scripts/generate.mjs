@@ -1,4 +1,3 @@
-// Regenerates the checked-in outputs of the tool: the parsers of the examples.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -12,7 +11,6 @@ if (!fs.existsSync(toolJar)) {
 
 for (const example of fs.readdirSync(path.join(rootDir, 'examples'))) {
   const grammarDir = path.join(rootDir, 'examples', example, 'grammar');
-  // Skip entries that are not examples, such as .DS_Store.
   if (!fs.existsSync(grammarDir)) continue;
   const generatedDir = path.join(rootDir, 'examples', example, 'src', 'generated');
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ultra-parser-'));
@@ -31,7 +29,7 @@ for (const example of fs.readdirSync(path.join(rootDir, 'examples'))) {
         : '';
     fs.writeFileSync(path.join(generatedDir, file), `${directive}${source}`);
   }
-  execFileSync(path.join(rootDir, 'node_modules', '.bin', 'oxfmt'), ['--write', generatedDir], { stdio: 'inherit' });
+  execFileSync('bun', ['fmt', '--no-script', '--', generatedDir], { cwd: rootDir, stdio: 'inherit' });
   execFileSync(
     path.join(rootDir, 'node_modules', '.bin', 'oxlint'),
     ['--fix', '--type-aware', '--type-check', generatedDir],
