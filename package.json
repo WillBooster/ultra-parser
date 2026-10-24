@@ -36,7 +36,7 @@
     "oxlint": "1.88.0",
     "oxlint-tsgolint": "7.0.2004",
     "prettier": "3.9.10",
-    "prettier-plugin-java": "2.10.4",
+    "prettier-plugin-java": "2.11.0",
     "typescript": "7.0.2"
   },
   "prettier": "@willbooster/prettier-config"
