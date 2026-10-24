@@ -12,6 +12,7 @@ import org.antlr.runtime.Token;
  *  scope blocks etc...
  */
 public class Attribute {
+
     /** The entire declaration such as "String foo" or "x:int" */
     public String decl;
 
@@ -21,18 +22,20 @@ public class Attribute {
     /** The name of the attribute "foo" */
     public String name;
 
-	/** A {@link Token} giving the position of the name of this attribute in the grammar. */
-	public Token token;
+    /** A {@link Token} giving the position of the name of this attribute in the grammar. */
+    public Token token;
 
     /** The optional attribute initialization expression */
     public String initValue;
 
-	/** Who contains us? */
-	public AttributeDict dict;
+    /** Who contains us? */
+    public AttributeDict dict;
 
     public Attribute() {}
 
-    public Attribute(String name) { this(name,null); }
+    public Attribute(String name) {
+        this(name, null);
+    }
 
     public Attribute(String name, String decl) {
         this.name = name;
@@ -41,11 +44,11 @@ public class Attribute {
 
     @Override
     public String toString() {
-        if ( initValue!=null ) {
-	        return name+":"+type+"="+initValue;
+        if (initValue != null) {
+            return name + ":" + type + "=" + initValue;
         }
-        if ( type!=null ) {
-	        return name+":"+type;
+        if (type != null) {
+            return name + ":" + type;
         }
         return name;
     }

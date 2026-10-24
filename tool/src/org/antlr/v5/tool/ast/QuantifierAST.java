@@ -11,7 +11,5 @@ package org.antlr.v5.tool.ast;
  * @author Sam Harwell
  */
 public interface QuantifierAST {
-
-	boolean isGreedy();
-
+    boolean isGreedy();
 }

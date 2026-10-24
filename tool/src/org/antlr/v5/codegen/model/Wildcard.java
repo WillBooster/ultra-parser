@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.GrammarAST;
 
 public class Wildcard extends MatchToken {
-	public Wildcard(OutputModelFactory factory, GrammarAST ast) {
-		super(factory, ast);
-	}
+
+    public Wildcard(OutputModelFactory factory, GrammarAST ast) {
+        super(factory, ast);
+    }
 }

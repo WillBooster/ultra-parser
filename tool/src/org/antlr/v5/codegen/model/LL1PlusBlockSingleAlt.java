@@ -6,29 +6,29 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
-import org.antlr.v5.runtime.core.state.PlusBlockStartState;
 import org.antlr.v5.runtime.core.misc.IntervalSet;
+import org.antlr.v5.runtime.core.state.PlusBlockStartState;
 import org.antlr.v5.tool.ast.BlockAST;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 /** */
 public class LL1PlusBlockSingleAlt extends LL1Loop {
-	public LL1PlusBlockSingleAlt(OutputModelFactory factory, GrammarAST plusRoot, List<CodeBlockForAlt> alts) {
-		super(factory, plusRoot, alts);
 
-		BlockAST blkAST = (BlockAST)plusRoot.getChild(0);
-		PlusBlockStartState blkStart = (PlusBlockStartState)blkAST.atnState;
+    public LL1PlusBlockSingleAlt(OutputModelFactory factory, GrammarAST plusRoot, List<CodeBlockForAlt> alts) {
+        super(factory, plusRoot, alts);
 
-		stateNumber = blkStart.getLoopBackState().getStateNumber();
-		blockStartStateNumber = blkStart.getStateNumber();
-		PlusBlockStartState plus = (PlusBlockStartState)blkAST.atnState;
-		this.decision = plus.getLoopBackState().getDecision();
-		IntervalSet[] altLookSets = factory.getGrammar().decisionLOOK.get(decision);
+        BlockAST blkAST = (BlockAST) plusRoot.getChild(0);
+        PlusBlockStartState blkStart = (PlusBlockStartState) blkAST.atnState;
 
-		IntervalSet loopBackLook = altLookSets[0];
-		loopExpr = addCodeForLoopLookaheadTempVar(loopBackLook);
-	}
+        stateNumber = blkStart.getLoopBackState().getStateNumber();
+        blockStartStateNumber = blkStart.getStateNumber();
+        PlusBlockStartState plus = (PlusBlockStartState) blkAST.atnState;
+        this.decision = plus.getLoopBackState().getDecision();
+        IntervalSet[] altLookSets = factory.getGrammar().decisionLOOK.get(decision);
+
+        IntervalSet loopBackLook = altLookSets[0];
+        loopExpr = addCodeForLoopLookaheadTempVar(loopBackLook);
+    }
 }

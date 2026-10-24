@@ -10,10 +10,11 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class RulePropertyRef extends ActionChunk {
-	public String label;
 
-	public RulePropertyRef(StructDecl ctx, String label) {
-		super(ctx);
-		this.label = label;
-	}
+    public String label;
+
+    public RulePropertyRef(StructDecl ctx, String label) {
+        super(ctx);
+        this.label = label;
+    }
 }

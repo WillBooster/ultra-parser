@@ -6,11 +6,10 @@
 
 package org.antlr.v5.codegen.model;
 
-import org.antlr.v5.codegen.model.decl.Decl;
-
 import java.util.List;
+import org.antlr.v5.codegen.model.decl.Decl;
 
 /** All the rule elements we can label like tokens, rules, sets, wildcard. */
 public interface LabeledOp {
-	public List<Decl> getLabels();
+    public List<Decl> getLabels();
 }

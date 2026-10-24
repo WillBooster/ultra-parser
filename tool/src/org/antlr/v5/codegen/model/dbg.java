@@ -7,5 +7,4 @@
 package org.antlr.v5.codegen.model;
 
 /** */
-public class dbg extends OutputModelObject {
-}
+public class dbg extends OutputModelObject {}

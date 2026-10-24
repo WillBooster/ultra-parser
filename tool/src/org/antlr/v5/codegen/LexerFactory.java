@@ -8,5 +8,8 @@ package org.antlr.v5.codegen;
 
 /** */
 public class LexerFactory extends DefaultOutputModelFactory {
-	public LexerFactory(CodeGenerator gen) { super(gen); }
+
+    public LexerFactory(CodeGenerator gen) {
+        super(gen);
+    }
 }

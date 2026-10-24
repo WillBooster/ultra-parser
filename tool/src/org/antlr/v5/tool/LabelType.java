@@ -12,5 +12,5 @@ public enum LabelType {
     TOKEN_LABEL,
     RULE_LIST_LABEL,
     TOKEN_LIST_LABEL,
-    LEXER_STRING_LABEL;         // used in lexer for x='a'
+    LEXER_STRING_LABEL, // used in lexer for x='a'
 }

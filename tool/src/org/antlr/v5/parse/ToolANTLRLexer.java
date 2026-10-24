@@ -13,21 +13,22 @@ import org.antlr.v5.Tool;
 import org.antlr.v5.tool.ErrorType;
 
 public class ToolANTLRLexer extends ANTLRLexer {
-	public Tool tool;
 
-	public ToolANTLRLexer(CharStream input, Tool tool) {
-		super(input);
-		this.tool = tool;
-	}
+    public Tool tool;
 
-	@Override
-	public void displayRecognitionError(String[] tokenNames, RecognitionException e) {
-		String msg = getErrorMessage(e, tokenNames);
-		tool.errMgr.syntaxError(ErrorType.SYNTAX_ERROR, getSourceName(), e.token, e, msg);
-	}
+    public ToolANTLRLexer(CharStream input, Tool tool) {
+        super(input);
+        this.tool = tool;
+    }
 
-	@Override
-	public void grammarError(ErrorType etype, Token token, Object... args) {
-		tool.errMgr.grammarError(etype, getSourceName(), token, args);
-	}
+    @Override
+    public void displayRecognitionError(String[] tokenNames, RecognitionException e) {
+        String msg = getErrorMessage(e, tokenNames);
+        tool.errMgr.syntaxError(ErrorType.SYNTAX_ERROR, getSourceName(), e.token, e, msg);
+    }
+
+    @Override
+    public void grammarError(ErrorType etype, Token token, Object... args) {
+        tool.errMgr.grammarError(etype, getSourceName(), token, args);
+    }
 }

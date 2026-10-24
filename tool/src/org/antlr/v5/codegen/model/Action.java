@@ -6,6 +6,8 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.runtime.CommonToken;
 import org.antlr.v5.codegen.ActionTranslator;
 import org.antlr.v5.codegen.OutputModelFactory;
@@ -17,43 +19,40 @@ import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.tool.ast.ActionAST;
 import org.stringtemplate.v4.ST;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** */
 public class Action extends RuleElement {
-	@ModelElement public List<ActionChunk> chunks;
 
-	public Action(OutputModelFactory factory, ActionAST ast) {
-		super(factory,ast);
-		RuleFunction rf = factory.getCurrentRuleFunction();
-		if (ast != null) {
-			chunks = ActionTranslator.translateAction(factory, rf, ast.token, ast);
-		}
-		else {
-			chunks = new ArrayList<ActionChunk>();
-		}
-		//System.out.println("actions="+chunks);
-	}
+    @ModelElement
+    public List<ActionChunk> chunks;
 
-	public Action(OutputModelFactory factory, StructDecl ctx, String action) {
-		super(factory,null);
-		ActionAST ast = new ActionAST(new CommonToken(ANTLRParser.ACTION, action));
-		RuleFunction rf = factory.getCurrentRuleFunction();
-		if ( rf!=null ) { // we can translate
-			ast.resolver = rf.rule;
-			chunks = ActionTranslator.translateActionChunk(factory, rf, action, ast);
-		}
-		else {
-			chunks = new ArrayList<ActionChunk>();
-			chunks.add(new ActionText(ctx, action));
-		}
-	}
+    public Action(OutputModelFactory factory, ActionAST ast) {
+        super(factory, ast);
+        RuleFunction rf = factory.getCurrentRuleFunction();
+        if (ast != null) {
+            chunks = ActionTranslator.translateAction(factory, rf, ast.token, ast);
+        } else {
+            chunks = new ArrayList<ActionChunk>();
+        }
+        //System.out.println("actions="+chunks);
+    }
 
-	public Action(OutputModelFactory factory, StructDecl ctx, ST actionST) {
-		super(factory, null);
-		chunks = new ArrayList<ActionChunk>();
-		chunks.add(new ActionTemplate(ctx, actionST));
-	}
+    public Action(OutputModelFactory factory, StructDecl ctx, String action) {
+        super(factory, null);
+        ActionAST ast = new ActionAST(new CommonToken(ANTLRParser.ACTION, action));
+        RuleFunction rf = factory.getCurrentRuleFunction();
+        if (rf != null) {
+            // we can translate
+            ast.resolver = rf.rule;
+            chunks = ActionTranslator.translateActionChunk(factory, rf, action, ast);
+        } else {
+            chunks = new ArrayList<ActionChunk>();
+            chunks.add(new ActionText(ctx, action));
+        }
+    }
 
+    public Action(OutputModelFactory factory, StructDecl ctx, ST actionST) {
+        super(factory, null);
+        chunks = new ArrayList<ActionChunk>();
+        chunks.add(new ActionTemplate(ctx, actionST));
+    }
 }

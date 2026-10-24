@@ -10,11 +10,12 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** */
 public class RuleContextDecl extends Decl {
-	public String ctxName;
-	public boolean isImplicit;
 
-	public RuleContextDecl(OutputModelFactory factory, String name, String ctxName) {
-		super(factory, name);
-		this.ctxName = ctxName;
-	}
+    public String ctxName;
+    public boolean isImplicit;
+
+    public RuleContextDecl(OutputModelFactory factory, String name, String ctxName) {
+        super(factory, name);
+        this.ctxName = ctxName;
+    }
 }

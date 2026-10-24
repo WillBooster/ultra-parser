@@ -13,5 +13,4 @@ import java.lang.annotation.RetentionPolicy;
  *  OutputModelWalker.
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ModelElement {
-}
+public @interface ModelElement {}

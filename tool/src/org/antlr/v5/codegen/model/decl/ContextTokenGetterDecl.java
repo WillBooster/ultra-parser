@@ -10,19 +10,20 @@ import org.antlr.v5.codegen.OutputModelFactory;
 
 /** {@code public Token X() { }} */
 public class ContextTokenGetterDecl extends ContextGetterDecl {
-	public boolean optional;
 
-	public ContextTokenGetterDecl(OutputModelFactory factory, String name, boolean optional) {
-		this(factory, name, optional, false);
-	}
+    public boolean optional;
 
-	public ContextTokenGetterDecl(OutputModelFactory factory, String name, boolean optional, boolean signature) {
-		super(factory, name, signature);
-		this.optional = optional;
-	}
+    public ContextTokenGetterDecl(OutputModelFactory factory, String name, boolean optional) {
+        this(factory, name, optional, false);
+    }
 
-	@Override
-	public ContextGetterDecl getSignatureDecl() {
-		return new ContextTokenGetterDecl(factory, name, optional, true);
-	}
+    public ContextTokenGetterDecl(OutputModelFactory factory, String name, boolean optional, boolean signature) {
+        super(factory, name, signature);
+        this.optional = optional;
+    }
+
+    @Override
+    public ContextGetterDecl getSignatureDecl() {
+        return new ContextTokenGetterDecl(factory, name, optional, true);
+    }
 }

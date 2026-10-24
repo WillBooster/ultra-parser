@@ -6,7 +6,7 @@
 
 package org.antlr.v5.codegen;
 
-
+import java.util.List;
 import org.antlr.v5.codegen.model.Choice;
 import org.antlr.v5.codegen.model.CodeBlockForAlt;
 import org.antlr.v5.codegen.model.LabeledOp;
@@ -18,55 +18,92 @@ import org.antlr.v5.codegen.model.RuleFunction;
 import org.antlr.v5.codegen.model.SrcOp;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 /** Filter list of SrcOps and return; default is pass-through filter */
 public class CodeGeneratorExtension {
-	public OutputModelFactory factory;
 
-	public CodeGeneratorExtension(OutputModelFactory factory) {
-		this.factory = factory;
-	}
+    public OutputModelFactory factory;
 
-	public ParserFile parserFile(ParserFile f) { return f; }
+    public CodeGeneratorExtension(OutputModelFactory factory) {
+        this.factory = factory;
+    }
 
-	public Parser parser(Parser p) { return p; }
+    public ParserFile parserFile(ParserFile f) {
+        return f;
+    }
 
-	public LexerFile lexerFile(LexerFile f) { return f; }
+    public Parser parser(Parser p) {
+        return p;
+    }
 
-	public Lexer lexer(Lexer l) { return l; }
+    public LexerFile lexerFile(LexerFile f) {
+        return f;
+    }
 
-	public RuleFunction rule(RuleFunction rf) { return rf; }
+    public Lexer lexer(Lexer l) {
+        return l;
+    }
 
-	public List<SrcOp> rulePostamble(List<SrcOp> ops) { return ops; }
+    public RuleFunction rule(RuleFunction rf) {
+        return rf;
+    }
 
-	public CodeBlockForAlt alternative(CodeBlockForAlt blk, boolean outerMost) { return blk; }
+    public List<SrcOp> rulePostamble(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public CodeBlockForAlt finishAlternative(CodeBlockForAlt blk, boolean outerMost) { return blk; }
+    public CodeBlockForAlt alternative(CodeBlockForAlt blk, boolean outerMost) {
+        return blk;
+    }
 
-	public CodeBlockForAlt epsilon(CodeBlockForAlt blk) { return blk; }
+    public CodeBlockForAlt finishAlternative(CodeBlockForAlt blk, boolean outerMost) {
+        return blk;
+    }
 
-	public List<SrcOp> ruleRef(List<SrcOp> ops) { return ops; }
+    public CodeBlockForAlt epsilon(CodeBlockForAlt blk) {
+        return blk;
+    }
 
-	public List<SrcOp> tokenRef(List<SrcOp> ops) { return ops; }
+    public List<SrcOp> ruleRef(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public List<SrcOp> set(List<SrcOp> ops) { return ops; }
+    public List<SrcOp> tokenRef(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public List<SrcOp> stringRef(List<SrcOp> ops) { return ops; }
+    public List<SrcOp> set(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public List<SrcOp> wildcard(List<SrcOp> ops) { return ops; }
+    public List<SrcOp> stringRef(List<SrcOp> ops) {
+        return ops;
+    }
 
-	// ACTIONS
+    public List<SrcOp> wildcard(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public List<SrcOp> action(List<SrcOp> ops) { return ops; }
+    // ACTIONS
 
-	public List<SrcOp> sempred(List<SrcOp> ops) { return ops; }
+    public List<SrcOp> action(List<SrcOp> ops) {
+        return ops;
+    }
 
-	// BLOCKS
+    public List<SrcOp> sempred(List<SrcOp> ops) {
+        return ops;
+    }
 
-	public Choice getChoiceBlock(Choice c) { return c; }
+    // BLOCKS
 
-	public Choice getEBNFBlock(Choice c) { return c; }
+    public Choice getChoiceBlock(Choice c) {
+        return c;
+    }
 
-	public boolean needsImplicitLabel(GrammarAST ID, LabeledOp op) { return false; }
+    public Choice getEBNFBlock(Choice c) {
+        return c;
+    }
+
+    public boolean needsImplicitLabel(GrammarAST ID, LabeledOp op) {
+        return false;
+    }
 }

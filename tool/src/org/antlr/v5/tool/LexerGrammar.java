@@ -6,60 +6,60 @@
 
 package org.antlr.v5.tool;
 
-import org.antlr.v5.Tool;
-import org.antlr.v5.runtime.core.error.RecognitionException;
-import org.antlr.v5.tool.ast.GrammarRootAST;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.antlr.v5.Tool;
+import org.antlr.v5.runtime.core.error.RecognitionException;
+import org.antlr.v5.tool.ast.GrammarRootAST;
 
 /** */
 public class LexerGrammar extends Grammar {
-	public static final String DEFAULT_MODE_NAME = "DEFAULT_MODE";
 
-	/** The grammar from which this lexer grammar was derived (if implicit) */
+    public static final String DEFAULT_MODE_NAME = "DEFAULT_MODE";
+
+    /** The grammar from which this lexer grammar was derived (if implicit) */
     public Grammar implicitLexerOwner;
 
-	/** DEFAULT_MODE rules are added first due to grammar syntax order */
-	public Map<String, List<Rule>> modes;
+    /** DEFAULT_MODE rules are added first due to grammar syntax order */
+    public Map<String, List<Rule>> modes;
 
-	public LexerGrammar(Tool tool, GrammarRootAST ast) {
-		super(tool, ast);
-	}
+    public LexerGrammar(Tool tool, GrammarRootAST ast) {
+        super(tool, ast);
+    }
 
-	public LexerGrammar(String grammarText) throws RecognitionException {
-		super(grammarText);
-	}
+    public LexerGrammar(String grammarText) throws RecognitionException {
+        super(grammarText);
+    }
 
-	public LexerGrammar(String grammarText, ANTLRToolListener listener) throws RecognitionException {
-		super(grammarText, listener);
-	}
+    public LexerGrammar(String grammarText, ANTLRToolListener listener) throws RecognitionException {
+        super(grammarText, listener);
+    }
 
-	public LexerGrammar(String fileName, String grammarText, ANTLRToolListener listener) throws RecognitionException {
-		super(fileName, grammarText, listener);
-	}
+    public LexerGrammar(String fileName, String grammarText, ANTLRToolListener listener) throws RecognitionException {
+        super(fileName, grammarText, listener);
+    }
 
-	@Override
-	public boolean defineRule(Rule r) {
-		if (!super.defineRule(r)) {
-			return false;
-		}
+    @Override
+    public boolean defineRule(Rule r) {
+        if (!super.defineRule(r)) {
+            return false;
+        }
 
-		if ( modes==null ) modes = new LinkedHashMap<>();
-		modes.computeIfAbsent(r.mode, mode -> new ArrayList<>()).add(r);
-		return true;
-	}
+        if (modes == null) modes = new LinkedHashMap<>();
+        modes.computeIfAbsent(r.mode, mode -> new ArrayList<>()).add(r);
+        return true;
+    }
 
-	@Override
-	public boolean undefineRule(Rule r) {
-		if (!super.undefineRule(r)) {
-			return false;
-		}
+    @Override
+    public boolean undefineRule(Rule r) {
+        if (!super.undefineRule(r)) {
+            return false;
+        }
 
-		boolean removed = modes.get(r.mode).remove(r);
-		assert removed;
-		return true;
-	}
+        boolean removed = modes.get(r.mode).remove(r);
+        assert removed;
+        return true;
+    }
 }

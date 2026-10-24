@@ -6,258 +6,280 @@
 
 package org.antlr.v5.test.runtime;
 
+import static org.antlr.v5.test.runtime.FileUtils.writeFile;
+import static org.antlr.v5.test.runtime.RuntimeTestUtils.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.*;
 import org.antlr.v5.test.runtime.states.CompiledState;
 import org.antlr.v5.test.runtime.states.ExecutedState;
 import org.antlr.v5.test.runtime.states.GeneratedState;
 import org.antlr.v5.test.runtime.states.State;
 import org.stringtemplate.v4.ST;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.*;
-
-import static org.antlr.v5.test.runtime.FileUtils.writeFile;
-import static org.antlr.v5.test.runtime.RuntimeTestUtils.*;
-
 public abstract class RuntimeRunner extends Runner {
-	public abstract String getLanguage();
 
-	protected String getTitleName() { return getLanguage(); }
+    public abstract String getLanguage();
 
-	protected String getTestFileName() { return "Test"; }
+    protected String getTitleName() {
+        return getLanguage();
+    }
 
-	private static String runtimeToolPath;
-	private static String compilerPath;
+    protected String getTestFileName() {
+        return "Test";
+    }
 
-	public final static String InputFileName = "input";
+    private static String runtimeToolPath;
+    private static String compilerPath;
 
-	protected final String getCompilerPath() {
-		if (compilerPath == null) {
-			compilerPath = getCompilerName();
-			if (compilerPath != null) {
-				String compilerPathFromProperty = System.getProperty(getPropertyPrefix() + "-compiler");
-				if (compilerPathFromProperty != null && compilerPathFromProperty.length() > 0) {
-					compilerPath = compilerPathFromProperty;
-				}
-			}
-		}
+    public static final String InputFileName = "input";
 
-		return compilerPath;
-	}
+    protected final String getCompilerPath() {
+        if (compilerPath == null) {
+            compilerPath = getCompilerName();
+            if (compilerPath != null) {
+                String compilerPathFromProperty = System.getProperty(getPropertyPrefix() + "-compiler");
+                if (compilerPathFromProperty != null && compilerPathFromProperty.length() > 0) {
+                    compilerPath = compilerPathFromProperty;
+                }
+            }
+        }
 
-	protected final String getRuntimeToolPath() {
-		if (runtimeToolPath == null) {
-			runtimeToolPath = getRuntimeToolName();
-			if (runtimeToolPath != null) {
-				String runtimeToolPathFromProperty = System.getProperty(getPropertyPrefix() + "-exec");
-				if (runtimeToolPathFromProperty != null && runtimeToolPathFromProperty.length() > 0) {
-					runtimeToolPath = runtimeToolPathFromProperty;
-				}
-			}
-		}
+        return compilerPath;
+    }
 
-		return runtimeToolPath;
-	}
+    protected final String getRuntimeToolPath() {
+        if (runtimeToolPath == null) {
+            runtimeToolPath = getRuntimeToolName();
+            if (runtimeToolPath != null) {
+                String runtimeToolPathFromProperty = System.getProperty(getPropertyPrefix() + "-exec");
+                if (runtimeToolPathFromProperty != null && runtimeToolPathFromProperty.length() > 0) {
+                    runtimeToolPath = runtimeToolPathFromProperty;
+                }
+            }
+        }
 
-	protected String getCompilerName() { return null; }
+        return runtimeToolPath;
+    }
 
-	protected String getRuntimeToolName() { return getLanguage().toLowerCase(); }
+    protected String getCompilerName() {
+        return null;
+    }
 
-	protected String getTestFileWithExt() { return getTestFileName() + "." + Generator.getExtension(getLanguage()); }
+    protected String getRuntimeToolName() {
+        return getLanguage().toLowerCase();
+    }
 
-	protected String getExecFileName() { return getTestFileWithExt(); }
+    protected String getTestFileWithExt() {
+        return getTestFileName() + "." + Generator.getExtension(getLanguage());
+    }
 
-	protected String[] getExtraRunArgs() { return null; }
+    protected String getExecFileName() {
+        return getTestFileWithExt();
+    }
 
-	protected Map<String, String> getExecEnvironment() { return null; }
+    protected String[] getExtraRunArgs() {
+        return null;
+    }
 
-	protected String getPropertyPrefix() {
-		return "antlr-" + getLanguage().toLowerCase();
-	}
+    protected Map<String, String> getExecEnvironment() {
+        return null;
+    }
 
-	protected RuntimeRunner() {
-		this(null, false);
-	}
+    protected String getPropertyPrefix() {
+        return "antlr-" + getLanguage().toLowerCase();
+    }
 
-	protected RuntimeRunner(Path tempDir, boolean saveTestDir) {
-		super(tempDir, saveTestDir);
-	}
+    protected RuntimeRunner() {
+        this(null, false);
+    }
 
-	public final static String cacheDirectory;
+    protected RuntimeRunner(Path tempDir, boolean saveTestDir) {
+        super(tempDir, saveTestDir);
+    }
 
-	private static class InitializationStatus {
-		public final Object lockObject = new Object();
-		public volatile Boolean isInitialized;
-		public Exception exception;
-	}
+    public static final String cacheDirectory;
 
-	private final static HashMap<String, InitializationStatus> runtimeInitializationStatuses = new HashMap<>();
+    private static class InitializationStatus {
 
-	static {
-		cacheDirectory = new File(System.getProperty("java.io.tmpdir"), "ANTLR-runtime-testsuite-cache").getAbsolutePath();
-	}
+        public final Object lockObject = new Object();
+        public volatile Boolean isInitialized;
+        public Exception exception;
+    }
 
-	protected final String getCachePath() {
-		return getCachePath(getLanguage());
-	}
+    private static final HashMap<String, InitializationStatus> runtimeInitializationStatuses = new HashMap<>();
 
-	public static String getCachePath(String language) {
-		return cacheDirectory + FileSeparator + language;
-	}
+    static {
+        cacheDirectory = new File(
+            System.getProperty("java.io.tmpdir"),
+            "ANTLR-runtime-testsuite-cache"
+        ).getAbsolutePath();
+    }
 
-	protected final String getRuntimePath() {
-		return getRuntimePath(getLanguage());
-	}
+    protected final String getCachePath() {
+        return getCachePath(getLanguage());
+    }
 
-	public static String getRuntimePath(String language) {
-		return runtimePath.toString() + FileSeparator + language;
-	}
+    public static String getCachePath(String language) {
+        return cacheDirectory + FileSeparator + language;
+    }
 
-	public State run(RunOptions runOptions) {
+    protected final String getRuntimePath() {
+        return getRuntimePath(getLanguage());
+    }
 
-		GeneratedState generatedState = Generator.generate(runOptions, getLanguage(), getTempDirPath(), null);
+    public static String getRuntimePath(String language) {
+        return runtimePath.toString() + FileSeparator + language;
+    }
 
-		if (generatedState.containsErrors() || runOptions.endStage == Stage.Generate) {
-			return generatedState;
-		}
+    public State run(RunOptions runOptions) {
+        GeneratedState generatedState = Generator.generate(runOptions, getLanguage(), getTempDirPath(), null);
 
-		if (!initAntlrRuntimeIfRequired(runOptions)) {
-			// Do not repeat ANTLR runtime initialization error
-			return new CompiledState(generatedState, new Exception(getTitleName() + " ANTLR runtime is not initialized"));
-		}
+        if (generatedState.containsErrors() || runOptions.endStage == Stage.Generate) {
+            return generatedState;
+        }
 
-		try {
-			writeRecognizerFile(runOptions, generatedState);
-		} catch (IOException e) {
-			return new CompiledState(generatedState, e);
-		}
+        if (!initAntlrRuntimeIfRequired(runOptions)) {
+            // Do not repeat ANTLR runtime initialization error
+            return new CompiledState(
+                generatedState,
+                new Exception(getTitleName() + " ANTLR runtime is not initialized")
+            );
+        }
 
-		CompiledState compiledState = compile(runOptions, generatedState);
+        try {
+            writeRecognizerFile(runOptions, generatedState);
+        } catch (IOException e) {
+            return new CompiledState(generatedState, e);
+        }
 
-		if (compiledState.containsErrors() || runOptions.endStage == Stage.Compile) {
-			return compiledState;
-		}
+        CompiledState compiledState = compile(runOptions, generatedState);
 
-		try {
-			writeInputFile(runOptions);
-		} catch (IOException e) {
-			return new CompiledState(generatedState, e);
-		}
+        if (compiledState.containsErrors() || runOptions.endStage == Stage.Compile) {
+            return compiledState;
+        }
 
-		return execute(runOptions, compiledState);
-	}
+        try {
+            writeInputFile(runOptions);
+        } catch (IOException e) {
+            return new CompiledState(generatedState, e);
+        }
 
-	protected void writeRecognizerFile(RunOptions runOptions, GeneratedState generatedState) throws IOException {
-		String text = RuntimeTestUtils.getTextFromResource("org/antlr/v5/test/runtime/helpers/" + getTestFileWithExt() + ".stg");
-		ST outputFileST = new ST(text);
-		outputFileST.add("grammarName", generatedState.getMainGrammarFile().grammarName);
-		outputFileST.add("lexerName", generatedState.lexerName);
-		outputFileST.add("parserName", generatedState.parserName);
-		outputFileST.add("parserStartRuleName", grammarParseRuleToRecognizerName(runOptions.startRuleName));
-		outputFileST.add("showDiagnosticErrors", runOptions.showDiagnosticErrors);
-		outputFileST.add("traceATN", runOptions.traceATN);
-		outputFileST.add("profile", runOptions.profile);
-		outputFileST.add("showDFA", runOptions.showDFA);
-		outputFileST.add("useListener", runOptions.useListener);
-		outputFileST.add("useVisitor", runOptions.useVisitor);
-		outputFileST.add("predictionMode", runOptions.predictionMode);
-		outputFileST.add("buildParseTree", runOptions.buildParseTree);
-		addExtraRecognizerParameters(outputFileST);
-		writeFile(Path.of(getTempDirPath(), getTestFileWithExt()).toString(), outputFileST.render(), "UTF-8");
-	}
+        return execute(runOptions, compiledState);
+    }
 
-	protected String grammarParseRuleToRecognizerName(String startRuleName) {
-		return startRuleName;
-	}
+    protected void writeRecognizerFile(RunOptions runOptions, GeneratedState generatedState) throws IOException {
+        String text = RuntimeTestUtils.getTextFromResource(
+            "org/antlr/v5/test/runtime/helpers/" + getTestFileWithExt() + ".stg"
+        );
+        ST outputFileST = new ST(text);
+        outputFileST.add("grammarName", generatedState.getMainGrammarFile().grammarName);
+        outputFileST.add("lexerName", generatedState.lexerName);
+        outputFileST.add("parserName", generatedState.parserName);
+        outputFileST.add("parserStartRuleName", grammarParseRuleToRecognizerName(runOptions.startRuleName));
+        outputFileST.add("showDiagnosticErrors", runOptions.showDiagnosticErrors);
+        outputFileST.add("traceATN", runOptions.traceATN);
+        outputFileST.add("profile", runOptions.profile);
+        outputFileST.add("showDFA", runOptions.showDFA);
+        outputFileST.add("useListener", runOptions.useListener);
+        outputFileST.add("useVisitor", runOptions.useVisitor);
+        outputFileST.add("predictionMode", runOptions.predictionMode);
+        outputFileST.add("buildParseTree", runOptions.buildParseTree);
+        addExtraRecognizerParameters(outputFileST);
+        writeFile(Path.of(getTempDirPath(), getTestFileWithExt()).toString(), outputFileST.render(), "UTF-8");
+    }
 
-	protected void addExtraRecognizerParameters(ST template) {
-	}
+    protected String grammarParseRuleToRecognizerName(String startRuleName) {
+        return startRuleName;
+    }
 
-	private boolean initAntlrRuntimeIfRequired(RunOptions runOptions) {
-		String language = getLanguage();
-		InitializationStatus status;
+    protected void addExtraRecognizerParameters(ST template) {}
 
-		// Create initialization status for every runtime with lock object
-		synchronized (runtimeInitializationStatuses) {
-			status = runtimeInitializationStatuses.get(language);
-			if (status == null) {
-				status = new InitializationStatus();
-				runtimeInitializationStatuses.put(language, status);
-			}
-		}
+    private boolean initAntlrRuntimeIfRequired(RunOptions runOptions) {
+        String language = getLanguage();
+        InitializationStatus status;
 
-		if (status.isInitialized != null) {
-			return status.isInitialized;
-		}
+        // Create initialization status for every runtime with lock object
+        synchronized (runtimeInitializationStatuses) {
+            status = runtimeInitializationStatuses.get(language);
+            if (status == null) {
+                status = new InitializationStatus();
+                runtimeInitializationStatuses.put(language, status);
+            }
+        }
 
-		// Locking per runtime, several runtimes can be being initialized simultaneously
-		synchronized (status.lockObject) {
-			if (status.isInitialized == null) {
-				Exception exception = null;
-				try {
-					initRuntime(runOptions);
-				} catch (Exception e) {
-					exception = e;
-					e.printStackTrace();
-				}
-				status.isInitialized = exception == null;
-				status.exception = exception;
-			}
-		}
-		return status.isInitialized;
-	}
+        if (status.isInitialized != null) {
+            return status.isInitialized;
+        }
 
-	protected void initRuntime(RunOptions runOptions) throws Exception {
-	}
+        // Locking per runtime, several runtimes can be being initialized simultaneously
+        synchronized (status.lockObject) {
+            if (status.isInitialized == null) {
+                Exception exception = null;
+                try {
+                    initRuntime(runOptions);
+                } catch (Exception e) {
+                    exception = e;
+                    e.printStackTrace();
+                }
+                status.isInitialized = exception == null;
+                status.exception = exception;
+            }
+        }
+        return status.isInitialized;
+    }
 
-	protected CompiledState compile(RunOptions runOptions, GeneratedState generatedState) {
-		return new CompiledState(generatedState, null);
-	}
+    protected void initRuntime(RunOptions runOptions) throws Exception {}
 
-	protected void writeInputFile(RunOptions runOptions) throws IOException {
-		writeFile(Path.of(getTempDirPath(), InputFileName).toString(), runOptions.input, "UTF-8");
-	}
+    protected CompiledState compile(RunOptions runOptions, GeneratedState generatedState) {
+        return new CompiledState(generatedState, null);
+    }
 
-	protected ExecutedState execute(RunOptions runOptions, CompiledState compiledState) {
-		String output = null;
-		String errors = null;
-		Exception exception = null;
-		try {
-			List<String> args = new ArrayList<>();
-			String runtimeToolPath = getRuntimeToolPath();
-			if (runtimeToolPath != null) {
-				args.add(runtimeToolPath);
-			}
-			String[] extraRunArgs = getExtraRunArgs();
-			if (extraRunArgs != null) {
-				args.addAll(Arrays.asList(extraRunArgs));
-			}
-			args.add(getExecFileName());
-			args.add(InputFileName);
-			ProcessorResult result = Processor.run(args.toArray(new String[0]), getTempDirPath(), getExecEnvironment());
-			output = result.output;
-			errors = result.errors;
-		} catch (InterruptedException | IOException e) {
-			exception = e;
-		}
-		return new ExecutedState(compiledState, output, errors, exception);
-	}
+    protected void writeInputFile(RunOptions runOptions) throws IOException {
+        writeFile(Path.of(getTempDirPath(), InputFileName).toString(), runOptions.input, "UTF-8");
+    }
 
-	protected ProcessorResult runCommand(String[] command, String workPath) throws Exception {
-		return runCommand(command, workPath, null);
-	}
+    protected ExecutedState execute(RunOptions runOptions, CompiledState compiledState) {
+        String output = null;
+        String errors = null;
+        Exception exception = null;
+        try {
+            List<String> args = new ArrayList<>();
+            String runtimeToolPath = getRuntimeToolPath();
+            if (runtimeToolPath != null) {
+                args.add(runtimeToolPath);
+            }
+            String[] extraRunArgs = getExtraRunArgs();
+            if (extraRunArgs != null) {
+                args.addAll(Arrays.asList(extraRunArgs));
+            }
+            args.add(getExecFileName());
+            args.add(InputFileName);
+            ProcessorResult result = Processor.run(args.toArray(new String[0]), getTempDirPath(), getExecEnvironment());
+            output = result.output;
+            errors = result.errors;
+        } catch (InterruptedException | IOException e) {
+            exception = e;
+        }
+        return new ExecutedState(compiledState, output, errors, exception);
+    }
 
-	protected ProcessorResult runCommand(String[] command, String workPath, String description) throws Exception {
-		String cmd = String.join(" ", command);
-		try {
-			return Processor.run(command, workPath);
-		} catch (InterruptedException | IOException e) {
-			String msg = "command \"" + cmd + "\"\n  in " + workPath + " failed";
-			if (description != null) {
-				msg += ":\n  can't " + description;
-			}
-			throw new Exception(msg, e);
-		}
-	}
+    protected ProcessorResult runCommand(String[] command, String workPath) throws Exception {
+        return runCommand(command, workPath, null);
+    }
+
+    protected ProcessorResult runCommand(String[] command, String workPath, String description) throws Exception {
+        String cmd = String.join(" ", command);
+        try {
+            return Processor.run(command, workPath);
+        } catch (InterruptedException | IOException e) {
+            String msg = "command \"" + cmd + "\"\n  in " + workPath + " failed";
+            if (description != null) {
+                msg += ":\n  can't " + description;
+            }
+            throw new Exception(msg, e);
+        }
+    }
 }

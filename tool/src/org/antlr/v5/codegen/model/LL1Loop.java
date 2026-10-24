@@ -6,42 +6,42 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.runtime.core.misc.IntervalSet;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** */
 public abstract class LL1Loop extends Choice {
-	/** The state associated wih the (A|B|...) block not loopback, which
-	 *  is super.stateNumber
-	 */
-	public int blockStartStateNumber;
-	public int loopBackStateNumber;
 
-	@ModelElement public OutputModelObject loopExpr;
-	@ModelElement public List<SrcOp> iteration;
+    /** The state associated wih the (A|B|...) block not loopback, which
+     *  is super.stateNumber
+     */
+    public int blockStartStateNumber;
+    public int loopBackStateNumber;
 
-	public LL1Loop(OutputModelFactory factory,
-				   GrammarAST blkAST,
-				   List<CodeBlockForAlt> alts)
-	{
-		super(factory, blkAST, alts);
-	}
+    @ModelElement
+    public OutputModelObject loopExpr;
 
-	public void addIterationOp(SrcOp op) {
-		if ( iteration==null ) iteration = new ArrayList<SrcOp>();
-		iteration.add(op);
-	}
+    @ModelElement
+    public List<SrcOp> iteration;
 
-	public SrcOp addCodeForLoopLookaheadTempVar(IntervalSet look) {
-		TestSetInline expr = addCodeForLookaheadTempVar(look);
-		if (expr != null) {
-			CaptureNextTokenType nextType = new CaptureNextTokenType(factory, expr.varName);
-			addIterationOp(nextType);
-		}
-		return expr;
-	}
+    public LL1Loop(OutputModelFactory factory, GrammarAST blkAST, List<CodeBlockForAlt> alts) {
+        super(factory, blkAST, alts);
+    }
+
+    public void addIterationOp(SrcOp op) {
+        if (iteration == null) iteration = new ArrayList<SrcOp>();
+        iteration.add(op);
+    }
+
+    public SrcOp addCodeForLoopLookaheadTempVar(IntervalSet look) {
+        TestSetInline expr = addCodeForLookaheadTempVar(look);
+        if (expr != null) {
+            CaptureNextTokenType nextType = new CaptureNextTokenType(factory, expr.varName);
+            addIterationOp(nextType);
+        }
+        return expr;
+    }
 }

@@ -9,27 +9,31 @@ package org.antlr.v5.tool.ast;
 import org.antlr.runtime.Token;
 
 public class OptionalBlockAST extends GrammarAST implements RuleElementAST, QuantifierAST {
-	private final boolean _greedy;
 
-	public OptionalBlockAST(OptionalBlockAST node) {
-		super(node);
-		_greedy = node._greedy;
-	}
+    private final boolean _greedy;
 
-	public OptionalBlockAST(int type, Token t, Token nongreedy) {
-		super(type, t);
-		_greedy = nongreedy == null;
-	}
+    public OptionalBlockAST(OptionalBlockAST node) {
+        super(node);
+        _greedy = node._greedy;
+    }
 
-	@Override
-	public boolean isGreedy() {
-		return _greedy;
-	}
+    public OptionalBlockAST(int type, Token t, Token nongreedy) {
+        super(type, t);
+        _greedy = nongreedy == null;
+    }
 
-	@Override
-	public OptionalBlockAST dupNode() { return new OptionalBlockAST(this); }
+    @Override
+    public boolean isGreedy() {
+        return _greedy;
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    @Override
+    public OptionalBlockAST dupNode() {
+        return new OptionalBlockAST(this);
+    }
 
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

@@ -1,7 +1,8 @@
 // Generated from Arithmetic.g4 by ultra-parser. Do not edit.
 
-import type { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from 'ultra-parser';
-import type { ProgramContext, ExprContext } from './ArithmeticParser.js';
+import type { ErrorNode, ParserRuleContext, ParseTreeListener, TerminalNode } from 'ultra-parser';
+
+import type { ExprContext, ProgramContext } from './ArithmeticParser.js';
 
 /** A listener for parse trees produced by `ArithmeticParser`. */
 export class ArithmeticListener implements ParseTreeListener {

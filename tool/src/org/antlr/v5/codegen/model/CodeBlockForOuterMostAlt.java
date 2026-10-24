@@ -13,18 +13,19 @@ import org.antlr.v5.tool.Alternative;
  *  code generation.
  */
 public class CodeBlockForOuterMostAlt extends CodeBlockForAlt {
-	/**
-	 * The label for the alternative; or null if the alternative is not labeled.
-	 */
-	public String altLabel;
-	/**
-	 * The alternative.
-	 */
-	public Alternative alt;
 
-	public CodeBlockForOuterMostAlt(OutputModelFactory factory, Alternative alt) {
-		super(factory);
-		this.alt = alt;
-		altLabel = alt.ast.altLabel!=null ? alt.ast.altLabel.getText() : null;
-	}
+    /**
+     * The label for the alternative; or null if the alternative is not labeled.
+     */
+    public String altLabel;
+    /**
+     * The alternative.
+     */
+    public Alternative alt;
+
+    public CodeBlockForOuterMostAlt(OutputModelFactory factory, Alternative alt) {
+        super(factory);
+        this.alt = alt;
+        altLabel = alt.ast.altLabel != null ? alt.ast.altLabel.getText() : null;
+    }
 }

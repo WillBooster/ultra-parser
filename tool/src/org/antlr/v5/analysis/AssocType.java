@@ -7,6 +7,6 @@
 package org.antlr.v5.analysis;
 
 public enum AssocType {
-	left,
-	right
+    left,
+    right,
 }

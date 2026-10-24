@@ -10,10 +10,12 @@ import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.ActionAST;
 
 public class ArgAction extends Action {
-	/** Context type of invoked rule */
-	public String ctxType;
-	public ArgAction(OutputModelFactory factory, ActionAST ast, String ctxType) {
-		super(factory, ast);
-		this.ctxType = ctxType;
-	}
+
+    /** Context type of invoked rule */
+    public String ctxType;
+
+    public ArgAction(OutputModelFactory factory, ActionAST ast, String ctxType) {
+        super(factory, ast);
+        this.ctxType = ctxType;
+    }
 }

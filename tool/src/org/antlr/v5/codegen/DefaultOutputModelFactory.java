@@ -6,6 +6,10 @@
 
 package org.antlr.v5.codegen;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.antlr.v5.codegen.model.CodeBlockForOuterMostAlt;
 import org.antlr.v5.codegen.model.OutputModelObject;
 import org.antlr.v5.codegen.model.RuleFunction;
@@ -14,79 +18,90 @@ import org.antlr.v5.codegen.model.decl.CodeBlock;
 import org.antlr.v5.tool.Alternative;
 import org.antlr.v5.tool.Grammar;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 /** Create output objects for elements *within* rule functions except
  *  buildOutputModel() which builds outer/root model object and any
  *  objects such as RuleFunction that surround elements in rule
  *  functions.
  */
 public abstract class DefaultOutputModelFactory extends BlankOutputModelFactory {
-	// Interface to outside world
 
-	public final Grammar g;
+    // Interface to outside world
 
-	public final CodeGenerator gen;
+    public final Grammar g;
 
-	public OutputModelController controller;
+    public final CodeGenerator gen;
 
-	protected DefaultOutputModelFactory(CodeGenerator gen) {
-		this.gen = gen;
-		this.g = gen.g;
-	}
+    public OutputModelController controller;
 
-	@Override
-	public void setController(OutputModelController controller) {
-		this.controller = controller;
-	}
+    protected DefaultOutputModelFactory(CodeGenerator gen) {
+        this.gen = gen;
+        this.g = gen.g;
+    }
 
-	@Override
-	public OutputModelController getController() {
-		return controller;
-	}
+    @Override
+    public void setController(OutputModelController controller) {
+        this.controller = controller;
+    }
 
-	// Convenience methods
+    @Override
+    public OutputModelController getController() {
+        return controller;
+    }
 
+    // Convenience methods
 
-	@Override
-	public Grammar getGrammar() { return g; }
+    @Override
+    public Grammar getGrammar() {
+        return g;
+    }
 
-	@Override
-	public CodeGenerator getGenerator() { return gen; }
+    @Override
+    public CodeGenerator getGenerator() {
+        return gen;
+    }
 
-	@Override
-	public OutputModelObject getRoot() { return controller.getRoot(); }
+    @Override
+    public OutputModelObject getRoot() {
+        return controller.getRoot();
+    }
 
-	@Override
-	public RuleFunction getCurrentRuleFunction() { return controller.getCurrentRuleFunction(); }
+    @Override
+    public RuleFunction getCurrentRuleFunction() {
+        return controller.getCurrentRuleFunction();
+    }
 
-	@Override
-	public Alternative getCurrentOuterMostAlt() { return controller.getCurrentOuterMostAlt(); }
+    @Override
+    public Alternative getCurrentOuterMostAlt() {
+        return controller.getCurrentOuterMostAlt();
+    }
 
-	@Override
-	public CodeBlock getCurrentBlock() { return controller.getCurrentBlock(); }
+    @Override
+    public CodeBlock getCurrentBlock() {
+        return controller.getCurrentBlock();
+    }
 
-	@Override
-	public CodeBlockForOuterMostAlt getCurrentOuterMostAlternativeBlock() { return controller.getCurrentOuterMostAlternativeBlock(); }
+    @Override
+    public CodeBlockForOuterMostAlt getCurrentOuterMostAlternativeBlock() {
+        return controller.getCurrentOuterMostAlternativeBlock();
+    }
 
-	@Override
-	public int getCodeBlockLevel() { return controller.codeBlockLevel; }
+    @Override
+    public int getCodeBlockLevel() {
+        return controller.codeBlockLevel;
+    }
 
-	@Override
-	public int getTreeLevel() { return controller.treeLevel; }
+    @Override
+    public int getTreeLevel() {
+        return controller.treeLevel;
+    }
 
-	// MISC
+    // MISC
 
+    public static List<SrcOp> list(SrcOp... values) {
+        return new ArrayList<SrcOp>(Arrays.asList(values));
+    }
 
-	public static List<SrcOp> list(SrcOp... values) {
-		return new ArrayList<SrcOp>(Arrays.asList(values));
-	}
-
-
-	public static List<SrcOp> list(Collection<? extends SrcOp> values) {
-		return new ArrayList<SrcOp>(values);
-	}
+    public static List<SrcOp> list(Collection<? extends SrcOp> values) {
+        return new ArrayList<SrcOp>(values);
+    }
 }

@@ -6,86 +6,98 @@
 
 package org.antlr.v5.test.runtime;
 
-import kotlin.Pair;
-
 import java.net.URI;
 import java.util.Arrays;
+import kotlin.Pair;
 
 /** This object represents all the information we need about a single test and is the
  * in-memory representation of a descriptor file
  */
 public class RuntimeTestDescriptor {
-	/** Return a string representing the name of the target currently testing
-	 *  this descriptor.
-	 *  Multiple instances of the same descriptor class
-	 *  can be created to test different targets.
-	 */
-	public final String name;
 
-	public final String notes;
+    /** Return a string representing the name of the target currently testing
+     *  this descriptor.
+     *  Multiple instances of the same descriptor class
+     *  can be created to test different targets.
+     */
+    public final String name;
 
-	/** Parser input. Return "" if not input should be provided to the parser or lexer. */
-	public final String input;
+    public final String notes;
 
-	/** Output from executing the parser. Return null if no output is expected. */
-	public final String output;
+    /** Parser input. Return "" if not input should be provided to the parser or lexer. */
+    public final String input;
 
-	/** Parse errors Return null if no errors are expected. */
-	public final String errors;
+    /** Output from executing the parser. Return null if no output is expected. */
+    public final String output;
 
-	/** The rule at which parsing should start */
-	public final String startRule;
+    /** Parse errors Return null if no errors are expected. */
+    public final String errors;
 
-	public final String[] grammars;
+    /** The rule at which parsing should start */
+    public final String startRule;
 
-	/** List of grammars imported into the grammar */
-	public final String[] slaveGrammars;
+    public final String[] grammars;
 
-	/** For lexical tests, dump the DFA of the default lexer mode to stdout */
-	public final boolean showDFA;
+    /** List of grammars imported into the grammar */
+    public final String[] slaveGrammars;
 
-	/** For parsing, engage the DiagnosticErrorListener, dumping results to stderr */
-	public final boolean showDiagnosticErrors;
+    /** For lexical tests, dump the DFA of the default lexer mode to stdout */
+    public final boolean showDFA;
 
-	public final boolean traceATN;
+    /** For parsing, engage the DiagnosticErrorListener, dumping results to stderr */
+    public final boolean showDiagnosticErrors;
 
-	public final PredictionMode predictionMode;
+    public final boolean traceATN;
 
-	public final boolean buildParseTree;
+    public final PredictionMode predictionMode;
 
-	public final String[] skipTargets;
+    public final boolean buildParseTree;
 
-	public final URI uri;
+    public final String[] skipTargets;
 
-	public RuntimeTestDescriptor(String name, String notes,
-								 String input, String output, String errors,
-								 String startRule, String[] grammars, String[] slaveGrammars,
-								 boolean showDiagnosticErrors, boolean traceATN, boolean showDFA, PredictionMode predictionMode,
-								 boolean buildParseTree, String[] skipTargets, URI uri) {
-		this.name = name;
-		this.notes = notes;
-		this.input = input;
-		this.output = output;
-		this.errors = errors;
-		this.startRule = startRule;
-		this.grammars = grammars;
-		this.slaveGrammars = slaveGrammars == null ? new String[0] : slaveGrammars;
-		this.showDFA = showDFA;
-		this.showDiagnosticErrors = showDiagnosticErrors;
-		this.traceATN = traceATN;
-		this.predictionMode = predictionMode;
-		this.buildParseTree = buildParseTree;
-		this.skipTargets = skipTargets != null ? skipTargets : new String[0];
-		this.uri = uri;
-	}
+    public final URI uri;
 
-	/** Return true if this test should be ignored for the indicated target */
-	public boolean ignore(String targetName) {
-		return Arrays.asList(skipTargets).contains(targetName);
-	}
+    public RuntimeTestDescriptor(
+        String name,
+        String notes,
+        String input,
+        String output,
+        String errors,
+        String startRule,
+        String[] grammars,
+        String[] slaveGrammars,
+        boolean showDiagnosticErrors,
+        boolean traceATN,
+        boolean showDFA,
+        PredictionMode predictionMode,
+        boolean buildParseTree,
+        String[] skipTargets,
+        URI uri
+    ) {
+        this.name = name;
+        this.notes = notes;
+        this.input = input;
+        this.output = output;
+        this.errors = errors;
+        this.startRule = startRule;
+        this.grammars = grammars;
+        this.slaveGrammars = slaveGrammars == null ? new String[0] : slaveGrammars;
+        this.showDFA = showDFA;
+        this.showDiagnosticErrors = showDiagnosticErrors;
+        this.traceATN = traceATN;
+        this.predictionMode = predictionMode;
+        this.buildParseTree = buildParseTree;
+        this.skipTargets = skipTargets != null ? skipTargets : new String[0];
+        this.uri = uri;
+    }
 
-	@Override
-	public String toString() {
-		return name;
-	}
+    /** Return true if this test should be ignored for the indicated target */
+    public boolean ignore(String targetName) {
+        return Arrays.asList(skipTargets).contains(targetName);
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

@@ -5,15 +5,16 @@
  */
 package org.antlr.v5.test.tool;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.NoSuchElementException;
 import org.antlr.runtime.misc.FastQueue;
 import org.junit.jupiter.api.Test;
 
-import java.util.NoSuchElementException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class TestFastQueue {
-    @Test public void testQueueNoRemove() throws Exception {
+
+    @Test
+    public void testQueueNoRemove() throws Exception {
         FastQueue<String> q = new FastQueue<String>();
         q.add("a");
         q.add("b");
@@ -25,7 +26,8 @@ public class TestFastQueue {
         assertEquals(expecting, found);
     }
 
-    @Test public void testQueueThenRemoveAll() throws Exception {
+    @Test
+    public void testQueueThenRemoveAll() throws Exception {
         FastQueue<String> q = new FastQueue<String>();
         q.add("a");
         q.add("b");
@@ -33,10 +35,10 @@ public class TestFastQueue {
         q.add("d");
         q.add("e");
         StringBuilder buf = new StringBuilder();
-        while ( q.size()>0 ) {
+        while (q.size() > 0) {
             String o = q.remove();
             buf.append(o);
-            if ( q.size()>0 ) buf.append(" ");
+            if (q.size() > 0) buf.append(" ");
         }
         assertEquals(0, q.size(), "queue should be empty");
         String expecting = "a b c d e";
@@ -44,7 +46,8 @@ public class TestFastQueue {
         assertEquals(expecting, found);
     }
 
-    @Test public void testQueueThenRemoveOneByOne() throws Exception {
+    @Test
+    public void testQueueThenRemoveOneByOne() throws Exception {
         StringBuilder buf = new StringBuilder();
         FastQueue<String> q = new FastQueue<String>();
         q.add("a");
@@ -65,11 +68,13 @@ public class TestFastQueue {
 
     // E r r o r s
 
-    @Test public void testGetFromEmptyQueue() throws Exception {
+    @Test
+    public void testGetFromEmptyQueue() throws Exception {
         FastQueue<String> q = new FastQueue<String>();
         String msg = null;
-        try { q.remove(); }
-        catch (NoSuchElementException nsee) {
+        try {
+            q.remove();
+        } catch (NoSuchElementException nsee) {
             msg = nsee.getMessage();
         }
         String expecting = "queue index 0 > last index -1";
@@ -77,15 +82,17 @@ public class TestFastQueue {
         assertEquals(expecting, found);
     }
 
-    @Test public void testGetFromEmptyQueueAfterSomeAdds() throws Exception {
+    @Test
+    public void testGetFromEmptyQueueAfterSomeAdds() throws Exception {
         FastQueue<String> q = new FastQueue<String>();
         q.add("a");
         q.add("b");
         q.remove();
         q.remove();
         String msg = null;
-        try { q.remove(); }
-        catch (NoSuchElementException nsee) {
+        try {
+            q.remove();
+        } catch (NoSuchElementException nsee) {
             msg = nsee.getMessage();
         }
         String expecting = "queue index 0 > last index -1";
@@ -93,14 +100,16 @@ public class TestFastQueue {
         assertEquals(expecting, found);
     }
 
-    @Test public void testGetFromEmptyQueueAfterClear() throws Exception {
+    @Test
+    public void testGetFromEmptyQueueAfterClear() throws Exception {
         FastQueue<String> q = new FastQueue<String>();
         q.add("a");
         q.add("b");
         q.clear();
         String msg = null;
-        try { q.remove(); }
-        catch (NoSuchElementException nsee) {
+        try {
+            q.remove();
+        } catch (NoSuchElementException nsee) {
             msg = nsee.getMessage();
         }
         String expecting = "queue index 0 > last index -1";

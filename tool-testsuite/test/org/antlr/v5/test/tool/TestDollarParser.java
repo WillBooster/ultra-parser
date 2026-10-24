@@ -6,22 +6,24 @@
 
 package org.antlr.v5.test.tool;
 
-import org.antlr.v5.test.runtime.states.ExecutedState;
-import org.junit.jupiter.api.Test;
-
 import static org.antlr.v5.test.tool.ToolTestUtils.execParser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.antlr.v5.test.runtime.states.ExecutedState;
+import org.junit.jupiter.api.Test;
+
 public class TestDollarParser {
-	@Test
-	public void testSimpleCall() {
-		String grammar = "grammar T;\n" +
-                      "a : ID  { console.log($parser.tokenStream.tokenSource.sourceName); }\n" +
-                      "  ;\n" +
-                      "ID : 'a'..'z'+ ;\n";
-		ExecutedState executedState = execParser(grammar, "a", "x", true);
-		assertTrue(executedState.output.contains("input"));
-		assertEquals("", executedState.errors);
-	}
+
+    @Test
+    public void testSimpleCall() {
+        String grammar =
+            "grammar T;\n" +
+            "a : ID  { console.log($parser.tokenStream.tokenSource.sourceName); }\n" +
+            "  ;\n" +
+            "ID : 'a'..'z'+ ;\n";
+        ExecutedState executedState = execParser(grammar, "a", "x", true);
+        assertTrue(executedState.output.contains("input"));
+        assertEquals("", executedState.errors);
+    }
 }

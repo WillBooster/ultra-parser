@@ -6,26 +6,26 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.LinkedHashMap;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.Rule;
 
-import java.util.LinkedHashMap;
-
 public class RuleActionFunction extends OutputModelObject {
-	public final String name;
-	public final String escapedName;
-	public final String ctxType;
-	public final int ruleIndex;
 
-	/** Map actionIndex to Action */
-	@ModelElement public LinkedHashMap<Integer, Action> actions =
-		new LinkedHashMap<Integer, Action>();
+    public final String name;
+    public final String escapedName;
+    public final String ctxType;
+    public final int ruleIndex;
 
-	public RuleActionFunction(OutputModelFactory factory, Rule r, String ctxType) {
-		super(factory);
-		name = r.name;
-		escapedName = factory.getGenerator().getTarget().escapeIfNeeded(name);
-		ruleIndex = r.index;
-		this.ctxType = ctxType;
-	}
+    /** Map actionIndex to Action */
+    @ModelElement
+    public LinkedHashMap<Integer, Action> actions = new LinkedHashMap<Integer, Action>();
+
+    public RuleActionFunction(OutputModelFactory factory, Rule r, String ctxType) {
+        super(factory);
+        name = r.name;
+        escapedName = factory.getGenerator().getTarget().escapeIfNeeded(name);
+        ruleIndex = r.index;
+        this.ctxType = ctxType;
+    }
 }

@@ -6,20 +6,24 @@
 
 package org.antlr.v5.codegen.model.chunk;
 
+import java.util.List;
 import org.antlr.v5.codegen.model.decl.StructDecl;
 
-import java.util.List;
-
 public class SetNonLocalAttr extends SetAttr {
-	public String ruleName;
-	public int ruleIndex;
 
-	public SetNonLocalAttr(StructDecl ctx,
-						   String ruleName, String name, String escapedName, int ruleIndex,
-						   List<ActionChunk> rhsChunks)
-	{
-		super(ctx, name, escapedName, rhsChunks);
-		this.ruleName = ruleName;
-		this.ruleIndex = ruleIndex;
-	}
+    public String ruleName;
+    public int ruleIndex;
+
+    public SetNonLocalAttr(
+        StructDecl ctx,
+        String ruleName,
+        String name,
+        String escapedName,
+        int ruleIndex,
+        List<ActionChunk> rhsChunks
+    ) {
+        super(ctx, name, escapedName, rhsChunks);
+        this.ruleName = ruleName;
+        this.ruleIndex = ruleIndex;
+    }
 }

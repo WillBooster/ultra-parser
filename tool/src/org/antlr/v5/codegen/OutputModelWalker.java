@@ -6,14 +6,6 @@
 
 package org.antlr.v5.codegen;
 
-import org.antlr.v5.Tool;
-import org.antlr.v5.codegen.model.ModelElement;
-import org.antlr.v5.codegen.model.OutputModelObject;
-import org.antlr.v5.tool.ErrorType;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
-import org.stringtemplate.v4.compiler.FormalArgument;
-
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +14,13 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.antlr.v5.Tool;
+import org.antlr.v5.codegen.model.ModelElement;
+import org.antlr.v5.codegen.model.OutputModelObject;
+import org.antlr.v5.tool.ErrorType;
+import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.STGroup;
+import org.stringtemplate.v4.compiler.FormalArgument;
 
 /** Convert an output model tree to template hierarchy by walking
  *  the output model. Each output model object has a corresponding template
@@ -41,105 +40,106 @@ import java.util.Set;
  *  output model object that says how to create the corresponding template.
  */
 public class OutputModelWalker {
-	Tool tool;
-	STGroup templates;
 
-	public OutputModelWalker(Tool tool,
-							 STGroup templates)
-	{
-		this.tool = tool;
-		this.templates = templates;
-	}
+    Tool tool;
+    STGroup templates;
 
-	public ST walk(OutputModelObject omo, boolean header) {
-		// CREATE TEMPLATE FOR THIS OUTPUT OBJECT
-		Class<? extends OutputModelObject> cl = omo.getClass();
-		String templateName = cl.getSimpleName();
-		if ( templateName == null ) {
-			tool.errMgr.toolError(ErrorType.NO_MODEL_TO_TEMPLATE_MAPPING, cl.getSimpleName());
-			return new ST("["+templateName+" invalid]");
-		}
+    public OutputModelWalker(Tool tool, STGroup templates) {
+        this.tool = tool;
+        this.templates = templates;
+    }
 
-		if (header) templateName += "Header";
+    public ST walk(OutputModelObject omo, boolean header) {
+        // CREATE TEMPLATE FOR THIS OUTPUT OBJECT
+        Class<? extends OutputModelObject> cl = omo.getClass();
+        String templateName = cl.getSimpleName();
+        if (templateName == null) {
+            tool.errMgr.toolError(ErrorType.NO_MODEL_TO_TEMPLATE_MAPPING, cl.getSimpleName());
+            return new ST("[" + templateName + " invalid]");
+        }
 
-		ST st = templates.getInstanceOf(templateName);
-		if ( st == null ) {
-			tool.errMgr.toolError(ErrorType.CODE_GEN_TEMPLATES_INCOMPLETE, templateName);
-			return new ST("["+templateName+" invalid]");
-		}
-		if ( st.impl.formalArguments == null ) {
-			tool.errMgr.toolError(ErrorType.CODE_TEMPLATE_ARG_ISSUE, templateName, "<none>");
-			return st;
-		}
+        if (header) templateName += "Header";
 
-		Map<String,FormalArgument> formalArgs = st.impl.formalArguments;
+        ST st = templates.getInstanceOf(templateName);
+        if (st == null) {
+            tool.errMgr.toolError(ErrorType.CODE_GEN_TEMPLATES_INCOMPLETE, templateName);
+            return new ST("[" + templateName + " invalid]");
+        }
+        if (st.impl.formalArguments == null) {
+            tool.errMgr.toolError(ErrorType.CODE_TEMPLATE_ARG_ISSUE, templateName, "<none>");
+            return st;
+        }
 
-		// PASS IN OUTPUT MODEL OBJECT TO TEMPLATE AS FIRST ARG
-		Set<String> argNames = formalArgs.keySet();
-		Iterator<String> arg_it = argNames.iterator();
-		String modelArgName = arg_it.next(); // ordered so this is first arg
-		st.add(modelArgName, omo);
+        Map<String, FormalArgument> formalArgs = st.impl.formalArguments;
 
-		// COMPUTE STs FOR EACH NESTED MODEL OBJECT MARKED WITH @ModelElement AND MAKE ST ATTRIBUTE
-		Set<String> usedFieldNames = new HashSet<String>();
-		Field fields[] = cl.getFields();
-		for (Field fi : fields) {
-			ModelElement annotation = fi.getAnnotation(ModelElement.class);
-			if (annotation == null) {
-				continue;
-			}
+        // PASS IN OUTPUT MODEL OBJECT TO TEMPLATE AS FIRST ARG
+        Set<String> argNames = formalArgs.keySet();
+        Iterator<String> arg_it = argNames.iterator();
+        String modelArgName = arg_it.next(); // ordered so this is first arg
+        st.add(modelArgName, omo);
 
-			String fieldName = fi.getName();
+        // COMPUTE STs FOR EACH NESTED MODEL OBJECT MARKED WITH @ModelElement AND MAKE ST ATTRIBUTE
+        Set<String> usedFieldNames = new HashSet<String>();
+        Field fields[] = cl.getFields();
+        for (Field fi : fields) {
+            ModelElement annotation = fi.getAnnotation(ModelElement.class);
+            if (annotation == null) {
+                continue;
+            }
 
-			if (!usedFieldNames.add(fieldName)) {
-				tool.errMgr.toolError(ErrorType.INTERNAL_ERROR, "Model object " + omo.getClass().getSimpleName() + " has multiple fields named '" + fieldName + "'");
-				continue;
-			}
+            String fieldName = fi.getName();
 
-			// Just don't set @ModelElement fields w/o formal arg in target ST
-			if ( formalArgs.get(fieldName)==null ) continue;
+            if (!usedFieldNames.add(fieldName)) {
+                tool.errMgr.toolError(
+                    ErrorType.INTERNAL_ERROR,
+                    "Model object " + omo.getClass().getSimpleName() + " has multiple fields named '" + fieldName + "'"
+                );
+                continue;
+            }
 
-			try {
-				Object o = fi.get(omo);
-				if ( o instanceof OutputModelObject ) {  // SINGLE MODEL OBJECT?
-					OutputModelObject nestedOmo = (OutputModelObject)o;
-					ST nestedST = walk(nestedOmo, header);
-//					System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
-					st.add(fieldName, nestedST);
-				}
-				else if ( o instanceof Collection || o instanceof OutputModelObject[] ) {
-					// LIST OF MODEL OBJECTS?
-					if ( o instanceof OutputModelObject[] ) {
-						o = Arrays.asList((OutputModelObject[])o);
-					}
-					Collection<?> nestedOmos = (Collection<?>)o;
-					for (Object nestedOmo : nestedOmos) {
-						if ( nestedOmo==null ) continue;
-						ST nestedST = walk((OutputModelObject)nestedOmo, header);
-//						System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
-						st.add(fieldName, nestedST);
-					}
-				}
-				else if ( o instanceof Map ) {
-					Map<?, ?> nestedOmoMap = (Map<?, ?>)o;
-					Map<Object, ST> m = new LinkedHashMap<Object, ST>();
-					for (Map.Entry<?, ?> entry : nestedOmoMap.entrySet()) {
-						ST nestedST = walk((OutputModelObject)entry.getValue(), header);
-//						System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
-						m.put(entry.getKey(), nestedST);
-					}
-					st.add(fieldName, m);
-				}
-				else if ( o!=null ) {
-					tool.errMgr.toolError(ErrorType.INTERNAL_ERROR, "not recognized nested model element: "+fieldName);
-				}
-			}
-			catch (IllegalAccessException iae) {
-				tool.errMgr.toolError(ErrorType.CODE_TEMPLATE_ARG_ISSUE, templateName, fieldName);
-			}
-		}
-		//st.impl.dump();
-		return st;
-	}
+            // Just don't set @ModelElement fields w/o formal arg in target ST
+            if (formalArgs.get(fieldName) == null) continue;
 
+            try {
+                Object o = fi.get(omo);
+                if (o instanceof OutputModelObject) {
+                    // SINGLE MODEL OBJECT?
+                    OutputModelObject nestedOmo = (OutputModelObject) o;
+                    ST nestedST = walk(nestedOmo, header);
+                    //					System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
+                    st.add(fieldName, nestedST);
+                } else if (o instanceof Collection || o instanceof OutputModelObject[]) {
+                    // LIST OF MODEL OBJECTS?
+                    if (o instanceof OutputModelObject[]) {
+                        o = Arrays.asList((OutputModelObject[]) o);
+                    }
+                    Collection<?> nestedOmos = (Collection<?>) o;
+                    for (Object nestedOmo : nestedOmos) {
+                        if (nestedOmo == null) continue;
+                        ST nestedST = walk((OutputModelObject) nestedOmo, header);
+                        //						System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
+                        st.add(fieldName, nestedST);
+                    }
+                } else if (o instanceof Map) {
+                    Map<?, ?> nestedOmoMap = (Map<?, ?>) o;
+                    Map<Object, ST> m = new LinkedHashMap<Object, ST>();
+                    for (Map.Entry<?, ?> entry : nestedOmoMap.entrySet()) {
+                        ST nestedST = walk((OutputModelObject) entry.getValue(), header);
+                        //						System.out.println("set ModelElement "+fieldName+"="+nestedST+" in "+templateName);
+                        m.put(entry.getKey(), nestedST);
+                    }
+                    st.add(fieldName, m);
+                } else if (o != null) {
+                    tool.errMgr.toolError(
+                        ErrorType.INTERNAL_ERROR,
+                        "not recognized nested model element: " + fieldName
+                    );
+                }
+            } catch (IllegalAccessException iae) {
+                tool.errMgr.toolError(ErrorType.CODE_TEMPLATE_ARG_ISSUE, templateName, fieldName);
+            }
+        }
+        //st.impl.dump();
+        return st;
+    }
 }

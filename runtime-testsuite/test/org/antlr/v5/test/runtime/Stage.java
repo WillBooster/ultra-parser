@@ -7,7 +7,7 @@
 package org.antlr.v5.test.runtime;
 
 public enum Stage {
-	Generate,
-	Compile,
-	Execute
+    Generate,
+    Compile,
+    Execute,
 }

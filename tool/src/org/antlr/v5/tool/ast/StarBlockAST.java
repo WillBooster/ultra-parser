@@ -9,26 +9,31 @@ package org.antlr.v5.tool.ast;
 import org.antlr.runtime.Token;
 
 public class StarBlockAST extends GrammarAST implements RuleElementAST, QuantifierAST {
-	private final boolean _greedy;
 
-	public StarBlockAST(StarBlockAST node) {
-		super(node);
-		_greedy = node._greedy;
-	}
+    private final boolean _greedy;
 
-	public StarBlockAST(int type, Token t, Token nongreedy) {
-		super(type, t);
-		_greedy = nongreedy == null;
-	}
+    public StarBlockAST(StarBlockAST node) {
+        super(node);
+        _greedy = node._greedy;
+    }
 
-	@Override
-	public boolean isGreedy() {
-		return _greedy;
-	}
+    public StarBlockAST(int type, Token t, Token nongreedy) {
+        super(type, t);
+        _greedy = nongreedy == null;
+    }
 
-	@Override
-	public StarBlockAST dupNode() { return new StarBlockAST(this); }
+    @Override
+    public boolean isGreedy() {
+        return _greedy;
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    @Override
+    public StarBlockAST dupNode() {
+        return new StarBlockAST(this);
+    }
+
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

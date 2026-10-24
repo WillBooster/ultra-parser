@@ -6,6 +6,8 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.v5.codegen.CodeGenerator;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.Target;
@@ -14,33 +16,33 @@ import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.ast.GrammarAST;
 import org.antlr.v5.tool.ast.TerminalAST;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** */
 public class MatchToken extends RuleElement implements LabeledOp {
-	public final String name;
-	public final String escapedName;
-	public final int ttype;
-	public final List<Decl> labels = new ArrayList<Decl>();
 
-	public MatchToken(OutputModelFactory factory, TerminalAST ast) {
-		super(factory, ast);
-		Grammar g = factory.getGrammar();
-		CodeGenerator gen = factory.getGenerator();
-		ttype = g.getTokenType(ast.getText());
-		Target target = gen.getTarget();
-		name = target.getTokenTypeAsTargetLabel(g, ttype);
-		escapedName = target.escapeIfNeeded(name);
-	}
+    public final String name;
+    public final String escapedName;
+    public final int ttype;
+    public final List<Decl> labels = new ArrayList<Decl>();
 
-	public MatchToken(OutputModelFactory factory, GrammarAST ast) {
-		super(factory, ast);
-		ttype = 0;
-		name = null;
-		escapedName = null;
-	}
+    public MatchToken(OutputModelFactory factory, TerminalAST ast) {
+        super(factory, ast);
+        Grammar g = factory.getGrammar();
+        CodeGenerator gen = factory.getGenerator();
+        ttype = g.getTokenType(ast.getText());
+        Target target = gen.getTarget();
+        name = target.getTokenTypeAsTargetLabel(g, ttype);
+        escapedName = target.escapeIfNeeded(name);
+    }
 
-	@Override
-	public List<Decl> getLabels() { return labels; }
+    public MatchToken(OutputModelFactory factory, GrammarAST ast) {
+        super(factory, ast);
+        ttype = 0;
+        name = null;
+        escapedName = null;
+    }
+
+    @Override
+    public List<Decl> getLabels() {
+        return labels;
+    }
 }

@@ -11,11 +11,11 @@ import org.antlr.runtime.Token;
 /** */
 public interface ActionSplitterListener {
     void qualifiedAttr(String expr, Token x, Token y);
-	void setAttr(String expr, Token x, Token rhs);
-	void attr(String expr, Token x);
+    void setAttr(String expr, Token x, Token rhs);
+    void attr(String expr, Token x);
 
-	void setNonLocalAttr(String expr, Token x, Token y, Token rhs);
-	void nonLocalAttr(String expr, Token x, Token y);
+    void setNonLocalAttr(String expr, Token x, Token y, Token rhs);
+    void nonLocalAttr(String expr, Token x, Token y);
 
     void text(String text);
 }

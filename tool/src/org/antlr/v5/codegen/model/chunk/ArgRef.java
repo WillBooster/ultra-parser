@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class ArgRef extends LocalRef {
-	public ArgRef(StructDecl ctx, String name, String escapedName) {
-		super(ctx, name, escapedName);
-	}
+
+    public ArgRef(StructDecl ctx, String name, String escapedName) {
+        super(ctx, name, escapedName);
+    }
 }

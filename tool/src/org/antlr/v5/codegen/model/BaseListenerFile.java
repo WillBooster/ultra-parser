@@ -8,7 +8,8 @@ package org.antlr.v5.codegen.model;
 import org.antlr.v5.codegen.OutputModelFactory;
 
 public class BaseListenerFile extends ListenerFile {
-	public BaseListenerFile(OutputModelFactory factory, String fileName) {
-		super(factory, fileName);
-	}
+
+    public BaseListenerFile(OutputModelFactory factory, String fileName) {
+        super(factory, fileName);
+    }
 }

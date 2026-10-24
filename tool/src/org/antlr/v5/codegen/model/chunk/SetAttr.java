@@ -6,17 +6,18 @@
 
 package org.antlr.v5.codegen.model.chunk;
 
+import java.util.List;
 import org.antlr.v5.codegen.model.ModelElement;
 import org.antlr.v5.codegen.model.decl.StructDecl;
 
-import java.util.List;
-
 /** */
 public class SetAttr extends SymbolRefChunk {
-	@ModelElement public List<ActionChunk> rhsChunks;
 
-	public SetAttr(StructDecl ctx, String name, String escapedName, List<ActionChunk> rhsChunks) {
-		super(ctx, name, escapedName);
-		this.rhsChunks = rhsChunks;
-	}
+    @ModelElement
+    public List<ActionChunk> rhsChunks;
+
+    public SetAttr(StructDecl ctx, String name, String escapedName, List<ActionChunk> rhsChunks) {
+        super(ctx, name, escapedName);
+        this.rhsChunks = rhsChunks;
+    }
 }

@@ -12,47 +12,51 @@ import org.antlr.v5.tool.ast.GrammarAST;
 
 /** */
 public abstract class SrcOp extends OutputModelObject {
-	/** Used to create unique var names etc... */
-	public int uniqueID; // TODO: do we need?
 
-	/** All operations know in which block they live:
-	 *
-	 *  	CodeBlock, CodeBlockForAlt
-	 *
-	 *  Templates might need to know block nesting level or find
-	 *  a specific declaration, etc...
-	 */
-	public CodeBlock enclosingBlock;
+    /** Used to create unique var names etc... */
+    public int uniqueID; // TODO: do we need?
 
-	public RuleFunction enclosingRuleRunction;
+    /** All operations know in which block they live:
+     *
+     *  	CodeBlock, CodeBlockForAlt
+     *
+     *  Templates might need to know block nesting level or find
+     *  a specific declaration, etc...
+     */
+    public CodeBlock enclosingBlock;
 
-	public SrcOp(OutputModelFactory factory) { this(factory,null); }
-	public SrcOp(OutputModelFactory factory, GrammarAST ast) {
-		super(factory,ast);
-		if ( ast!=null ) uniqueID = ast.token.getTokenIndex();
-		enclosingBlock = factory.getCurrentBlock();
-		enclosingRuleRunction = factory.getCurrentRuleFunction();
-	}
+    public RuleFunction enclosingRuleRunction;
 
-	/** Walk upwards in model tree, looking for outer alt's code block */
-	public CodeBlockForOuterMostAlt getOuterMostAltCodeBlock() {
-		if ( this instanceof CodeBlockForOuterMostAlt ) {
-			return (CodeBlockForOuterMostAlt)this;
-		}
-		CodeBlock p = enclosingBlock;
-		while ( p!=null ) {
-			if ( p instanceof CodeBlockForOuterMostAlt ) {
-				return (CodeBlockForOuterMostAlt)p;
-			}
-			p = p.enclosingBlock;
-		}
-		return null;
-	}
+    public SrcOp(OutputModelFactory factory) {
+        this(factory, null);
+    }
 
-	/** Return label alt or return name of rule */
-	public String getContextName() {
-		CodeBlockForOuterMostAlt alt = getOuterMostAltCodeBlock();
-		if ( alt!=null && alt.altLabel!=null ) return alt.altLabel;
-		return enclosingRuleRunction.name;
-	}
+    public SrcOp(OutputModelFactory factory, GrammarAST ast) {
+        super(factory, ast);
+        if (ast != null) uniqueID = ast.token.getTokenIndex();
+        enclosingBlock = factory.getCurrentBlock();
+        enclosingRuleRunction = factory.getCurrentRuleFunction();
+    }
+
+    /** Walk upwards in model tree, looking for outer alt's code block */
+    public CodeBlockForOuterMostAlt getOuterMostAltCodeBlock() {
+        if (this instanceof CodeBlockForOuterMostAlt) {
+            return (CodeBlockForOuterMostAlt) this;
+        }
+        CodeBlock p = enclosingBlock;
+        while (p != null) {
+            if (p instanceof CodeBlockForOuterMostAlt) {
+                return (CodeBlockForOuterMostAlt) p;
+            }
+            p = p.enclosingBlock;
+        }
+        return null;
+    }
+
+    /** Return label alt or return name of rule */
+    public String getContextName() {
+        CodeBlockForOuterMostAlt alt = getOuterMostAltCodeBlock();
+        if (alt != null && alt.altLabel != null) return alt.altLabel;
+        return enclosingRuleRunction.name;
+    }
 }

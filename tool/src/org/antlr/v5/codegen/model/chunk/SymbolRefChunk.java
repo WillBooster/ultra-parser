@@ -3,12 +3,13 @@ package org.antlr.v5.codegen.model.chunk;
 import org.antlr.v5.codegen.model.decl.StructDecl;
 
 public abstract class SymbolRefChunk extends ActionChunk {
-	public final String name;
-	public final String escapedName;
 
-	public SymbolRefChunk(StructDecl ctx, String name, String escapedName) {
-		super(ctx);
-		this.name = name;
-		this.escapedName = escapedName;
-	}
+    public final String name;
+    public final String escapedName;
+
+    public SymbolRefChunk(StructDecl ctx, String name, String escapedName) {
+        super(ctx);
+        this.name = name;
+        this.escapedName = escapedName;
+    }
 }

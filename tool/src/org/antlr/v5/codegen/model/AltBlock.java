@@ -6,22 +6,19 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.runtime.core.state.BlockStartState;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 public class AltBlock extends Choice {
-//	@ModelElement public ThrowNoViableAlt error;
 
-	public AltBlock(OutputModelFactory factory,
-					GrammarAST blkOrEbnfRootAST,
-					List<CodeBlockForAlt> alts)
-	{
-		super(factory, blkOrEbnfRootAST, alts);
-		decision = ((BlockStartState) blkOrEbnfRootAST.atnState).getDecision();
-		// interp.predict() throws exception
-//		this.error = new ThrowNoViableAlt(factory, blkOrEbnfRootAST, null);
-	}
+    //	@ModelElement public ThrowNoViableAlt error;
+
+    public AltBlock(OutputModelFactory factory, GrammarAST blkOrEbnfRootAST, List<CodeBlockForAlt> alts) {
+        super(factory, blkOrEbnfRootAST, alts);
+        decision = ((BlockStartState) blkOrEbnfRootAST.atnState).getDecision();
+        // interp.predict() throws exception
+        //		this.error = new ThrowNoViableAlt(factory, blkOrEbnfRootAST, null);
+    }
 }

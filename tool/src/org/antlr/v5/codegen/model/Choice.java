@@ -6,6 +6,8 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.codegen.Target;
 import org.antlr.v5.codegen.model.decl.Decl;
@@ -15,9 +17,6 @@ import org.antlr.v5.runtime.core.misc.IntegerList;
 import org.antlr.v5.runtime.core.misc.IntervalSet;
 import org.antlr.v5.tool.Grammar;
 import org.antlr.v5.tool.ast.GrammarAST;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** The class hierarchy underneath SrcOp is pretty deep but makes sense that,
  *  for example LL1StarBlock is a kind of LL1Loop which is a kind of Choice.
@@ -30,54 +29,53 @@ import java.util.List;
  *  it has too much work to do.
  */
 public abstract class Choice extends RuleElement {
-	public int decision = -1;
-	public Decl label;
 
-	@ModelElement public List<CodeBlockForAlt> alts;
-	@ModelElement public List<SrcOp> preamble = new ArrayList<SrcOp>();
+    public int decision = -1;
+    public Decl label;
 
-	public Choice(OutputModelFactory factory,
-				  GrammarAST blkOrEbnfRootAST,
-				  List<CodeBlockForAlt> alts)
-	{
-		super(factory, blkOrEbnfRootAST);
-		this.alts = alts;
-	}
+    @ModelElement
+    public List<CodeBlockForAlt> alts;
 
-	public void addPreambleOp(SrcOp op) {
-		preamble.add(op);
-	}
+    @ModelElement
+    public List<SrcOp> preamble = new ArrayList<SrcOp>();
 
-	public List<TokenInfo[]> getAltLookaheadAsStringLists(IntervalSet[] altLookSets) {
-		List<TokenInfo[]> altLook = new ArrayList<>();
-		Target target = factory.getGenerator().getTarget();
-		Grammar grammar = factory.getGrammar();
-		for (IntervalSet s : altLookSets) {
-			IntegerList list = s.toIntegerList();
-			TokenInfo[] info = new TokenInfo[list.size()];
-			for (int i = 0; i < info.length; i++) {
-				info[i] = new TokenInfo(list.get(i), target.getTokenTypeAsTargetLabel(grammar, list.get(i)));
-			}
-			altLook.add(info);
-		}
-		return altLook;
-	}
+    public Choice(OutputModelFactory factory, GrammarAST blkOrEbnfRootAST, List<CodeBlockForAlt> alts) {
+        super(factory, blkOrEbnfRootAST);
+        this.alts = alts;
+    }
 
-	public TestSetInline addCodeForLookaheadTempVar(IntervalSet look) {
-		List<SrcOp> testOps = factory.getLL1Test(look, ast);
-		TestSetInline expr = Utils.find(testOps, TestSetInline.class);
-		if (expr != null) {
-			Decl d = new TokenTypeDecl(factory, expr.varName);
-			factory.getCurrentRuleFunction().addLocalDecl(d);
-			CaptureNextTokenType nextType = new CaptureNextTokenType(factory,expr.varName);
-			addPreambleOp(nextType);
-		}
-		return expr;
-	}
+    public void addPreambleOp(SrcOp op) {
+        preamble.add(op);
+    }
 
-	public ThrowNoViableAlt getThrowNoViableAlt(OutputModelFactory factory,
-												GrammarAST blkAST,
-												IntervalSet expecting) {
-		return new ThrowNoViableAlt(factory, blkAST, expecting);
-	}
+    public List<TokenInfo[]> getAltLookaheadAsStringLists(IntervalSet[] altLookSets) {
+        List<TokenInfo[]> altLook = new ArrayList<>();
+        Target target = factory.getGenerator().getTarget();
+        Grammar grammar = factory.getGrammar();
+        for (IntervalSet s : altLookSets) {
+            IntegerList list = s.toIntegerList();
+            TokenInfo[] info = new TokenInfo[list.size()];
+            for (int i = 0; i < info.length; i++) {
+                info[i] = new TokenInfo(list.get(i), target.getTokenTypeAsTargetLabel(grammar, list.get(i)));
+            }
+            altLook.add(info);
+        }
+        return altLook;
+    }
+
+    public TestSetInline addCodeForLookaheadTempVar(IntervalSet look) {
+        List<SrcOp> testOps = factory.getLL1Test(look, ast);
+        TestSetInline expr = Utils.find(testOps, TestSetInline.class);
+        if (expr != null) {
+            Decl d = new TokenTypeDecl(factory, expr.varName);
+            factory.getCurrentRuleFunction().addLocalDecl(d);
+            CaptureNextTokenType nextType = new CaptureNextTokenType(factory, expr.varName);
+            addPreambleOp(nextType);
+        }
+        return expr;
+    }
+
+    public ThrowNoViableAlt getThrowNoViableAlt(OutputModelFactory factory, GrammarAST blkAST, IntervalSet expecting) {
+        return new ThrowNoViableAlt(factory, blkAST, expecting);
+    }
 }

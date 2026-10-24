@@ -10,15 +10,16 @@ import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.ActionAST;
 
 public class ExceptionClause extends SrcOp {
-	@ModelElement public Action catchArg;
-	@ModelElement public Action catchAction;
 
-	public ExceptionClause(OutputModelFactory factory,
-						   ActionAST catchArg,
-						   ActionAST catchAction)
-	{
-		super(factory, catchArg);
-		this.catchArg = new Action(factory, catchArg);
-		this.catchAction = new Action(factory, catchAction);
-	}
+    @ModelElement
+    public Action catchArg;
+
+    @ModelElement
+    public Action catchAction;
+
+    public ExceptionClause(OutputModelFactory factory, ActionAST catchArg, ActionAST catchAction) {
+        super(factory, catchArg);
+        this.catchArg = new Action(factory, catchArg);
+        this.catchAction = new Action(factory, catchAction);
+    }
 }

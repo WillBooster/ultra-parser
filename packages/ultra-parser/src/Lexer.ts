@@ -27,7 +27,7 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   static readonly DEFAULT_TOKEN_CHANNEL = Token.DEFAULT_CHANNEL;
   static readonly HIDDEN = Token.HIDDEN_CHANNEL;
   static readonly MIN_CHAR_VALUE = 0x00_00;
-  static readonly MAX_CHAR_VALUE = 0x10_FF_FF;
+  static readonly MAX_CHAR_VALUE = 0x10_ff_ff;
 
   _input: CharStream;
   /** The token to return from `nextToken`, if an action emitted one. */
@@ -334,7 +334,7 @@ export abstract class Lexer extends Recognizer implements TokenSource, LexerHost
   #recover(): void {
     const c = this._input.LA(1);
     if (c === Token.EOF) return;
-    if (c === 0x0A) {
+    if (c === 0x0a) {
       this.line++;
       this.column = 0;
     } else {

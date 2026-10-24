@@ -12,16 +12,17 @@ import org.antlr.v5.codegen.OutputModelFactory;
  *  public Token X(int i) { }}
  */
 public class ContextTokenListGetterDecl extends ContextGetterDecl {
-	public ContextTokenListGetterDecl(OutputModelFactory factory, String name) {
-		this(factory, name, false);
-	}
 
-	public ContextTokenListGetterDecl(OutputModelFactory factory, String name, boolean signature) {
-		super(factory, name, signature);
-	}
+    public ContextTokenListGetterDecl(OutputModelFactory factory, String name) {
+        this(factory, name, false);
+    }
 
-	@Override
-	public ContextGetterDecl getSignatureDecl() {
-		return new ContextTokenListGetterDecl(factory, name, true);
-	}
+    public ContextTokenListGetterDecl(OutputModelFactory factory, String name, boolean signature) {
+        super(factory, name, signature);
+    }
+
+    @Override
+    public ContextGetterDecl getSignatureDecl() {
+        return new ContextTokenListGetterDecl(factory, name, true);
+    }
 }

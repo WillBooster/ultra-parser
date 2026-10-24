@@ -6,69 +6,68 @@
 
 package org.antlr.v5.tool;
 
-import org.antlr.v5.analysis.LeftRecursiveRuleAltInfo;
-import org.antlr.v5.analysis.RuleInfo;
-import org.antlr.v5.misc.OrderedHashMap;
-import kotlin.Pair;
-import org.antlr.v5.tool.ast.AltAST;
-import org.antlr.v5.tool.ast.GrammarAST;
-import org.antlr.v5.tool.ast.RuleAST;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import kotlin.Pair;
+import org.antlr.v5.analysis.LeftRecursiveRuleAltInfo;
+import org.antlr.v5.analysis.RuleInfo;
+import org.antlr.v5.misc.OrderedHashMap;
+import org.antlr.v5.tool.ast.AltAST;
+import org.antlr.v5.tool.ast.GrammarAST;
+import org.antlr.v5.tool.ast.RuleAST;
 
 public class LeftRecursiveRule extends Rule {
-	public List<LeftRecursiveRuleAltInfo> recPrimaryAlts;
-	public OrderedHashMap<Integer, LeftRecursiveRuleAltInfo> recOpAlts;
-	public RuleAST originalAST;
-	public RuleInfo ruleInfo;
 
-	/** Did we delete any labels on direct left-recur refs? Points at ID of ^(= ID el) */
-	public List<Pair<GrammarAST,String>> leftRecursiveRuleRefLabels =
-		new ArrayList<Pair<GrammarAST,String>>();
+    public List<LeftRecursiveRuleAltInfo> recPrimaryAlts;
+    public OrderedHashMap<Integer, LeftRecursiveRuleAltInfo> recOpAlts;
+    public RuleAST originalAST;
+    public RuleInfo ruleInfo;
 
-	public LeftRecursiveRule(Grammar g, String name, RuleAST ast, RuleInfo ruleInfo) {
-		super(g, name, ast, 1);
-		originalAST = ast;
-		alt = new Alternative[numberOfAlts+1]; // always just one
-		this.ruleInfo = ruleInfo;
-		for (int i=1; i<=numberOfAlts; i++) alt[i] = new Alternative(this, i);
-	}
+    /** Did we delete any labels on direct left-recur refs? Points at ID of ^(= ID el) */
+    public List<Pair<GrammarAST, String>> leftRecursiveRuleRefLabels = new ArrayList<Pair<GrammarAST, String>>();
 
-	@Override
-	public boolean hasAltSpecificContexts() {
-		return super.hasAltSpecificContexts() || getAltLabels()!=null;
-	}
+    public LeftRecursiveRule(Grammar g, String name, RuleAST ast, RuleInfo ruleInfo) {
+        super(g, name, ast, 1);
+        originalAST = ast;
+        alt = new Alternative[numberOfAlts + 1]; // always just one
+        this.ruleInfo = ruleInfo;
+        for (int i = 1; i <= numberOfAlts; i++) alt[i] = new Alternative(this, i);
+    }
 
-	@Override
-	public int getOriginalNumberOfAlts() {
-		int n = 0;
-		if ( recPrimaryAlts!=null ) n += recPrimaryAlts.size();
-		if ( recOpAlts!=null ) n += recOpAlts.size();
-		return n;
-	}
+    @Override
+    public boolean hasAltSpecificContexts() {
+        return super.hasAltSpecificContexts() || getAltLabels() != null;
+    }
 
-	public RuleAST getOriginalAST() {
-		return originalAST;
-	}
+    @Override
+    public int getOriginalNumberOfAlts() {
+        int n = 0;
+        if (recPrimaryAlts != null) n += recPrimaryAlts.size();
+        if (recOpAlts != null) n += recOpAlts.size();
+        return n;
+    }
 
-	@Override
-	public List<AltAST> getUnlabeledAltASTs() {
-		List<AltAST> alts = new ArrayList<AltAST>();
-		for (LeftRecursiveRuleAltInfo altInfo : recPrimaryAlts) {
-			if (altInfo.altLabel == null) alts.add(altInfo.originalAltAST);
-		}
-		for (int i = 0; i < recOpAlts.size(); i++) {
-			LeftRecursiveRuleAltInfo altInfo = recOpAlts.getElement(i);
-			if ( altInfo.altLabel==null ) alts.add(altInfo.originalAltAST);
-		}
-		if ( alts.isEmpty() ) return null;
-		return alts;
-	}
+    public RuleAST getOriginalAST() {
+        return originalAST;
+    }
 
-	/** Return an array that maps predicted alt from primary decision
+    @Override
+    public List<AltAST> getUnlabeledAltASTs() {
+        List<AltAST> alts = new ArrayList<AltAST>();
+        for (LeftRecursiveRuleAltInfo altInfo : recPrimaryAlts) {
+            if (altInfo.altLabel == null) alts.add(altInfo.originalAltAST);
+        }
+        for (int i = 0; i < recOpAlts.size(); i++) {
+            LeftRecursiveRuleAltInfo altInfo = recOpAlts.getElement(i);
+            if (altInfo.altLabel == null) alts.add(altInfo.originalAltAST);
+        }
+        if (alts.isEmpty()) return null;
+        return alts;
+    }
+
+    /** Return an array that maps predicted alt from primary decision
 	 *  to original alt of rule. For following rule, return [0, 2, 4]
 	 *
 		e : e '*' e
@@ -81,17 +80,18 @@ public class LeftRecursiveRule extends Rule {
 	 *
 	 *  @since 4.5.1
 	 */
-	public int[] getPrimaryAlts() {
-		if ( recPrimaryAlts.size()==0 ) return null;
-		int[] alts = new int[recPrimaryAlts.size()+1];
-		for (int i = 0; i < recPrimaryAlts.size(); i++) { // recPrimaryAlts is a List not Map like recOpAlts
-			LeftRecursiveRuleAltInfo altInfo = recPrimaryAlts.get(i);
-			alts[i+1] = altInfo.altNum;
-		}
-		return alts;
-	}
+    public int[] getPrimaryAlts() {
+        if (recPrimaryAlts.size() == 0) return null;
+        int[] alts = new int[recPrimaryAlts.size() + 1];
+        for (int i = 0; i < recPrimaryAlts.size(); i++) {
+            // recPrimaryAlts is a List not Map like recOpAlts
+            LeftRecursiveRuleAltInfo altInfo = recPrimaryAlts.get(i);
+            alts[i + 1] = altInfo.altNum;
+        }
+        return alts;
+    }
 
-	/** Return an array that maps predicted alt from recursive op decision
+    /** Return an array that maps predicted alt from recursive op decision
 	 *  to original alt of rule. For following rule, return [0, 1, 3]
 	 *
 		e : e '*' e
@@ -104,51 +104,51 @@ public class LeftRecursiveRule extends Rule {
 	 *
 	 *  @since 4.5.1
 	 */
-	public int[] getRecursiveOpAlts() {
-		if ( recOpAlts.size()==0 ) return null;
-		int[] alts = new int[recOpAlts.size()+1];
-		int alt = 1;
-		for (LeftRecursiveRuleAltInfo altInfo : recOpAlts.values()) {
-			alts[alt] = altInfo.altNum;
-			alt++; // recOpAlts has alts possibly with gaps
-		}
-		return alts;
-	}
+    public int[] getRecursiveOpAlts() {
+        if (recOpAlts.size() == 0) return null;
+        int[] alts = new int[recOpAlts.size() + 1];
+        int alt = 1;
+        for (LeftRecursiveRuleAltInfo altInfo : recOpAlts.values()) {
+            alts[alt] = altInfo.altNum;
+            alt++; // recOpAlts has alts possibly with gaps
+        }
+        return alts;
+    }
 
-	/** Get -&gt; labels from those alts we deleted for left-recursive rules. */
-	@Override
-	public Map<String, List<Pair<Integer, AltAST>>> getAltLabels() {
-		Map<String, List<Pair<Integer, AltAST>>> labels = new HashMap<String, List<Pair<Integer, AltAST>>>();
-		Map<String, List<Pair<Integer, AltAST>>> normalAltLabels = super.getAltLabels();
-		if ( normalAltLabels!=null ) labels.putAll(normalAltLabels);
-		if ( recPrimaryAlts!=null ) {
-			for (LeftRecursiveRuleAltInfo altInfo : recPrimaryAlts) {
-				if (altInfo.altLabel != null) {
-					List<Pair<Integer, AltAST>> pairs = labels.get(altInfo.altLabel);
-					if (pairs == null) {
-						pairs = new ArrayList<Pair<Integer, AltAST>>();
-						labels.put(altInfo.altLabel, pairs);
-					}
+    /** Get -&gt; labels from those alts we deleted for left-recursive rules. */
+    @Override
+    public Map<String, List<Pair<Integer, AltAST>>> getAltLabels() {
+        Map<String, List<Pair<Integer, AltAST>>> labels = new HashMap<String, List<Pair<Integer, AltAST>>>();
+        Map<String, List<Pair<Integer, AltAST>>> normalAltLabels = super.getAltLabels();
+        if (normalAltLabels != null) labels.putAll(normalAltLabels);
+        if (recPrimaryAlts != null) {
+            for (LeftRecursiveRuleAltInfo altInfo : recPrimaryAlts) {
+                if (altInfo.altLabel != null) {
+                    List<Pair<Integer, AltAST>> pairs = labels.get(altInfo.altLabel);
+                    if (pairs == null) {
+                        pairs = new ArrayList<Pair<Integer, AltAST>>();
+                        labels.put(altInfo.altLabel, pairs);
+                    }
 
-					pairs.add(new Pair<Integer, AltAST>(altInfo.altNum, altInfo.originalAltAST));
-				}
-			}
-		}
-		if ( recOpAlts!=null ) {
-			for (int i = 0; i < recOpAlts.size(); i++) {
-				LeftRecursiveRuleAltInfo altInfo = recOpAlts.getElement(i);
-				if ( altInfo.altLabel!=null ) {
-					List<Pair<Integer, AltAST>> pairs = labels.get(altInfo.altLabel);
-					if (pairs == null) {
-						pairs = new ArrayList<Pair<Integer, AltAST>>();
-						labels.put(altInfo.altLabel, pairs);
-					}
+                    pairs.add(new Pair<Integer, AltAST>(altInfo.altNum, altInfo.originalAltAST));
+                }
+            }
+        }
+        if (recOpAlts != null) {
+            for (int i = 0; i < recOpAlts.size(); i++) {
+                LeftRecursiveRuleAltInfo altInfo = recOpAlts.getElement(i);
+                if (altInfo.altLabel != null) {
+                    List<Pair<Integer, AltAST>> pairs = labels.get(altInfo.altLabel);
+                    if (pairs == null) {
+                        pairs = new ArrayList<Pair<Integer, AltAST>>();
+                        labels.put(altInfo.altLabel, pairs);
+                    }
 
-					pairs.add(new Pair<Integer, AltAST>(altInfo.altNum, altInfo.originalAltAST));
-				}
-			}
-		}
-		if ( labels.isEmpty() ) return null;
-		return labels;
-	}
+                    pairs.add(new Pair<Integer, AltAST>(altInfo.altNum, altInfo.originalAltAST));
+                }
+            }
+        }
+        if (labels.isEmpty()) return null;
+        return labels;
+    }
 }

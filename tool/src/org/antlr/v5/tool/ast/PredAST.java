@@ -9,17 +9,30 @@ package org.antlr.v5.tool.ast;
 import org.antlr.runtime.Token;
 
 public class PredAST extends ActionAST {
-	public PredAST(PredAST node) {
-		super(node);
-	}
 
-	public PredAST(Token t) { super(t); }
-    public PredAST(int type) { super(type); }
-    public PredAST(int type, Token t) { super(type, t); }
+    public PredAST(PredAST node) {
+        super(node);
+    }
 
-	@Override
-	public PredAST dupNode() { return new PredAST(this); }
+    public PredAST(Token t) {
+        super(t);
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    public PredAST(int type) {
+        super(type);
+    }
+
+    public PredAST(int type, Token t) {
+        super(type, t);
+    }
+
+    @Override
+    public PredAST dupNode() {
+        return new PredAST(this);
+    }
+
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

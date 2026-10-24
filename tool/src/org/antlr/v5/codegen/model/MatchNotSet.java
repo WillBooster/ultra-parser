@@ -10,8 +10,10 @@ import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.GrammarAST;
 
 public class MatchNotSet extends MatchSet {
-	public String varName = "_la";
-	public MatchNotSet(OutputModelFactory factory, GrammarAST ast) {
-		super(factory, ast);
-	}
+
+    public String varName = "_la";
+
+    public MatchNotSet(OutputModelFactory factory, GrammarAST ast) {
+        super(factory, ast);
+    }
 }

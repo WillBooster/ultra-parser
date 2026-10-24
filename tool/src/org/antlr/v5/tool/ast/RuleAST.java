@@ -12,40 +12,53 @@ import org.antlr.v5.parse.ANTLRParser;
 import org.antlr.v5.tool.Grammar;
 
 public class RuleAST extends GrammarASTWithOptions {
-	public RuleAST(RuleAST node) {
-		super(node);
-	}
 
-	public RuleAST(Token t) { super(t); }
-	public RuleAST(int type) { super(type); }
-	public RuleAST(int type, Token t, String text) { super(type, t, text); }
+    public RuleAST(RuleAST node) {
+        super(node);
+    }
 
-	public boolean isLexerRule() {
-		String name = getRuleName();
-		return name!=null && Grammar.isTokenName(name);
-	}
+    public RuleAST(Token t) {
+        super(t);
+    }
 
-	public String getRuleName() {
-		GrammarAST nameNode = (GrammarAST)getChild(0);
-		if ( nameNode!=null ) return nameNode.getText();
-		return null;
-	}
+    public RuleAST(int type) {
+        super(type);
+    }
 
-	@Override
-	public RuleAST dupNode() { return new RuleAST(this); }
+    public RuleAST(int type, Token t, String text) {
+        super(type, t, text);
+    }
 
-	public ActionAST getLexerAction() {
-		Tree blk = getFirstChildWithType(ANTLRParser.BLOCK);
-		if ( blk.getChildCount()==1 ) {
-			Tree onlyAlt = blk.getChild(0);
-			Tree lastChild = onlyAlt.getChild(onlyAlt.getChildCount()-1);
-			if ( lastChild.getType()==ANTLRParser.ACTION ) {
-				return (ActionAST)lastChild;
-			}
-		}
-		return null;
-	}
+    public boolean isLexerRule() {
+        String name = getRuleName();
+        return name != null && Grammar.isTokenName(name);
+    }
 
-	@Override
-	public Object visit(GrammarASTVisitor v) { return v.visit(this); }
+    public String getRuleName() {
+        GrammarAST nameNode = (GrammarAST) getChild(0);
+        if (nameNode != null) return nameNode.getText();
+        return null;
+    }
+
+    @Override
+    public RuleAST dupNode() {
+        return new RuleAST(this);
+    }
+
+    public ActionAST getLexerAction() {
+        Tree blk = getFirstChildWithType(ANTLRParser.BLOCK);
+        if (blk.getChildCount() == 1) {
+            Tree onlyAlt = blk.getChild(0);
+            Tree lastChild = onlyAlt.getChild(onlyAlt.getChildCount() - 1);
+            if (lastChild.getType() == ANTLRParser.ACTION) {
+                return (ActionAST) lastChild;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Object visit(GrammarASTVisitor v) {
+        return v.visit(this);
+    }
 }

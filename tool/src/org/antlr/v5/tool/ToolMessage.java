@@ -17,12 +17,15 @@ import org.antlr.runtime.Token;
  *  with just printing it or pulling a property out of it.
  */
 public class ToolMessage extends ANTLRMessage {
-	public ToolMessage(ErrorType errorType) {
-		super(errorType);
-	}
+
+    public ToolMessage(ErrorType errorType) {
+        super(errorType);
+    }
+
     public ToolMessage(ErrorType errorType, Object... args) {
         super(errorType, null, null, args);
     }
+
     public ToolMessage(ErrorType errorType, Throwable e, Object... args) {
         super(errorType, e, null, null, args);
     }

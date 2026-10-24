@@ -12,12 +12,8 @@ import org.antlr.runtime.Token;
  *  redefinition. Any msg where we can point to a location in the grammar.
  */
 public class GrammarSemanticsMessage extends ANTLRMessage {
-    public GrammarSemanticsMessage(ErrorType etype,
-                                   String fileName,
-                                   Token offendingToken,
-                                   Object... args)
-    {
+
+    public GrammarSemanticsMessage(ErrorType etype, String fileName, Token offendingToken, Object... args) {
         super(etype, fileName, offendingToken, args);
     }
 }
-

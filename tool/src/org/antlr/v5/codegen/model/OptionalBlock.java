@@ -6,17 +6,14 @@
 
 package org.antlr.v5.codegen.model;
 
+import java.util.List;
 import org.antlr.v5.codegen.OutputModelFactory;
 import org.antlr.v5.tool.ast.GrammarAST;
 
-import java.util.List;
-
 /** */
 public class OptionalBlock extends AltBlock {
-	public OptionalBlock(OutputModelFactory factory,
-						 GrammarAST questionAST,
-						 List<CodeBlockForAlt> alts)
-	{
-		super(factory, questionAST, alts);
-	}
+
+    public OptionalBlock(OutputModelFactory factory, GrammarAST questionAST, List<CodeBlockForAlt> alts) {
+        super(factory, questionAST, alts);
+    }
 }

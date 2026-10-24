@@ -13,18 +13,20 @@ import org.antlr.runtime.Token;
  *  "The '{' came as a complete surprise to me at this point in your program"
  */
 public class GrammarSyntaxMessage extends ANTLRMessage {
-	public GrammarSyntaxMessage(ErrorType etype,
-								String fileName,
-								Token offendingToken,
-								RecognitionException antlrException,
-								Object... args)
-	{
-		super(etype, antlrException, fileName, offendingToken, args);
-	}
 
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
+    public GrammarSyntaxMessage(
+        ErrorType etype,
+        String fileName,
+        Token offendingToken,
+        RecognitionException antlrException,
+        Object... args
+    ) {
+        super(etype, antlrException, fileName, offendingToken, args);
+    }
+
+    @SuppressWarnings({ "ThrowableResultOfMethodCallIgnored" })
     @Override
     public RecognitionException getCause() {
-        return (RecognitionException)super.getCause();
+        return (RecognitionException) super.getCause();
     }
 }

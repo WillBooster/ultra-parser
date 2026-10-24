@@ -7,26 +7,51 @@
 package org.antlr.v5.misc;
 
 public class MutableInt extends Number implements Comparable<MutableInt> {
-	public int v;
 
-	public MutableInt(int v) { this.v = v; }
+    public int v;
 
-	@Override
-	public boolean equals(Object o) {
-		if ( o instanceof Number ) return v == ((Number)o).intValue();
-		return false;
-	}
+    public MutableInt(int v) {
+        this.v = v;
+    }
 
-	@Override public int hashCode() { return v; }
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Number) return v == ((Number) o).intValue();
+        return false;
+    }
 
-	@Override public int compareTo(MutableInt o) { return v-o.intValue(); }
-	@Override public int intValue() { return v; }
-	@Override public long longValue() { return v; }
-	@Override public float floatValue() { return v; }
-	@Override public double doubleValue() { return v; }
+    @Override
+    public int hashCode() {
+        return v;
+    }
 
-	@Override
-	public String toString() {
-		return String.valueOf(v);
-	}
+    @Override
+    public int compareTo(MutableInt o) {
+        return v - o.intValue();
+    }
+
+    @Override
+    public int intValue() {
+        return v;
+    }
+
+    @Override
+    public long longValue() {
+        return v;
+    }
+
+    @Override
+    public float floatValue() {
+        return v;
+    }
+
+    @Override
+    public double doubleValue() {
+        return v;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(v);
+    }
 }

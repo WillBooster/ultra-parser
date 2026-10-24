@@ -6,8 +6,7 @@
 
 package org.antlr.v5.test.runtime;
 
-import org.antlr.v5.Tool;
-import org.antlr.v5.test.runtime.states.GeneratedState;
+import static org.antlr.v5.test.runtime.FileUtils.writeFile;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -19,190 +18,219 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.antlr.v5.test.runtime.FileUtils.writeFile;
+import org.antlr.v5.Tool;
+import org.antlr.v5.test.runtime.states.GeneratedState;
 
 public class Generator {
-	private final static Pattern grammarHeaderRegex = Pattern.compile("^((?<grammarType>(parser|lexer))\\s+)?grammar\\s+(?<grammarName>[^;\\s]+)\\s*;");
 
-	public static GeneratedState generate(RunOptions runOptions, String language, String workingDirectory, String[] extraOptions) {
-		if (runOptions.slaveGrammars != null) {
-			for (String grammar : runOptions.slaveGrammars) {
-				GrammarFile slaveGrammarFile = parseGrammarFile(grammar);
-				Path fullPath = Paths.get(workingDirectory, slaveGrammarFile.grammarName + ".g4");
-				writeFile(fullPath.toString() , slaveGrammarFile.content, null);
-			}
-		}
+    private static final Pattern grammarHeaderRegex = Pattern.compile(
+        "^((?<grammarType>(parser|lexer))\\s+)?grammar\\s+(?<grammarName>[^;\\s]+)\\s*;"
+    );
 
-		List<GrammarFile> grammarFiles = new ArrayList<>();
-		for (String grammar : runOptions.grammars) {
-			grammarFiles.add(parseGrammarFile(grammar));
-		}
+    public static GeneratedState generate(
+        RunOptions runOptions,
+        String language,
+        String workingDirectory,
+        String[] extraOptions
+    ) {
+        if (runOptions.slaveGrammars != null) {
+            for (String grammar : runOptions.slaveGrammars) {
+                GrammarFile slaveGrammarFile = parseGrammarFile(grammar);
+                Path fullPath = Paths.get(workingDirectory, slaveGrammarFile.grammarName + ".g4");
+                writeFile(fullPath.toString(), slaveGrammarFile.content, null);
+            }
+        }
 
-		GrammarFile mainFile = grammarFiles.get(0);
-		String mainGrammarName = mainFile.grammarName;
+        List<GrammarFile> grammarFiles = new ArrayList<>();
+        for (String grammar : runOptions.grammars) {
+            grammarFiles.add(parseGrammarFile(grammar));
+        }
 
-		final List<String> options = new ArrayList<>();
+        GrammarFile mainFile = grammarFiles.get(0);
+        String mainGrammarName = mainFile.grammarName;
 
-		for (GrammarFile grammarFile : grammarFiles) {
-			Path fullPath = Paths.get(workingDirectory, grammarFile.grammarName + ".g4");
-			writeFile(fullPath.toString(), grammarFile.content, null);
+        final List<String> options = new ArrayList<>();
 
-			if (grammarFile == mainFile) continue;
+        for (GrammarFile grammarFile : grammarFiles) {
+            Path fullPath = Paths.get(workingDirectory, grammarFile.grammarName + ".g4");
+            writeFile(fullPath.toString(), grammarFile.content, null);
 
-			// Generate dependent recognizers at first
-			options.add(grammarFile.grammarName + ".g4");
-		}
+            if (grammarFile == mainFile) continue;
 
-		// Generate the main recognizer at last
-		options.add(mainFile.grammarName + ".g4");
+            // Generate dependent recognizers at first
+            options.add(grammarFile.grammarName + ".g4");
+        }
 
-		if (runOptions.useVisitor) {
-			options.add("-visitor");
-		}
+        // Generate the main recognizer at last
+        options.add(mainFile.grammarName + ".g4");
 
-		String superClass = runOptions.superClass;
-		if (superClass != null) {
-			options.add("-DsuperClass=" + superClass);
-		}
+        if (runOptions.useVisitor) {
+            options.add("-visitor");
+        }
 
-		if (extraOptions != null) {
-			options.addAll(Arrays.asList(extraOptions));
-		}
+        String superClass = runOptions.superClass;
+        if (superClass != null) {
+            options.add("-DsuperClass=" + superClass);
+        }
 
-		String[] extraGenerationOptions = runOptions.extraGenerationOptions;
-		if (extraGenerationOptions != null) {
-			options.addAll(Arrays.asList(extraGenerationOptions));
-		}
+        if (extraOptions != null) {
+            options.addAll(Arrays.asList(extraOptions));
+        }
 
-		String outputDirectory;
+        String[] extraGenerationOptions = runOptions.extraGenerationOptions;
+        if (extraGenerationOptions != null) {
+            options.addAll(Arrays.asList(extraGenerationOptions));
+        }
 
-		if (!options.contains("-o")) {
-			outputDirectory = workingDirectory;
-		}
-		else {
-			outputDirectory = options.get(options.indexOf("-o") + 1);
-		}
-		options.add("-o");
-		options.add(outputDirectory);
+        String outputDirectory;
 
-		if (!options.contains("-lib")) {
-			options.add("-lib");
-			options.add(workingDirectory);
-		}
-		if (!options.contains("-encoding")) {
-			options.add("-encoding");
-			options.add("UTF-8");
-		}
-		if (!options.contains("-Dlanguage=") && language != null) {
-			options.add("-Dlanguage=" + language);
-		}
+        if (!options.contains("-o")) {
+            outputDirectory = workingDirectory;
+        } else {
+            outputDirectory = options.get(options.indexOf("-o") + 1);
+        }
+        options.add("-o");
+        options.add(outputDirectory);
 
-		Tool antlr = new Tool(options.toArray(new String[0]));
-		ErrorQueue errorQueue = new ErrorQueue(antlr);
-		antlr.inputDirectory = new File(workingDirectory);
-		antlr.addListener(errorQueue);
-		antlr.processGrammarsOnCommandLine();
+        if (!options.contains("-lib")) {
+            options.add("-lib");
+            options.add(workingDirectory);
+        }
+        if (!options.contains("-encoding")) {
+            options.add("-encoding");
+            options.add("UTF-8");
+        }
+        if (!options.contains("-Dlanguage=") && language != null) {
+            options.add("-Dlanguage=" + language);
+        }
 
-		final LexerParserName lexerParserName;
-		List<GeneratedFile> generatedFiles = new ArrayList<>();
+        Tool antlr = new Tool(options.toArray(new String[0]));
+        ErrorQueue errorQueue = new ErrorQueue(antlr);
+        antlr.inputDirectory = new File(workingDirectory);
+        antlr.addListener(errorQueue);
+        antlr.processGrammarsOnCommandLine();
 
-		language = language != null ? language : "TypeScript";
-		if (errorQueue.errors.isEmpty()) {
-			lexerParserName = getLexerParserName(mainFile, grammarFiles, language, outputDirectory);
-			generatedFiles = getGeneratedFiles(runOptions, language, mainGrammarName, outputDirectory, lexerParserName);
-		} else {
-			lexerParserName = new LexerParserName(null, null);
-		}
+        final LexerParserName lexerParserName;
+        List<GeneratedFile> generatedFiles = new ArrayList<>();
 
-		return new GeneratedState(grammarFiles, errorQueue, lexerParserName.lexerName, lexerParserName.parserName, generatedFiles, null);
-	}
+        language = language != null ? language : "TypeScript";
+        if (errorQueue.errors.isEmpty()) {
+            lexerParserName = getLexerParserName(mainFile, grammarFiles, language, outputDirectory);
+            generatedFiles = getGeneratedFiles(runOptions, language, mainGrammarName, outputDirectory, lexerParserName);
+        } else {
+            lexerParserName = new LexerParserName(null, null);
+        }
 
-	private static GrammarFile parseGrammarFile(String input) {
-		Matcher matcher = grammarHeaderRegex.matcher(input);
+        return new GeneratedState(
+            grammarFiles,
+            errorQueue,
+            lexerParserName.lexerName,
+            lexerParserName.parserName,
+            generatedFiles,
+            null
+        );
+    }
 
-		GrammarFile.Type grammarType = GrammarFile.Type.Combined;
-		String grammarName = null;
+    private static GrammarFile parseGrammarFile(String input) {
+        Matcher matcher = grammarHeaderRegex.matcher(input);
 
-		if (matcher.find()) {
-			String grammarTypeValue = matcher.group("grammarType");
-			grammarName = matcher.group("grammarName");
+        GrammarFile.Type grammarType = GrammarFile.Type.Combined;
+        String grammarName = null;
 
-			if (grammarTypeValue != null) {
-				grammarType = grammarTypeValue.equals("parser") ? GrammarFile.Type.Parser : GrammarFile.Type.Lexer;
-			}
-		}
+        if (matcher.find()) {
+            String grammarTypeValue = matcher.group("grammarType");
+            grammarName = matcher.group("grammarName");
 
-		return new GrammarFile(grammarName, grammarType, input);
-	}
+            if (grammarTypeValue != null) {
+                grammarType = grammarTypeValue.equals("parser") ? GrammarFile.Type.Parser : GrammarFile.Type.Lexer;
+            }
+        }
 
-	private static LexerParserName getLexerParserName(GrammarFile mainFile, List<GrammarFile> grammarFiles,
-													  String language, String outputDirectory) {
-		final String lexerName;
-		final String parserName;
+        return new GrammarFile(grammarName, grammarType, input);
+    }
 
-		if (mainFile.type == GrammarFile.Type.Combined) {
-			String tempLexerName = mainFile.grammarName + "Lexer";
-			String generateLexerFileName = tempLexerName + "." + getExtension(language);
-			lexerName = Files.exists(new File(outputDirectory, generateLexerFileName).toPath()) ? tempLexerName : null;
-			parserName = mainFile.grammarName + "Parser";
-		}
-		else if (mainFile.type == GrammarFile.Type.Lexer) {
-			lexerName = mainFile.grammarName;
-			parserName = null;
-		}
-		else {
-			Optional<GrammarFile> lexerFile = grammarFiles.stream().filter(g -> g.type == GrammarFile.Type.Lexer).findFirst();
-			lexerName = lexerFile.map(grammarFile -> grammarFile.grammarName).orElse(null);
-			parserName = mainFile.grammarName;
-		}
+    private static LexerParserName getLexerParserName(
+        GrammarFile mainFile,
+        List<GrammarFile> grammarFiles,
+        String language,
+        String outputDirectory
+    ) {
+        final String lexerName;
+        final String parserName;
 
-		return new LexerParserName(lexerName, parserName);
-	}
+        if (mainFile.type == GrammarFile.Type.Combined) {
+            String tempLexerName = mainFile.grammarName + "Lexer";
+            String generateLexerFileName = tempLexerName + "." + getExtension(language);
+            lexerName = Files.exists(new File(outputDirectory, generateLexerFileName).toPath()) ? tempLexerName : null;
+            parserName = mainFile.grammarName + "Parser";
+        } else if (mainFile.type == GrammarFile.Type.Lexer) {
+            lexerName = mainFile.grammarName;
+            parserName = null;
+        } else {
+            Optional<GrammarFile> lexerFile = grammarFiles
+                .stream()
+                .filter(g -> g.type == GrammarFile.Type.Lexer)
+                .findFirst();
+            lexerName = lexerFile.map(grammarFile -> grammarFile.grammarName).orElse(null);
+            parserName = mainFile.grammarName;
+        }
 
-	private static class LexerParserName {
-		public final String lexerName;
-		public final String parserName;
+        return new LexerParserName(lexerName, parserName);
+    }
 
-		private LexerParserName(String lexerName, String parserName) {
-			this.lexerName = lexerName;
-			this.parserName = parserName;
-		}
-	}
+    private static class LexerParserName {
 
-	private static List<GeneratedFile> getGeneratedFiles(RunOptions runOptions, String language, String mainGrammarName,
-														 String outputDirectory, LexerParserName lexerParserName) {
-		List<GeneratedFile> generatedFiles = new ArrayList<>();
+        public final String lexerName;
+        public final String parserName;
 
-		String extensionWithDot = "." + getExtension(language);
+        private LexerParserName(String lexerName, String parserName) {
+            this.lexerName = lexerName;
+            this.parserName = parserName;
+        }
+    }
 
-		if (lexerParserName.lexerName != null) {
-			String generateLexerFileName = lexerParserName.lexerName + extensionWithDot;
-			generatedFiles.add(new GeneratedFile(generateLexerFileName, GeneratedFile.Type.Lexer));
-		}
+    private static List<GeneratedFile> getGeneratedFiles(
+        RunOptions runOptions,
+        String language,
+        String mainGrammarName,
+        String outputDirectory,
+        LexerParserName lexerParserName
+    ) {
+        List<GeneratedFile> generatedFiles = new ArrayList<>();
 
-		if (lexerParserName.parserName != null) {
-			String generatedParserFileName = lexerParserName.parserName + extensionWithDot;
-			generatedFiles.add(new GeneratedFile(generatedParserFileName, GeneratedFile.Type.Parser));
+        String extensionWithDot = "." + getExtension(language);
 
-			if (runOptions.useListener) {
-				generatedFiles.add(new GeneratedFile(mainGrammarName + "Listener" + extensionWithDot, GeneratedFile.Type.Other));
-			}
-			if (runOptions.useVisitor) {
-				generatedFiles.add(new GeneratedFile(mainGrammarName + "Visitor" + extensionWithDot, GeneratedFile.Type.Other));
-			}
-		}
+        if (lexerParserName.lexerName != null) {
+            String generateLexerFileName = lexerParserName.lexerName + extensionWithDot;
+            generatedFiles.add(new GeneratedFile(generateLexerFileName, GeneratedFile.Type.Lexer));
+        }
 
-		for (GeneratedFile generatedFile : generatedFiles) {
-			if (!Files.exists(new File(outputDirectory, generatedFile.name).toPath())) {
-				throw new RuntimeException("Generated file " + generatedFile.name + " should exist");
-			}
-		}
+        if (lexerParserName.parserName != null) {
+            String generatedParserFileName = lexerParserName.parserName + extensionWithDot;
+            generatedFiles.add(new GeneratedFile(generatedParserFileName, GeneratedFile.Type.Parser));
 
-		return generatedFiles;
-	}
+            if (runOptions.useListener) {
+                generatedFiles.add(
+                    new GeneratedFile(mainGrammarName + "Listener" + extensionWithDot, GeneratedFile.Type.Other)
+                );
+            }
+            if (runOptions.useVisitor) {
+                generatedFiles.add(
+                    new GeneratedFile(mainGrammarName + "Visitor" + extensionWithDot, GeneratedFile.Type.Other)
+                );
+            }
+        }
 
-	public static String getExtension(String language) {
-		return language.equals("TypeScript") ? "ts" : language.toLowerCase();
-	}
+        for (GeneratedFile generatedFile : generatedFiles) {
+            if (!Files.exists(new File(outputDirectory, generatedFile.name).toPath())) {
+                throw new RuntimeException("Generated file " + generatedFile.name + " should exist");
+            }
+        }
+
+        return generatedFiles;
+    }
+
+    public static String getExtension(String language) {
+        return language.equals("TypeScript") ? "ts" : language.toLowerCase();
+    }
 }

@@ -10,7 +10,8 @@ import org.antlr.v5.codegen.model.decl.StructDecl;
 
 /** */
 public class TokenPropertyRef_int extends TokenPropertyRef {
-	public TokenPropertyRef_int(StructDecl ctx, String label) {
-		super(ctx, label);
-	}
+
+    public TokenPropertyRef_int(StructDecl ctx, String label) {
+        super(ctx, label);
+    }
 }
