@@ -307,7 +307,9 @@ pub unsafe extern "C" fn tokens_set(tokens: *mut Tokens, data: *const i32, n: us
     // SAFETY: guaranteed by the caller.
     let (tokens, data) = unsafe { (&mut *tokens, slice(data, 6 * n)) };
     tokens.tokens = data
-        .chunks_exact(6)
+        .as_chunks::<6>()
+        .0
+        .iter()
         .enumerate()
         .map(|(i, t)| Token {
             token_type: t[0],
