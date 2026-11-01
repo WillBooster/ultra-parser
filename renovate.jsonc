@@ -1,4 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>WillBooster/willbooster-configs:renovate.jsonc"],
+  "packageRules": [
+    // 25.0.5+8.0.LTS: The pinned Kotlin 2.0.0-Beta4 Maven compiler fails on Java 25.0.5 with IllegalArgumentException while parsing the Java version; JetBrains documents Java 25 support in Kotlin 2.3.0 and later: https://youtrack.jetbrains.com/projects/AMPER/issues/AMPER-5006/Add-diagnostic-for-JDK-version-compatibility-with-Kotlin-version
+    { "matchPackageNames": ["java"], "allowedVersions": "!/^25\\.0\\.5\\+8\\.0\\.LTS$/" },
+  ],
 }
