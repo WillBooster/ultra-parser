@@ -2,7 +2,7 @@
 java = "temurin-25.0.5+8.0.LTS"
 maven = "3.9"
 node = "26.13.1"
-bun = "1.4.4"
+bun = "1.4.5"
 rust = { version = "1.100.0", profile = "minimal", components = ["clippy","rustfmt"], targets = ["wasm32-unknown-unknown"] }
 
 [settings]
